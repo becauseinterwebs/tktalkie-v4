@@ -5,11 +5,11 @@
 /**
  * Emit a warning tone
  */
-void beep(const int times = 1)
+void beep(const byte times = 1)
 {
   audioShield.unmuteHeadphone();
   audioShield.unmuteLineout();
-  for (int i=0; i<times; i++) {
+  for (byte i=0; i<times; i++) {
     waveform1.frequency(720);
     waveform1.amplitude(0.7);
     delay(100);
@@ -26,6 +26,11 @@ void beep(const int times = 1)
  */
 void loadSoundEffects() 
 {
+  if (strcasecmp(EFFECTS_DIR, "") == 0) {
+    SOUND_EFFECTS_COUNT = 0;
+    debug(F("No effects directory specified"));
+    return;
+  }
   SOUND_EFFECTS_COUNT = listFiles(EFFECTS_DIR, SOUND_EFFECTS, MAX_FILE_COUNT, SOUND_EXT, false, false);
   debug(F("%d Sound effects loaded\n"), SOUND_EFFECTS_COUNT);
 }
@@ -33,7 +38,7 @@ void loadSoundEffects()
 /***
  * Play the specified sound effect from the SD card
  */
-long playSoundFile(int player, char *filename) 
+long playSoundFile(byte player, char *filename) 
 {
 
   if (strcasecmp(filename, "") == 0) {
@@ -47,7 +52,7 @@ long playSoundFile(int player, char *filename)
     strcat(filename, ext);
   }
   debug(F("Play sound file %s on player %d\n"), filename, player);
-  long len = 0;
+  unsigned long len = 0;
   switch (player) {
     case LOOP_PLAYER:
       loopPlayer.stop();
@@ -68,7 +73,21 @@ long playSoundFile(int player, char *filename)
 /**
  * Shortcut to play a sound from the SOUNDS directory
  */
-long playSound(const char *filename)
+unsigned long playGloveSound(const char *filename)
+{
+  if (strcasecmp(filename, "") == 0) {
+    return 0;
+  }
+  char buf[100];
+  strcpy(buf, GLOVE_DIR);
+  strcat(buf, filename);
+  return playSoundFile(EFFECTS_PLAYER, buf);
+}
+
+/**
+ * Shortcut to play a sound from the SOUNDS directory
+ */
+unsigned long playSound(const char *filename)
 {
   if (strcasecmp(filename, "") == 0) {
     return 0;
@@ -82,7 +101,7 @@ long playSound(const char *filename)
 /**
  * Shortcut to play a sound from the EFFECTS directory
  */
-long playEffect(const char *filename)
+unsigned long playEffect(const char *filename)
 {
   if (strcasecmp(filename, "") == 0) {
     return 0;
@@ -113,10 +132,10 @@ void playLoop()
  */
 void addSoundEffect()
 {
-  if (speaking == true || SOUND_EFFECTS_COUNT < 1) return;
+  if (speaking == true || SOUND_EFFECTS_COUNT < 1 || MUTE_EFFECTS == true) return;
   // generate a random number between 0 and the number of files read - 1
-  int rnd = 0;
-  int count = 0;
+  byte rnd = 0;
+  byte count = 0;
   rnd = lastRnd;
   while (rnd == lastRnd && count < 50) {
    rnd = random(0, SOUND_EFFECTS_COUNT);
@@ -157,7 +176,7 @@ float readVolume()
  */
 void connectSound() 
 {
-  for (int i=0; i<3; i++) {
+  for (byte i=0; i<3; i++) {
     waveform1.frequency(1440);
     waveform1.amplitude(0.3);
     delay(100);
@@ -172,7 +191,7 @@ void connectSound()
  */
 void disconnectSound() 
 {
-  for (int i=0; i<3; i++) {
+  for (byte i=0; i<3; i++) {
     waveform1.frequency(720);
     waveform1.amplitude(0.3);
     delay(100);
@@ -198,7 +217,7 @@ void loopOn()
 {
   // gradually raise level to avoid pops 
   if (LOOP_GAIN > 1) {
-    for (int i=0; i<=LOOP_GAIN; i++) {
+    for (byte i=0; i<=LOOP_GAIN; i++) {
       loopMixer.gain(2, i);
       loopMixer.gain(3, i);
     }
@@ -212,10 +231,11 @@ void loopOn()
  */
 void voiceOff() 
 {
+  autoSleepMillis = 0;
   speaking = false;
   silent = false;
   stopped = 0;
-  pink1.amplitude(0);
+  white1.amplitude(0);
   voiceMixer.gain(0, 0);
   voiceMixer.gain(1, 0);
   if (MUTE_LOOP == 1) {
@@ -228,6 +248,7 @@ void voiceOff()
  */
 void voiceOn() 
 {
+  autoSleepMillis = 0;
   speaking = true;
   silent = true;
   if (MUTE_LOOP == 1) {
@@ -236,7 +257,7 @@ void voiceOn()
   // Reset the "user is talking" timer
   stopped = 0;
   // pops are ok here ;)
-  pink1.amplitude(NOISE_GAIN);
+  white1.amplitude(NOISE_GAIN);
   voiceMixer.gain(0, VOICE_GAIN);
   voiceMixer.gain(1, VOICE_GAIN);
 }

@@ -3,12 +3,13 @@
  */
  
 // GUItool: begin automatically generated code
+/*
 AudioInputI2S            i2s1;           //xy=196,125
 AudioPlaySdWav           loopPlayer;     //xy=199,402
 AudioSynthWaveform       waveform1;      //xy=202,316
 AudioPlaySdWav           effectsPlayer;  //xy=208,266
 AudioAnalyzeRMS          rms1;           //xy=325,174
-AudioSynthNoisePink      pink1;          //xy=473,176
+AudioSynthNoisePink      white1;          //xy=473,176
 AudioEffectBitcrusher    bitcrusher1;    //xy=487,90
 AudioEffectBitcrusher    bitcrusher2;    //xy=487,133
 AudioMixer4              loopMixer;      //xy=656,412
@@ -23,7 +24,7 @@ AudioConnection          patchCord5(loopPlayer, 1, loopMixer, 1);
 AudioConnection          patchCord6(waveform1, 0, effectsMixer, 2);
 AudioConnection          patchCord7(effectsPlayer, 0, effectsMixer, 0);
 AudioConnection          patchCord8(effectsPlayer, 1, effectsMixer, 1);
-AudioConnection          patchCord9(pink1, 0, voiceMixer, 2);
+AudioConnection          patchCord9(white1, 0, voiceMixer, 2);
 AudioConnection          patchCord10(bitcrusher1, 0, voiceMixer, 0);
 AudioConnection          patchCord11(bitcrusher2, 0, voiceMixer, 1);
 AudioConnection          patchCord12(loopMixer, 0, effectsMixer, 3);
@@ -32,30 +33,82 @@ AudioConnection          patchCord14(voiceMixer, 0, i2s2, 1);
 AudioConnection          patchCord15(effectsMixer, 0, voiceMixer, 3);
 AudioControlSGTL5000     audioShield;    //xy=846,428
 // GUItool: end automatically generated code
+*/
+
+// GUItool: begin automatically generated code
+AudioInputI2S            i2s1;           //xy=103,151
+AudioAnalyzeRMS          rms1;           //xy=222,215
+AudioSynthNoiseWhite     white1;          //xy=278,379
+AudioPlaySdWav           loopPlayer;     //xy=287,319
+AudioEffectBitcrusher    bitcrusher1;    //xy=295,87
+AudioSynthWaveform       waveform1;      //xy=361,251
+AudioPlaySdWav           effectsPlayer;  //xy=368,208
+AudioEffectFlange        flange1;        //xy=430,86
+AudioMixer4              loopMixer;      //xy=463,331
+AudioEffectChorus        chorus1;        //xy=559,86
+AudioMixer4              effectsMixer;   //xy=603,222
+AudioMixer4              voiceMixer;     //xy=724,115
+AudioOutputI2S           i2s2;           //xy=889,115
+AudioConnection          patchCord1(i2s1, 0, bitcrusher1, 0);
+AudioConnection          patchCord2(i2s1, 0, voiceMixer, 2);
+AudioConnection          patchCord3(i2s1, 1, rms1, 0);
+AudioConnection          patchCord4(white1, 0, loopMixer, 3);
+AudioConnection          patchCord5(loopPlayer, 0, loopMixer, 0);
+AudioConnection          patchCord6(loopPlayer, 1, loopMixer, 1);
+AudioConnection          patchCord7(bitcrusher1, flange1);
+AudioConnection          patchCord8(waveform1, 0, effectsMixer, 2);
+AudioConnection          patchCord9(effectsPlayer, 0, effectsMixer, 0);
+AudioConnection          patchCord10(effectsPlayer, 1, effectsMixer, 1);
+AudioConnection          patchCord11(flange1, chorus1);
+AudioConnection          patchCord12(loopMixer, 0, effectsMixer, 3);
+AudioConnection          patchCord13(chorus1, 0, voiceMixer, 0);
+AudioConnection          patchCord14(chorus1, 0, voiceMixer, 1);
+AudioConnection          patchCord15(effectsMixer, 0, voiceMixer, 3);
+AudioConnection          patchCord16(voiceMixer, 0, i2s2, 0);
+AudioConnection          patchCord17(voiceMixer, 0, i2s2, 1);
+AudioControlSGTL5000     audioShield;    //xy=89,261
+// GUItool: end automatically generated code
 
 
 // version flag
-const char VERSION[5] = "3.11";
+const char VERSION[5] = "3.5";
+float APP_VER = 1.13;
       
 //elapsedMillis ms;                         // running timer...inputs are checked every 24 milliseconds
 elapsedMillis stopped;                      // used to tell how long user has stopped talking
 boolean speaking = false;                   // flag to let us know if the user is speaking or not
 
-const int MAX_FILE_COUNT    = 99;
-const int SETTING_ENTRY_MAX = 50;
+const byte MAX_FILE_COUNT    = 99;
+const byte SETTING_ENTRY_MAX = 50;
 
-int SOUND_EFFECTS_COUNT = 0;                             // This keeps count of how many valid WAV files were found.
+byte SOUND_EFFECTS_COUNT = 0;                             // This keeps count of how many valid WAV files were found.
 char SOUND_EFFECTS[MAX_FILE_COUNT][SETTING_ENTRY_MAX];   // This will hold an array of the WAV files on the SD card.
                                                          // 99 is an arbitrary number.  You can change it as you need to.
-int lastRnd  = -1;                                       // Keeps track of the last file played so that it is different each time
+byte lastRnd  = -1;                                       // Keeps track of the last file played so that it is different each time
 
 Bounce PTT = Bounce();                       // Used to read the PTT button (if attached)
+
+byte CONTROL_BUTTON_PINS[6] = {0,0,0,0,0,0};
+byte CONTROL_BUTTON_COUNT = 0;
+// this is temp for testing
+char CONTROL_BUTTON_SETTINGS[3][SETTING_ENTRY_MAX] = {
+    "3,SOUND1;3,SOUND4",
+    "3,SOUND2;3,SOUND5",
+    "3,SOUND3;3,SOUND6"  
+};
+
+
+ControlButton ControlButtons[3] = {
+  ControlButton(),
+  ControlButton(),
+  ControlButton()
+}; 
 
 boolean silent = false;                      // used for PTT and to switch back to Voice Activated mode
 boolean button_initialized = false;          // flag that lets us know if the PTT has been pushed or not to go into PTT mode
 
-const int EFFECTS_PLAYER = 1;
-const int LOOP_PLAYER = 2;
+const byte EFFECTS_PLAYER = 1;
+const byte LOOP_PLAYER = 2;
 
 const char SETTINGS_FILE[SETTING_ENTRY_MAX]    = "SETTINGS.TXT";   // Global settings file
 
@@ -65,16 +118,20 @@ char EFFECTS_DIR[SETTING_ENTRY_MAX] = "/effects/";      // effects sounds (mic p
 char SOUNDS_DIR[SETTING_ENTRY_MAX]  = "/sounds/";       // general sound files 
 char LOOP_DIR[SETTING_ENTRY_MAX]    = "/loops/";        // sound loops
 const char PROFILES_DIR[11]         = "/profiles/";     // Location of config profiles
+char GLOVE_DIR[SETTING_ENTRY_MAX]   = "/glove/";
 
-const int STARTUP_SETTINGS_COUNT    = 6;                                 // counter for number of entries in global settings file
+const byte STARTUP_SETTINGS_COUNT    = 6;                                 // counter for number of entries in global settings file
 char STARTUP_SETTINGS[STARTUP_SETTINGS_COUNT][SETTING_ENTRY_MAX];        // Holds settings values
 
-int STATE;                                             // current operational state of application
 
-// operation states
-const int STATE_NONE     = 0;
-const int STATE_BOOTING  = 2;
-const int STATE_RUNNING  = 3;
+/**
+ * OPERATIONAL STATES - Used for tracking at what stage the app is currently running
+ */
+byte STATE;                      
+const byte STATE_NONE     = 0;   
+const byte STATE_BOOTING  = 1;
+const byte STATE_RUNNING  = 2;
+const byte STATE_SLEEPING = 3;
 
 // Other defaults
 const char SOUND_EXT[5]  = ".WAV";
@@ -85,33 +142,55 @@ const char BACKUP_EXT[5] = ".BAK";
 char     PROFILE_NAME[50] = "Default";
 char     PROFILE_FILE[SETTING_ENTRY_MAX] = "TKCONFIG.TXT";
 float    MASTER_VOLUME    = 0.5; 
-int      LINEOUT          = 29; // Valid values 13 to 31. Default teensy setting is 29.
-int      LINEIN           = 5;  // Value values 0 to 15. Default teensy setting is 5;
-int      HIPASS           = 0;  // off by default, 1 = on
-int      MIC_GAIN         = 3;
+byte     LINEOUT          = 29; // Valid values 13 to 31. Default teensy setting is 29.
+byte     LINEIN           = 5;  // Value values 0 to 15. Default teensy setting is 5;
+byte     HIPASS           = 0;  // off by default, 1 = on
+byte     MIC_GAIN         = 3;
 char     STARTUP_WAV[SETTING_ENTRY_MAX];
 char     LOOP_WAV[SETTING_ENTRY_MAX];
 char     BUTTON_WAV[SETTING_ENTRY_MAX];
-int      AUDIO_INPUT      = AUDIO_INPUT_MIC;
-int      EQ               = 0;
-int      EQ_BANDS_SIZE    = 5;
+byte     AUDIO_INPUT      = AUDIO_INPUT_MIC;
+byte     EQ               = 0;
+byte     EQ_BANDS_SIZE    = 5;
 float    EQ_BANDS[5]      = { -1.0,0,1,0,-1.0 };
-int      BITCRUSHER_SIZE  = 4;
-int      BITCRUSHER[4]    = { 12,16384,10,10240 };
+byte     BITCRUSHER_SIZE  = 2;
+int      BITCRUSHER[2]    = { 16,44100 };
 float    LOOP_GAIN        = 2;
 float    VOICE_GAIN       = 1;
+float    DRY_GAIN         = 1;
 float    NOISE_GAIN       = 0;
-float    EFFECTS_GAIN     = 5;
-uint16_t SILENCE_TIME     = 350;    // The minimum time to wait before playing a sound effect after talking has stopped
-float    VOICE_START      = 0.07;   // The amplitude needed to trigger the sound effects process
-float    VOICE_STOP       = 0.02;   // The minimum amplitude to use when determining if you've stopped talking.
-                                    // Depending upon the microphone you are using, you may get a constant signal
-                                    // that is above 0 or even 0.01.  Use the Serial monitor and add output to the 
-                                    // loop to see what signal amplitude you are receiving when the mic is "quiet."
-int      BUTTON_PIN;                // The pin to which a PTT button is connected (not required.) Change it if you 
-                                    // attach it to a different pin (should use 0, 1 or 2, though...as not all pins
-                                    // are available since they are used by the Audio Adaptor.
-boolean MUTE_LOOP = 1;              // mute loop while talking on/off
+float    EFFECTS_GAIN     = 1;
+uint16_t SILENCE_TIME     = 350;     // The minimum time to wait before playing a sound effect after talking has stopped
+float    VOICE_START      = 0.07;    // The amplitude needed to trigger the sound effects process
+float    VOICE_STOP       = 0.02;    // The minimum amplitude to use when determining if you've stopped talking.
+                                     // Depending upon the microphone you are using, you may get a constant signal
+                                     // that is above 0 or even 0.01.  Use the Serial monitor and add output to the 
+                                     // loop to see what signal amplitude you are receiving when the mic is "quiet."
+byte     BUTTON_PIN;                 // The pin to which a PTT button is connected (not required.) Change it if you 
+                                     // attach it to a different pin (should use 0, 1 or 2, though...as not all pins
+                                     // are available since they are used by the Audio Adaptor.
+boolean  MUTE_LOOP = 1;              // mute loop while talking on/off
+boolean  MUTE_EFFECTS = 0;           // flag to mute sound effects after talking has stopped
+uint16_t SLEEP_TIME = 0;             // Number of minutes to wait before putting unit to sleep if no sound is heard
+                                     // from the microphone (default is 0 = do not sleep.)
+                                     
+// Sound played when going into sleep mode
+char     SLEEP_SOUND[SETTING_ENTRY_MAX];
+
+#define FX_DELAY 32
+
+// Chorus settings
+byte  CHORUS_DELAY     = FX_DELAY;
+byte  CHORUS_VOICES    = 1;          // off by default
+short CHORUS_BUFFER[FX_DELAY*AUDIO_BLOCK_SAMPLES];
+
+byte   FLANGE_DELAY    = FX_DELAY;
+byte   FLANGE_OFFSET   = 1;
+byte   FLANGE_DEPTH    = 0;
+double FLANGE_FREQ     = .0625;
+short  FLANGE_BUFFER[FX_DELAY*AUDIO_BLOCK_SAMPLES];
+
+
 boolean DEBUG     = false;          // Set to true to have debug messages printed out...useful for testing
 boolean ECHO      = false;          // Set to true to have BLE TX/RX messages displayed in serial monitor
 
@@ -127,10 +206,15 @@ char OUTPUT_TYPE[5]        = "BOTH";  // Set to "SPKR", "LINE" or "BOTH" (defaul
 // Loops
 elapsedMillis loopMillis = 0;
 unsigned int loopLength;
+elapsedMillis autoSleepMillis = 0;
 
 // loop and serial command handlers
 char cmd_key[SETTING_ENTRY_MAX] = "";
 char cmd_val[SETTING_ENTRY_MAX] = "";
-const int MAX_DATA_SIZE = 100;
+const byte MAX_DATA_SIZE = 100;
 char received[MAX_DATA_SIZE] = "";
+
+SnoozeDigital snoozeDigital;
+SnoozeAudio   snoozeAudio;
+SnoozeBlock config_teensy3x(snoozeDigital, snoozeAudio);
 

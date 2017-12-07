@@ -70,7 +70,7 @@ void sendConfig()
   // get sound files
   char files[MAX_FILE_COUNT][SETTING_ENTRY_MAX];
   
-  int count = listFiles(SOUNDS_DIR, files, MAX_FILE_COUNT, SOUND_EXT, false, false);
+  byte count = listFiles(SOUNDS_DIR, files, MAX_FILE_COUNT, SOUND_EXT, false, false);
 
   // Add sound files
   char buffer[1024];
@@ -113,13 +113,13 @@ void sendConfig()
   // get config profile files 
   count = listFiles(PROFILES_DIR, files, MAX_FILE_COUNT, FILE_EXT, false, false);
   
-  for (int i = 0; i < count; i++) {
+  for (byte i = 0; i < count; i++) {
      char entries[MAX_FILE_COUNT][SETTING_ENTRY_MAX];
      char filename[SETTING_ENTRY_MAX];
      strcpy(filename, PROFILES_DIR);
      strcat(filename, files[i]);
-     int total = loadSettingsFile(filename, entries, MAX_FILE_COUNT);
-     for (int x = 0; x < total; x++) {
+     byte total = loadSettingsFile(filename, entries, MAX_FILE_COUNT);
+     for (byte x = 0; x < total; x++) {
         char *key, *value, *ptr;
         char entry[SETTING_ENTRY_MAX];
         strcpy(entry, entries[x]);
