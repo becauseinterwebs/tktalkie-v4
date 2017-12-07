@@ -1039,18 +1039,26 @@ void applySettings()
   voiceOff();
 
   // Setup control glove buttons
-  for (byte a=0; a<6; a++) {
+  byte a = 0;
+  while (a < 7) {
     byte pin = CONTROL_BUTTON_PINS[a];
+    byte buttonNum = 0;
     Serial.print("Pin: ");
     Serial.println(pin);
     if (pin > 0) {
+
+      // setup physical button
+      ControlButtons[a].setup(pin);
+      
       char *part_token, *part_ptr;
       Serial.print("SETTINGS ");
       Serial.println(CONTROL_BUTTON_SETTINGS[a]);
       part_token = strtok_r(CONTROL_BUTTON_SETTINGS[a], ";", &part_ptr);
+      // button_type,data(sound)
       Serial.print("Initial part token: ");
       Serial.println(part_token);
       byte b = 0;
+      
       while (part_token && b < 3) {
         char *button_token, *button_ptr;
         button_token = strtok_r(part_token, ",", &button_ptr);
@@ -1082,8 +1090,15 @@ void applySettings()
             break;
         }
 
-        ControlButtons[a].setup(pin, button_type);
-
+        // setup virtual button type
+        Serial.print("Setting phyical button ");
+        Serial.print(a);
+        Serial.print(", Virtual button ");
+        Serial.print(buttonNum);
+        Serial.print(" to ");
+        Serial.println(button_type);
+        ControlButtons[a].buttons[buttonNum].setup(button_type);
+        
         // start off with one since we have the first part 
         // and just need to get the second part before 
         // we keep processing the settings
@@ -1095,9 +1110,13 @@ void applySettings()
             case 3:
               Serial.print("Setting sound to: ");
               Serial.println(button_token);
-              ControlButtons[a].setSound(button_token);
+              ControlButtons[a].buttons[buttonNum].setSound(button_token);
               break;
           }
+
+          // NOTE: Each physical button needs to have 
+          // to virtual button properties that hold 
+          // what to do
           
           Serial.print("token -> ");
           Serial.print(a);
@@ -1107,16 +1126,17 @@ void applySettings()
           Serial.print(c);
           Serial.print(" -> ");
           Serial.println(button_token);
-
           //byte cb_type = atoi(token);
           c++;
           button_token = strtok_r(NULL, ",", &button_ptr);
         }  
+        buttonNum++;
         b++;
         part_token = strtok_r(NULL, ";", &part_ptr);
       }
     }
     // Setup soundglove buttons
+    a++;
   }
 
   //ControlButtons[0].setup(3, 0);
