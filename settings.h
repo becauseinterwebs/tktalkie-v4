@@ -110,8 +110,6 @@ void parseSetting(const char *settingName, char *settingValue)
       i++;
       token = strtok_r(NULL, ",", &ptr);
     }
-  } else if (strcasecmp(settingName, "button_pin") == 0) {
-    BUTTON_PIN = (byte)atoi(settingValue);
   } else if (strcasecmp(settingName, "effects_dir") == 0) {
     memset(EFFECTS_DIR, 0, sizeof(EFFECTS_DIR));
     strcpy(EFFECTS_DIR, settingValue);
@@ -240,6 +238,14 @@ void parseSetting(const char *settingName, char *settingValue)
       } else if (strcasecmp(settingValue, "1") == 0) {
         flange1.voices(FLANGE_OFFSET,FLANGE_DEPTH,FLANGE_FREQ);
       }
+  } else if (strcasecmp(settingName, "button") == 0) {
+      char *token, *ptr;
+      token = strtok_r(settingValue, ",", &ptr);
+      byte b = (byte)atoi(token);
+      if (b >= 0 && b <= 5) {
+        strcpy(CONTROL_BUTTON_SETTINGS[b], ptr);
+      }
+    
   }
   
 }
@@ -328,12 +334,12 @@ char *settingsToJson(char result[])
   strcat(result, tmp);
   strcat(result, ",");
   
-  
+  /*
   sprintf(buf, "%d", BUTTON_PIN);
   sprintf(tmp, num_template, "button_pin", buf);
   strcat(result, tmp);
   strcat(result, ",");
-  
+  */
   sprintf(tmp, str_template, "button_click", BUTTON_WAV);
   strcat(result, tmp);
   strcat(result, ",");
@@ -519,12 +525,13 @@ char *settingsToString(char result[])
   strcat(result, "]\n");
   memset(buf, 0, sizeof(buf));
 
+/*
   strcat(result, "[button_pin=");
   sprintf(buf, "%d", BUTTON_PIN);
   strcat(result, buf);
   strcat(result, "]\n");
   memset(buf, 0, sizeof(buf));
-
+*/
   strcat(result, "[button_click=");
   strcat(result, BUTTON_WAV);
   strcat(result, "]\n");
@@ -1003,6 +1010,7 @@ void applySettings()
   //bitcrusher2.sampleRate(BITCRUSHER[3]);
   // Bitcrusher 1 input (fed by mic/line-in)
   voiceMixer.gain(0, VOICE_GAIN);
+  voiceMixer.gain(1, VOICE_GAIN);
   // Dry (unprocessed) voice input
   voiceMixer.gain(2, DRY_GAIN);
   // Pink noise channel
@@ -1030,18 +1038,25 @@ void applySettings()
     audioShield.adcHighPassFilterEnable();
   }
   // Initialize PTT button
+  /*
   if (BUTTON_PIN && BUTTON_PIN > 0) {
     pinMode(BUTTON_PIN, INPUT_PULLUP);
     PTT.attach(BUTTON_PIN);
     PTT.interval(15);
     snoozeDigital.pinMode(BUTTON_PIN, INPUT_PULLUP, FALLING);
   }
+  */
   voiceOff();
 
   // Setup control glove buttons
   byte a = 0;
+  button_initialized = false;
+  PTT_BUTTON = NULL;
+  WAKE_BUTTON = NULL;
   while (a < 7) {
     byte pin = CONTROL_BUTTON_PINS[a];
+    // need to clear button settings...
+    ControlButtons[a].setPTT(false);
     byte buttonNum = 0;
     Serial.print("Pin: ");
     Serial.println(pin);
@@ -1058,7 +1073,7 @@ void applySettings()
       Serial.print("Initial part token: ");
       Serial.println(part_token);
       byte b = 0;
-      
+
       while (part_token && b < 3) {
         char *button_token, *button_ptr;
         button_token = strtok_r(part_token, ",", &button_ptr);
@@ -1072,22 +1087,28 @@ void applySettings()
         // Determine how many options we need to read 
         // based on the type of button
         switch (button_type) {
-          // PTT Button
-          case 0:
+          // PTT/Sleep/Wake Button
+          case 1:
             debug(F("PTT Button on pin: %d\n"), pin);
             Serial.println(" -> PTT Button");
+            PTT_BUTTON = a;
+            ControlButtons[a].setPTT(true);
+            if (WAKE_BUTTON == NULL) {
+              WAKE_BUTTON = a;
+              snoozeDigital.pinMode(pin, INPUT_PULLUP, FALLING);
+            }
             break;
-          // Wake Button
-          case 1:
-            debug(F("Wake Button on pin: %d\n"), pin);
-            Serial.println(" -> Wake Button");
-            break; 
           // Sound button    
-          case 3:
+          case 2:
             max = 2;
             debug(F("Sound Button on pin: %d\n"), pin);
             Serial.println(" -> Sound Button");
             break;
+          // sleep/wake (overrides PTT)
+          case 6:
+            WAKE_BUTTON = a;
+            snoozeDigital.pinMode(pin, INPUT_PULLUP, FALLING);
+            break;  
         }
 
         // setup virtual button type
@@ -1096,7 +1117,10 @@ void applySettings()
         Serial.print(", Virtual button ");
         Serial.print(buttonNum);
         Serial.print(" to ");
-        Serial.println(button_type);
+        Serial.print(button_type);
+        Serial.print(" max: ");
+        Serial.println(max);
+        
         ControlButtons[a].buttons[buttonNum].setup(button_type);
         
         // start off with one since we have the first part 
@@ -1107,7 +1131,7 @@ void applySettings()
         
         while (button_token && c < max) {
           switch (button_type) {
-            case 3:
+            case 2:
               Serial.print("Setting sound to: ");
               Serial.println(button_token);
               ControlButtons[a].buttons[buttonNum].setSound(button_token);
@@ -1135,14 +1159,9 @@ void applySettings()
         part_token = strtok_r(NULL, ";", &part_ptr);
       }
     }
-    // Setup soundglove buttons
     a++;
   }
 
-  //ControlButtons[0].setup(3, 0);
-  //ControlButtons[1].setup(4, 0);
-  //ControlButtons[2].setup(2, 0);
-  
 
   
 }

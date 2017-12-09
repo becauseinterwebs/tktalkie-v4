@@ -100,10 +100,10 @@
 /*** 
  * Check if the PTT button was pressed 
  */
-boolean checkButton() 
+boolean checkPTTButton() 
 {
-  PTT.update();
-  if (PTT.fell()) {
+  ControlButtons[PTT_BUTTON].update();
+  if (ControlButtons[PTT_BUTTON].fell()) {
     if (STATE == STATE_RUNNING) {
       if (strcasecmp(BUTTON_WAV, "*") == 0) {
         addSoundEffect();
@@ -374,6 +374,8 @@ void loop()
 /***
  * Called from main loop
  */
+elapsedMillis checkMillis = 0;
+ 
 void run() {
 
   // check loop
@@ -708,18 +710,99 @@ void run() {
 
     // Check sound glove buttons
     for (byte i = 0; i < 3; i++) {
-      byte whichButton = ControlButtons[i].check();
-      switch(ControlButtons[i].buttons[whichButton-1].getType()) {
-        case 0:
-          break;
-        case 1:
-          break;
-        case 3:
-          char buffer[12];
-          char *sound = ControlButtons[i].buttons[whichButton-1].getSound(buffer);
-          playGloveSound(sound);
-          break;
-      }
+      
+      if (!ControlButtons[i].isPTT()) {
+
+        byte whichButton = ControlButtons[i].check();
+          switch(ControlButtons[i].buttons[whichButton-1].getType()) {
+            // Sound button
+            case 2:
+              {
+                Serial.println(2);
+                char buffer[12];
+                char *sound = ControlButtons[i].buttons[whichButton-1].getSound(buffer);
+                Serial.println(sound);
+                playGloveSound(sound);
+              }  
+              break;
+            // Volume Up
+            case 3:  
+              {
+                MASTER_VOLUME = MASTER_VOLUME + .01;
+                if (MASTER_VOLUME > 10) {
+                  MASTER_VOLUME = 10;
+                }
+                audioShield.volume(MASTER_VOLUME);
+              }  
+              break;
+            // Volume down  
+            case 4:
+              {
+                MASTER_VOLUME = MASTER_VOLUME - .01;
+                if (MASTER_VOLUME < 0) {
+                  MASTER_VOLUME = 0;
+                }
+                audioShield.volume(MASTER_VOLUME);
+              }  
+              break;
+            // mute  
+            case 5:
+              {
+                if (MUTED) {
+                  audioShield.unmuteHeadphone();
+                  audioShield.unmuteLineout();
+                  MUTED = false;
+                } else {
+                  audioShield.muteHeadphone();
+                  audioShield.muteLineout();
+                  MUTED = true;  
+                }
+              }
+            // sleep/wake  
+            case 6:
+              gotoSleep();
+              break;
+            // lineout up  
+            case 7:
+              {
+                LINEOUT--;
+                if (LINEOUT < 13) {
+                  LINEOUT = 13;
+                }
+                audioShield.lineOutLevel(LINEOUT);     
+              }
+              break;
+            // lineout down  
+            case 8:
+              {
+                LINEOUT++;
+                if (LINEOUT > 31) {
+                  LINEOUT = 31;
+                }
+                audioShield.lineOutLevel(LINEOUT); 
+              }
+            // mic gain up
+            case 9:
+              {
+                ++MIC_GAIN;
+                if (MIC_GAIN > 63) {
+                  MIC_GAIN = 63;  
+                }
+                audioShield.micGain(MIC_GAIN);  
+              }
+              break;
+            // mic gain down  
+            case 10:
+              {
+                --MIC_GAIN;
+                if (MIC_GAIN < 0) {
+                  MIC_GAIN = 0;  
+                }
+                audioShield.micGain(MIC_GAIN);  
+              }
+              break;
+          }
+        }  
     }  
 /*
     switch (G2.check()) {
@@ -739,19 +822,18 @@ void run() {
         playGloveSound("SOUND6");
         break;
     }
-  */  
-    if (BUTTON_PIN && button_initialized == false) {
-      button_initialized = checkButton();
+  */ 
+    if (PTT_BUTTON >= 0 && button_initialized == false) {
+      button_initialized = checkPTTButton();
       if (button_initialized) {
         // turn voice on with background noise
         voiceOn();
       }
     } else {
-      PTT.update();
+      ControlButtons[PTT_BUTTON].update();
     }
-
     
-    if (BUTTON_PIN && button_initialized) {
+    if (PTT_BUTTON >= 0 && button_initialized) {
 
       float val = 0;
       
@@ -772,13 +854,13 @@ void run() {
       // Play notification sound if there has been silence for 2 or 5 seconds:
       //    2 seconds: switching back to VA mode
       //    5 seconds: go into sleep mode
-      if (speaking == true && silent == true && (stopped == 2000 || stopped == 5000)) {
+      if (speaking == true && silent == true && (stopped == 2000 || (stopped == 5000 && PTT_BUTTON == WAKE_BUTTON))) {
           connectSound();
       }
   
       // Button press
 
-      if (PTT.fell()) {
+      if (ControlButtons[PTT_BUTTON].fell()) {
         if (strcasecmp(BUTTON_WAV, "*") == 0) {
           addSoundEffect();
         } else {
@@ -795,8 +877,8 @@ void run() {
       // NOTE:  If you start talking before the 2 second time limit
       //        it will NOT switch back...or if you talk and pause for 
       //        2 seconds or more it will NOT switch back.
-      if (PTT.rose()) {
-        if (silent == true && stopped >= 5000) {
+      if (ControlButtons[PTT_BUTTON].rose()) {
+        if (silent == true && stopped >= 5000 && PTT_BUTTON == WAKE_BUTTON) {
           gotoSleep();
           return;
         } else if (silent == true && stopped >= 2000) {
@@ -826,7 +908,7 @@ void run() {
           // Set a minimum and maximum level to use or you will trigger it accidentally 
           // by breathing, etc.  Adjust this level as necessary!
           if (val >= VOICE_START) {
-  
+
              debug(F("Voice start: %4f\n"), val);
              
             // If user is not currently speaking, then they just started talking :)
@@ -882,8 +964,8 @@ void run() {
 bool buttonHeld(uint16_t msecs) {
     elapsedMillis duration = 0;
     while (duration < msecs) {
-        PTT.update();
-        if (PTT.read() != 0) {
+        ControlButtons[WAKE_BUTTON].update();
+        if (ControlButtons[WAKE_BUTTON].read() != 0) {
             return false;
         }
     }
@@ -898,7 +980,7 @@ void gotoSleep() {
   long l = playSound(SLEEP_SOUND);
   delay(l+250);
   SLEEP:
-    PTT.update();
+    ControlButtons[WAKE_BUTTON].update();
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, LOW);
     elapsedMillis timeout = 0;
@@ -908,7 +990,7 @@ void gotoSleep() {
     Snooze.hibernate( config_teensy3x );
     timeout = 0;
     // debouce set to 15ms, so have to wait and check button status
-    while (timeout < 16) PTT.update();
+    while (timeout < 16) ControlButtons[WAKE_BUTTON].update();
     bool awake = buttonHeld(100);
     if (!awake) goto SLEEP;
     softreset();

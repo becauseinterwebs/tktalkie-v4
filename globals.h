@@ -86,15 +86,30 @@ char SOUND_EFFECTS[MAX_FILE_COUNT][SETTING_ENTRY_MAX];   // This will hold an ar
                                                          // 99 is an arbitrary number.  You can change it as you need to.
 byte lastRnd  = -1;                                       // Keeps track of the last file played so that it is different each time
 
-Bounce PTT = Bounce();                       // Used to read the PTT button (if attached)
+//Bounce PTT = Bounce();                       // Used to read the PTT button (if attached)
 
 byte CONTROL_BUTTON_PINS[6] = {0,0,0,0,0,0};
 byte CONTROL_BUTTON_COUNT = 0;
+
+
 // this is temp for testing
+/***************************
+ * BUTTON VALUES
+ *   1  = PTT (SLEEP/WAKE unless otherwise configured)
+ *   2  = Play Specified Sound
+ *   3  = Spkr Volume Up 
+ *   4  = Spkr Volume Down 
+ *   5  = Mute
+ *   6  = Sleep/Wake (Overrides PTT)
+ *   7  = LineOut Volume Up
+ *   8  = LineOut Volume Down
+ *   9  = MIC_GAIN up
+ *   10 = MIC_GAIN down
+ */
 char CONTROL_BUTTON_SETTINGS[3][SETTING_ENTRY_MAX] = {
-    "3,SOUND1;3,SOUND4",
-    "3,SOUND2;3,SOUND5",
-    "3,SOUND3;3,SOUND6"  
+    "9;10",
+    "3;4",
+    "6;2,SOUND6"  
 };
 
 
@@ -166,14 +181,13 @@ float    VOICE_STOP       = 0.02;    // The minimum amplitude to use when determ
                                      // Depending upon the microphone you are using, you may get a constant signal
                                      // that is above 0 or even 0.01.  Use the Serial monitor and add output to the 
                                      // loop to see what signal amplitude you are receiving when the mic is "quiet."
-byte     BUTTON_PIN;                 // The pin to which a PTT button is connected (not required.) Change it if you 
-                                     // attach it to a different pin (should use 0, 1 or 2, though...as not all pins
-                                     // are available since they are used by the Audio Adaptor.
 boolean  MUTE_LOOP = 1;              // mute loop while talking on/off
 boolean  MUTE_EFFECTS = 0;           // flag to mute sound effects after talking has stopped
 uint16_t SLEEP_TIME = 0;             // Number of minutes to wait before putting unit to sleep if no sound is heard
                                      // from the microphone (default is 0 = do not sleep.)
-                                     
+byte  PTT_BUTTON;  
+byte  WAKE_BUTTON;
+                                   
 // Sound played when going into sleep mode
 char     SLEEP_SOUND[SETTING_ENTRY_MAX];
 

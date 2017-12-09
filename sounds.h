@@ -13,7 +13,6 @@ void beep(const byte times = 1)
     waveform1.frequency(720);
     waveform1.amplitude(0.7);
     delay(100);
-    waveform1.frequency(1440);
     delay(50);
     waveform1.amplitude(0);
     delay(350);
@@ -238,6 +237,7 @@ void voiceOff()
   white1.amplitude(0);
   voiceMixer.gain(0, 0);
   voiceMixer.gain(1, 0);
+  voiceMixer.gain(2, 0);
   if (MUTE_LOOP == 1) {
     loopOn();
   }
@@ -260,4 +260,5 @@ void voiceOn()
   white1.amplitude(NOISE_GAIN);
   voiceMixer.gain(0, VOICE_GAIN);
   voiceMixer.gain(1, VOICE_GAIN);
+  voiceMixer.gain(2, DRY_GAIN);
 }
