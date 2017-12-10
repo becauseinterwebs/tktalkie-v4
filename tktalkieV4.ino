@@ -874,7 +874,7 @@ void run() {
                 loopMixer.gain(1, LOOP_GAIN);
                 boop(540, 0);
               }
-              break;  
+              break; 
             // Voice gain up
             case 14:
               {
