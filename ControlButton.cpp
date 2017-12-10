@@ -28,23 +28,17 @@ byte ControlButton::check()
   this->_value = 0;
   this->_button.update();
   if (this->_button.fell()) {
-      elapsedMillis t = 0;
-      while (t < 350) {
-        this->_button.update();
-        if (this->_button.read() != 0) {
-          this->_value = 1;
-          return this->_value;
-        }
+    elapsedMillis t = 0;
+    while (t < 350) {
+      this->_button.update();
+      if (this->_button.read() != 0) {
+        this->_value = 1;
+        return this->_value;
       }
-      this->_value = 2;
-      return this->_value;
-  } else {
-    if (this->_button.rose()) {
-      this->_value = 3;
-      return this->_value;
     }
+    this->_value = 2;
+    return this->_value;
   }
-  return this->_value;
 }
 
 void ControlButton::setup()
@@ -61,9 +55,17 @@ void ControlButton::setup(byte buttonPin)
 void ControlButton::setPin(byte buttonPin)
 {
   this->_pin = buttonPin;
-  pinMode(this->_pin, INPUT_PULLUP);
-  this->_button.attach(this->_pin);
-  this->_button.interval(this->_interval);
+  if (buttonPin > 0) {
+    pinMode(this->_pin, INPUT_PULLUP);
+    this->_button.attach(this->_pin);
+    this->_button.interval(this->_interval);
+  }  
+  Serial.print("THIS PIN SET TO: ");
+  Serial.println(this->_pin);
+}
+
+byte ControlButton::getPin() {
+  return this->_pin;
 }
 
 // Most of these are just pass-thrus so that
@@ -101,5 +103,9 @@ byte ControlButton::getInterval() {
 
 byte ControlButton::read() {
   return this->_button.read();
+}
+
+void ControlButton::reset() {
+  this->_isPTT = false;
 }
 

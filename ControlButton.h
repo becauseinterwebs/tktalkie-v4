@@ -23,6 +23,7 @@ class ControlButton
     byte check();
     void update();
     void setPin(byte buttonPin);
+    byte getPin();
     void setType(byte buttonType);
     byte read();
     byte getType();
@@ -33,9 +34,10 @@ class ControlButton
     boolean fell();
     void setPTT(boolean val);
     boolean isPTT();
+    void reset();
     VirtualButton buttons[2] = { VirtualButton(), VirtualButton() };
   private:
-    byte _pin;
+    byte _pin = 0;
     Bounce _button;
     byte _interval = 15;
     byte _value;

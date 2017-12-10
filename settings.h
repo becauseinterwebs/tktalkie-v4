@@ -2,6 +2,130 @@
  * Routines to handle reading/handling settings
  */
 
+void configureButton(byte a) {
+  
+    ControlButtons[a].setPTT(false);
+    ControlButtons[a].setPin(0);
+    byte buttonNum = 0;
+    char buf[25];
+    byte pin = CONTROL_BUTTON_PINS[a];
+    
+    Serial.print("Pin: ");
+    Serial.println(pin);
+    if (pin > 0) {
+
+      // setup physical button
+      ControlButtons[a].setup(pin);
+      strcpy(buf, CONTROL_BUTTON_SETTINGS[a]);
+      char *part_token, *part_ptr;
+      Serial.print("SETTINGS ");
+      Serial.println(buf);
+      part_token = strtok_r(buf, ";", &part_ptr);
+      // button_type,data(sound)
+      Serial.print("Initial part token: ");
+      Serial.println(part_token);
+      byte b = 0;
+
+      while (part_token && b < 3) {
+        char *button_token, *button_ptr;
+        button_token = strtok_r(part_token, ",", &button_ptr);
+        Serial.print("Intitial button token: ");
+        Serial.println(button_token);
+        byte button_type = (byte)atoi(button_token);
+        Serial.print("Button Type: ");
+        Serial.println(button_type);
+        // by default, do not continue processing
+        byte max = 0;
+        // Determine how many options we need to read 
+        // based on the type of button
+        switch (button_type) {
+          // PTT/Sleep/Wake Button
+          case 1:
+            {
+              debug(F("PTT Button on pin: %d\n"), pin);
+              Serial.println(" -> PTT Button");
+              PTT_BUTTON = a;
+              ControlButtons[a].setPTT(true);
+              if (WAKE_BUTTON == NULL) {
+                WAKE_BUTTON = a;
+                snoozeDigital.pinMode(pin, INPUT_PULLUP, FALLING);
+              }
+            }  
+            break;
+          // Sound button    
+          case 2:
+            {
+              max = 2;
+            }  
+            break;
+          // sleep/wake (overrides PTT)
+          case 6:
+            {
+              debug(F("Sleep Button on pin: %d\n"), pin);
+              Serial.print("Sleep Button on pin: ");
+              Serial.println(pin);
+              WAKE_BUTTON = a;
+              snoozeDigital.pinMode(pin, INPUT_PULLUP, FALLING);
+            }  
+            break;   
+        }
+
+        // setup virtual button type
+        Serial.print("Setting phyical button ");
+        Serial.print(a);
+        Serial.print(", Virtual button ");
+        Serial.print(buttonNum);
+        Serial.print(" to ");
+        Serial.print(button_type);
+        Serial.print(" max: ");
+        Serial.println(max);
+        
+        ControlButtons[a].buttons[buttonNum].setup(button_type);
+        
+        // start off with one since we have the first part 
+        // and just need to get the second part before 
+        // we keep processing the settings
+        byte c = 1;
+        button_token = strtok_r(NULL, ",", &button_ptr);
+        
+        while (button_token && c < max) {
+          switch (button_type) {
+            case 2:
+              {
+                debug(F("Sound Button on pin: %d\n"), pin);
+                Serial.println(" -> Sound Button");
+                Serial.print("Setting sound to: ");
+                Serial.println(button_token);
+                ControlButtons[a].buttons[buttonNum].setSound(button_token);
+              }  
+              break;
+          }
+
+          // NOTE: Each physical button needs to have 
+          // to virtual button properties that hold 
+          // what to do
+          
+          Serial.print("token -> ");
+          Serial.print(a);
+          Serial.print(" -> ");
+          Serial.print(b);
+          Serial.print(" -> ");
+          Serial.print(c);
+          Serial.print(" -> ");
+          Serial.println(button_token);
+          //byte cb_type = atoi(token);
+          c++;
+          button_token = strtok_r(NULL, ",", &button_ptr);
+        }  
+        buttonNum++;
+        b++;
+        part_token = strtok_r(NULL, ";", &part_ptr);
+      }
+    }
+    Serial.println("--------------END OF BUTTON-----------------");
+    Serial.println("");
+}
+
 /***
  * Parse and set a configuration setting
  */
@@ -244,6 +368,7 @@ void parseSetting(const char *settingName, char *settingValue)
       byte b = (byte)atoi(token);
       if (b >= 0 && b <= 5) {
         strcpy(CONTROL_BUTTON_SETTINGS[b], ptr);
+        configureButton(b);
       }
     
   }
@@ -438,6 +563,18 @@ char *settingsToJson(char result[])
     dtostrf(FLANGE_FREQ, 0, 4, buf);
     sprintf(tmp, num_template, "flange_freq", buf);
     strcat(result, tmp);
+
+    char buttons[30];
+    for (byte i = 0; i < 6; i++) {
+      strcat(buttons, CONTROL_BUTTON_SETTINGS[i]);
+      if (i < 5) {
+        strcat(buttons, "|"); 
+      }
+    }
+    
+    sprintf(tmp, str_template, "buttons", buttons);
+    strcat(result, tmp);
+    
   }
   
   return result;
@@ -648,7 +785,17 @@ char *settingsToString(char result[])
   strcat(result, buf);
   strcat(result, "]\n");
   memset(buf, 0, sizeof(buf));
-  
+
+  strcat(result, "[buttons=");
+  for (byte i=0; i<6; i++) {
+    Serial.println(CONTROL_BUTTON_SETTINGS[i]);
+    strcpy(buf, CONTROL_BUTTON_SETTINGS[i]);
+    strcat(result, buf);
+    if (i<5) {
+      strcat(result, "|");
+    }
+  }
+  strcat(result, "]\n");
   return result;
   
 }
@@ -1049,121 +1196,15 @@ void applySettings()
   voiceOff();
 
   // Setup control glove buttons
-  byte a = 0;
   button_initialized = false;
   PTT_BUTTON = NULL;
   WAKE_BUTTON = NULL;
-  while (a < 7) {
-    byte pin = CONTROL_BUTTON_PINS[a];
+  
+  for (byte a = 0; a < 6; a++) {
     // need to clear button settings...
-    ControlButtons[a].setPTT(false);
-    byte buttonNum = 0;
-    Serial.print("Pin: ");
-    Serial.println(pin);
-    if (pin > 0) {
-
-      // setup physical button
-      ControlButtons[a].setup(pin);
-      
-      char *part_token, *part_ptr;
-      Serial.print("SETTINGS ");
-      Serial.println(CONTROL_BUTTON_SETTINGS[a]);
-      part_token = strtok_r(CONTROL_BUTTON_SETTINGS[a], ";", &part_ptr);
-      // button_type,data(sound)
-      Serial.print("Initial part token: ");
-      Serial.println(part_token);
-      byte b = 0;
-
-      while (part_token && b < 3) {
-        char *button_token, *button_ptr;
-        button_token = strtok_r(part_token, ",", &button_ptr);
-        Serial.print("Intitial button token: ");
-        Serial.println(button_token);
-        byte button_type = (byte)atoi(button_token);
-        Serial.print("Button Type: ");
-        Serial.println(button_type);
-        // by default, do not continue processing
-        byte max = 0;
-        // Determine how many options we need to read 
-        // based on the type of button
-        switch (button_type) {
-          // PTT/Sleep/Wake Button
-          case 1:
-            debug(F("PTT Button on pin: %d\n"), pin);
-            Serial.println(" -> PTT Button");
-            PTT_BUTTON = a;
-            ControlButtons[a].setPTT(true);
-            if (WAKE_BUTTON == NULL) {
-              WAKE_BUTTON = a;
-              snoozeDigital.pinMode(pin, INPUT_PULLUP, FALLING);
-            }
-            break;
-          // Sound button    
-          case 2:
-            max = 2;
-            debug(F("Sound Button on pin: %d\n"), pin);
-            Serial.println(" -> Sound Button");
-            break;
-          // sleep/wake (overrides PTT)
-          case 6:
-            WAKE_BUTTON = a;
-            snoozeDigital.pinMode(pin, INPUT_PULLUP, FALLING);
-            break;  
-        }
-
-        // setup virtual button type
-        Serial.print("Setting phyical button ");
-        Serial.print(a);
-        Serial.print(", Virtual button ");
-        Serial.print(buttonNum);
-        Serial.print(" to ");
-        Serial.print(button_type);
-        Serial.print(" max: ");
-        Serial.println(max);
-        
-        ControlButtons[a].buttons[buttonNum].setup(button_type);
-        
-        // start off with one since we have the first part 
-        // and just need to get the second part before 
-        // we keep processing the settings
-        byte c = 1;
-        button_token = strtok_r(NULL, ",", &button_ptr);
-        
-        while (button_token && c < max) {
-          switch (button_type) {
-            case 2:
-              Serial.print("Setting sound to: ");
-              Serial.println(button_token);
-              ControlButtons[a].buttons[buttonNum].setSound(button_token);
-              break;
-          }
-
-          // NOTE: Each physical button needs to have 
-          // to virtual button properties that hold 
-          // what to do
-          
-          Serial.print("token -> ");
-          Serial.print(a);
-          Serial.print(" -> ");
-          Serial.print(b);
-          Serial.print(" -> ");
-          Serial.print(c);
-          Serial.print(" -> ");
-          Serial.println(button_token);
-          //byte cb_type = atoi(token);
-          c++;
-          button_token = strtok_r(NULL, ",", &button_ptr);
-        }  
-        buttonNum++;
-        b++;
-        part_token = strtok_r(NULL, ";", &part_ptr);
-      }
-    }
-    a++;
+    configureButton(a);
   }
 
-
-  
 }
 
   

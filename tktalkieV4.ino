@@ -381,7 +381,7 @@ void run() {
   // check loop
   if (STATE == STATE_RUNNING) {
 
-    if (loopLength && loopMillis > loopLength) {
+    if (loopLength > 0 && loopMillis > loopLength) {
         playLoop();
     }
 
@@ -586,6 +586,7 @@ void run() {
           playLoop();
       } else if (strcasecmp(cmd_key, "stop_loop") == 0) {
          loopPlayer.stop();
+         loopLength = 0;
       } else if (strcasecmp(cmd_key, "beep") == 0) {
           int i = atoi(cmd_val);
           if (i < 1) {
@@ -714,7 +715,18 @@ void run() {
       if (!ControlButtons[i].isPTT()) {
 
         byte whichButton = ControlButtons[i].check();
-          switch(ControlButtons[i].buttons[whichButton-1].getType()) {
+        
+          byte btype = ControlButtons[i].buttons[whichButton-1].getType();
+
+          if (whichButton != 1 && whichButton != 2) {
+            continue;
+          }
+          Serial.print("BUTTON PRESSED: ");
+          Serial.print(whichButton);
+          Serial.print(" TYPE: ");
+          Serial.println(btype);
+        
+          switch(btype) {
             // Sound button
             case 2:
               {
@@ -732,7 +744,10 @@ void run() {
                 if (MASTER_VOLUME > 10) {
                   MASTER_VOLUME = 10;
                 }
+                Serial.print("VOLUME UP: ");
+                Serial.println(MASTER_VOLUME);
                 audioShield.volume(MASTER_VOLUME);
+                boop(440, 1);
               }  
               break;
             // Volume down  
@@ -742,7 +757,10 @@ void run() {
                 if (MASTER_VOLUME < 0) {
                   MASTER_VOLUME = 0;
                 }
+                Serial.print("VOLUME DOWN: ");
+                Serial.println(MASTER_VOLUME);
                 audioShield.volume(MASTER_VOLUME);
+                boop(490, 0);
               }  
               break;
             // mute  
@@ -758,29 +776,41 @@ void run() {
                   MUTED = true;  
                 }
               }
+              break;
             // sleep/wake  
             case 6:
-              gotoSleep();
+              {
+                Serial.print("CALLING SLEEP WITH BUTTON: ");
+                Serial.println(WAKE_BUTTON);
+                gotoSleep();
+              }  
               break;
             // lineout up  
             case 7:
               {
-                LINEOUT--;
+                --LINEOUT;
                 if (LINEOUT < 13) {
                   LINEOUT = 13;
                 }
-                audioShield.lineOutLevel(LINEOUT);     
+                Serial.print("LINEOUT UP: ");
+                Serial.println(LINEOUT);
+                audioShield.lineOutLevel(LINEOUT);   
+                boop(440, 1);  
               }
               break;
             // lineout down  
             case 8:
               {
-                LINEOUT++;
+                ++LINEOUT;
                 if (LINEOUT > 31) {
                   LINEOUT = 31;
                 }
+                Serial.print("LINEOUT DOWN: ");
+                Serial.println(LINEOUT);
                 audioShield.lineOutLevel(LINEOUT); 
+                boop(490, 0);
               }
+              break;
             // mic gain up
             case 9:
               {
@@ -788,7 +818,10 @@ void run() {
                 if (MIC_GAIN > 63) {
                   MIC_GAIN = 63;  
                 }
+                Serial.print("MIC GAIN UP: ");
+                Serial.println(MIC_GAIN);
                 audioShield.micGain(MIC_GAIN);  
+                boop(540, 1);
               }
               break;
             // mic gain down  
@@ -798,9 +831,121 @@ void run() {
                 if (MIC_GAIN < 0) {
                   MIC_GAIN = 0;  
                 }
+                Serial.print("MIC GAIN DOWN: ");
+                Serial.println(MIC_GAIN);
                 audioShield.micGain(MIC_GAIN);  
+                boop(540, 0);
               }
               break;
+            // Start/Stop Loop
+            case 11:
+              {
+                if (loopPlayer.isPlaying()) {
+                  loopPlayer.stop();
+                } else {
+                  playLoop();
+                }
+              }
+              break; 
+            // Loop Gain up
+            case 12:
+              {
+                LOOP_GAIN = LOOP_GAIN + .05;
+                if (LOOP_GAIN > 10) {
+                  LOOP_GAIN = 10;
+                }
+                Serial.print("LOOP GAIN UP: ");
+                Serial.println(LOOP_GAIN);
+                loopMixer.gain(0, LOOP_GAIN);
+                loopMixer.gain(1, LOOP_GAIN);
+                boop(540, 1);
+              }
+              break;  
+            // Loop gain down
+            case 13:
+              {
+                LOOP_GAIN = LOOP_GAIN - .10;
+                if (LOOP_GAIN < 0) {
+                  LOOP_GAIN = 0;
+                }
+                Serial.print("LOOP GAIN DOWN: ");
+                Serial.println(LOOP_GAIN);
+                loopMixer.gain(0, LOOP_GAIN);
+                loopMixer.gain(1, LOOP_GAIN);
+                boop(540, 0);
+              }
+              break;  
+            // Voice gain up
+            case 14:
+              {
+                VOICE_GAIN = VOICE_GAIN + .05;
+                if (VOICE_GAIN > 10) {
+                  VOICE_GAIN = 10;
+                }
+                DRY_GAIN = DRY_GAIN + .05;
+                if (DRY_GAIN > 10) {
+                  DRY_GAIN = 10;
+                }
+                Serial.print("VOICE GAIN UP: ");
+                Serial.println(VOICE_GAIN);
+                Serial.print("DRY GAIN UP: ");
+                Serial.println(DRY_GAIN);
+                voiceMixer.gain(0, VOICE_GAIN);
+                voiceMixer.gain(1, VOICE_GAIN);
+                voiceMixer.gain(2, DRY_GAIN);  
+                boop(540, 0);
+              }
+              break;
+            // Voice gain down
+            case 15:
+              {
+                VOICE_GAIN = VOICE_GAIN - .10;
+                if (VOICE_GAIN < 0) {
+                  VOICE_GAIN = 0;
+                }
+                DRY_GAIN = DRY_GAIN - .10;
+                if (DRY_GAIN < 0) {
+                  DRY_GAIN = 0;
+                }
+                Serial.print("VOICE GAIN DOWN: ");
+                Serial.println(VOICE_GAIN);
+                Serial.print("DRY GAIN DOWN: ");
+                Serial.println(DRY_GAIN);
+                voiceMixer.gain(0, VOICE_GAIN);
+                voiceMixer.gain(1, VOICE_GAIN);  
+                voiceMixer.gain(2, DRY_GAIN);  
+                boop(540, 0);
+              }
+              break; 
+            // Effects gain up
+            case 16:
+              {
+                EFFECTS_GAIN = EFFECTS_GAIN + .05;
+                if (EFFECTS_GAIN > 10) {
+                  EFFECTS_GAIN = 10;
+                }
+                Serial.print("EFFECTS GAIN UP: ");
+                Serial.println(EFFECTS_GAIN);
+                effectsMixer.gain(0, EFFECTS_GAIN);
+                effectsMixer.gain(1, EFFECTS_GAIN);  
+                boop(540, 0);
+              }
+              break;
+            // Effects gain down
+            case 17:
+              {
+                EFFECTS_GAIN = EFFECTS_GAIN - .10;
+                if (EFFECTS_GAIN < 0) {
+                  EFFECTS_GAIN = 0;
+                }
+                Serial.print("EFFECTS GAIN DOWN: ");
+                Serial.println(EFFECTS_GAIN);
+                effectsMixer.gain(0, EFFECTS_GAIN);
+                effectsMixer.gain(1, EFFECTS_GAIN);  
+                boop(540, 0);
+              }
+              break;       
+               
           }
         }  
     }  
@@ -980,6 +1125,8 @@ void gotoSleep() {
   long l = playSound(SLEEP_SOUND);
   delay(l+250);
   SLEEP:
+    Serial.print("GOING TO SLEEP NOW...BUTTON IS ");
+    Serial.println(WAKE_BUTTON);
     ControlButtons[WAKE_BUTTON].update();
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, LOW);

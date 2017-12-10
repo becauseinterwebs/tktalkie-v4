@@ -19,6 +19,21 @@ void beep(const byte times = 1)
   }
 }
 
+void boop(int freq, byte dir) {
+   waveform1.frequency(freq);
+   waveform1.amplitude(.7);
+   for (byte i = 0; i < 50; i++) {
+      if (dir == 1) {
+        freq++;
+      } else {
+        freq--;
+      }
+      waveform1.frequency(freq);  
+      delay(1);
+   }
+   waveform1.amplitude(0);
+}
+
 /***
  * Read the contents of the SD card and put any files ending with ".WAV" 
  * into the array.  It will recursively search directories.  
@@ -39,7 +54,6 @@ void loadSoundEffects()
  */
 long playSoundFile(byte player, char *filename) 
 {
-
   if (strcasecmp(filename, "") == 0) {
     debug(F("Exit play sound -> blank file name\n"));
     return 0;
@@ -54,7 +68,9 @@ long playSoundFile(byte player, char *filename)
   unsigned long len = 0;
   switch (player) {
     case LOOP_PLAYER:
-      loopPlayer.stop();
+      if (loopPlayer.isPlaying()) {
+        loopPlayer.stop();
+      }
       loopPlayer.play(filename);
       delay(10);
       len = loopPlayer.lengthMillis();
@@ -77,7 +93,7 @@ unsigned long playGloveSound(const char *filename)
   if (strcasecmp(filename, "") == 0) {
     return 0;
   }
-  char buf[100];
+  char buf[25];
   strcpy(buf, GLOVE_DIR);
   strcat(buf, filename);
   return playSoundFile(EFFECTS_PLAYER, buf);
@@ -91,7 +107,7 @@ unsigned long playSound(const char *filename)
   if (strcasecmp(filename, "") == 0) {
     return 0;
   }
-  char buf[100];
+  char buf[25];
   strcpy(buf, SOUNDS_DIR);
   strcat(buf, filename);
   return playSoundFile(EFFECTS_PLAYER, buf);
@@ -105,7 +121,7 @@ unsigned long playEffect(const char *filename)
   if (strcasecmp(filename, "") == 0) {
     return 0;
   }
-  char buf[100];
+  char buf[25];
   strcpy(buf, EFFECTS_DIR);
   strcat(buf, filename);
   return playSoundFile(EFFECTS_PLAYER, buf);
@@ -117,10 +133,13 @@ unsigned long playEffect(const char *filename)
 void playLoop() 
 {
   loopLength = 0;
+  Serial.println("AT PLAY LOOP");
   if (strcasecmp(LOOP_WAV, "") != 0) {
-    char buf[100];
+    char buf[25];
     strcpy(buf, LOOP_DIR);
     strcat(buf, LOOP_WAV);
+    Serial.print("PLAYING LOOP: ");
+    Serial.println(buf);
     loopLength = playSoundFile(LOOP_PLAYER, buf);
   }
   loopMillis = 0;
@@ -234,7 +253,7 @@ void voiceOff()
   speaking = false;
   silent = false;
   stopped = 0;
-  white1.amplitude(0);
+  pink1.amplitude(0);
   voiceMixer.gain(0, 0);
   voiceMixer.gain(1, 0);
   voiceMixer.gain(2, 0);
@@ -257,7 +276,7 @@ void voiceOn()
   // Reset the "user is talking" timer
   stopped = 0;
   // pops are ok here ;)
-  white1.amplitude(NOISE_GAIN);
+  pink1.amplitude(NOISE_GAIN);
   voiceMixer.gain(0, VOICE_GAIN);
   voiceMixer.gain(1, VOICE_GAIN);
   voiceMixer.gain(2, DRY_GAIN);

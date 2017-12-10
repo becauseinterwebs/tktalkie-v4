@@ -9,7 +9,7 @@ AudioPlaySdWav           loopPlayer;     //xy=199,402
 AudioSynthWaveform       waveform1;      //xy=202,316
 AudioPlaySdWav           effectsPlayer;  //xy=208,266
 AudioAnalyzeRMS          rms1;           //xy=325,174
-AudioSynthNoisePink      white1;          //xy=473,176
+AudioSynthNoisePink      pink1;          //xy=473,176
 AudioEffectBitcrusher    bitcrusher1;    //xy=487,90
 AudioEffectBitcrusher    bitcrusher2;    //xy=487,133
 AudioMixer4              loopMixer;      //xy=656,412
@@ -24,7 +24,7 @@ AudioConnection          patchCord5(loopPlayer, 1, loopMixer, 1);
 AudioConnection          patchCord6(waveform1, 0, effectsMixer, 2);
 AudioConnection          patchCord7(effectsPlayer, 0, effectsMixer, 0);
 AudioConnection          patchCord8(effectsPlayer, 1, effectsMixer, 1);
-AudioConnection          patchCord9(white1, 0, voiceMixer, 2);
+AudioConnection          patchCord9(pink1, 0, voiceMixer, 2);
 AudioConnection          patchCord10(bitcrusher1, 0, voiceMixer, 0);
 AudioConnection          patchCord11(bitcrusher2, 0, voiceMixer, 1);
 AudioConnection          patchCord12(loopMixer, 0, effectsMixer, 3);
@@ -35,24 +35,30 @@ AudioControlSGTL5000     audioShield;    //xy=846,428
 // GUItool: end automatically generated code
 */
 
+#include <Audio.h>
+#include <Wire.h>
+#include <SPI.h>
+#include <SD.h>
+#include <SerialFlash.h>
+
 // GUItool: begin automatically generated code
-AudioInputI2S            i2s1;           //xy=103,151
-AudioAnalyzeRMS          rms1;           //xy=222,215
-AudioSynthNoiseWhite     white1;          //xy=278,379
-AudioPlaySdWav           loopPlayer;     //xy=287,319
-AudioEffectBitcrusher    bitcrusher1;    //xy=295,87
-AudioSynthWaveform       waveform1;      //xy=361,251
-AudioPlaySdWav           effectsPlayer;  //xy=368,208
-AudioEffectFlange        flange1;        //xy=430,86
-AudioMixer4              loopMixer;      //xy=463,331
-AudioEffectChorus        chorus1;        //xy=559,86
-AudioMixer4              effectsMixer;   //xy=603,222
-AudioMixer4              voiceMixer;     //xy=724,115
-AudioOutputI2S           i2s2;           //xy=889,115
+AudioInputI2S            i2s1;           //xy=91.1111068725586,153.88888931274414
+AudioAnalyzeRMS          rms1;           //xy=210.1111068725586,217.88888931274414
+AudioSynthNoisePink      pink1;          //xy=266.6666717529297,385.55557441711426
+AudioPlaySdWav           loopPlayer;     //xy=275.1111068725586,321.88888931274414
+AudioEffectBitcrusher    bitcrusher1;    //xy=283.1111068725586,89.88888931274414
+AudioSynthWaveform       waveform1;      //xy=349.1111068725586,253.88888931274414
+AudioPlaySdWav           effectsPlayer;  //xy=356.1111068725586,210.88888931274414
+AudioEffectFlange        flange1;        //xy=418.1111068725586,88.88888931274414
+AudioMixer4              loopMixer;      //xy=451.1111068725586,333.88888931274414
+AudioEffectChorus        chorus1;        //xy=547.1111068725586,88.88888931274414
+AudioMixer4              effectsMixer;   //xy=591.1111068725586,224.88888931274414
+AudioMixer4              voiceMixer;     //xy=712.1111068725586,117.88888931274414
+AudioOutputI2S           i2s2;           //xy=877.1111068725586,117.88888931274414
 AudioConnection          patchCord1(i2s1, 0, bitcrusher1, 0);
 AudioConnection          patchCord2(i2s1, 0, voiceMixer, 2);
 AudioConnection          patchCord3(i2s1, 1, rms1, 0);
-AudioConnection          patchCord4(white1, 0, loopMixer, 3);
+AudioConnection          patchCord4(pink1, 0, loopMixer, 3);
 AudioConnection          patchCord5(loopPlayer, 0, loopMixer, 0);
 AudioConnection          patchCord6(loopPlayer, 1, loopMixer, 1);
 AudioConnection          patchCord7(bitcrusher1, flange1);
@@ -66,8 +72,9 @@ AudioConnection          patchCord14(chorus1, 0, voiceMixer, 1);
 AudioConnection          patchCord15(effectsMixer, 0, voiceMixer, 3);
 AudioConnection          patchCord16(voiceMixer, 0, i2s2, 0);
 AudioConnection          patchCord17(voiceMixer, 0, i2s2, 1);
-AudioControlSGTL5000     audioShield;    //xy=89,261
+AudioControlSGTL5000     audioShield;    //xy=77.1111068725586,263.88888931274414
 // GUItool: end automatically generated code
+
 
 
 // version flag
@@ -105,11 +112,24 @@ byte CONTROL_BUTTON_COUNT = 0;
  *   8  = LineOut Volume Down
  *   9  = MIC_GAIN up
  *   10 = MIC_GAIN down
+ *   11 = Start/Stop Loop
+ *   12 = Loop gain up
+ *   13 = Loop gain down
+ *   14 = Voice gain up
+ *   15 = Voice gain down
+ *   16 = Effects gain up
+ *   17 = Effects gain down
+ *   
+ *   NOTE:  Pin 3 CANNOT wake up...
+ *          only digital pins (like 2) work!
  */
-char CONTROL_BUTTON_SETTINGS[3][SETTING_ENTRY_MAX] = {
-    "9;10",
+char CONTROL_BUTTON_SETTINGS[6][SETTING_ENTRY_MAX] = {
+    "6;10",
     "3;4",
-    "6;2,SOUND6"  
+    "7;8",
+    "0",
+    "0",
+    "0"  
 };
 
 
@@ -191,7 +211,7 @@ byte  WAKE_BUTTON;
 // Sound played when going into sleep mode
 char     SLEEP_SOUND[SETTING_ENTRY_MAX];
 
-#define FX_DELAY 32
+#define FX_DELAY 16
 
 // Chorus settings
 byte  CHORUS_DELAY     = FX_DELAY;
