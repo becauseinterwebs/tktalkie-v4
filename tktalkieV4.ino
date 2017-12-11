@@ -253,7 +253,7 @@ void startup()
   processSettings(profile_settings, total);
 
   // apply the settings so we can do stuff
-  applySettings();
+  //applySettings();
 
   // set the volume, either by config or volume pot
   readVolume();
@@ -394,6 +394,7 @@ void run() {
       val = strtok_r(NULL, "=", &buf);
       strcpy(cmd_key, key);
       strcpy(cmd_val, val);
+      autoSleepMillis = 0;
     } else if (Serial1.available() > 0) {
       char *key, *val, *buf, *buf2, *uid, *app_ver;      
       Serial1.readBytesUntil('\n', received, MAX_DATA_SIZE);
@@ -408,6 +409,7 @@ void run() {
       }
       strcpy(cmd_key, key);
       strcpy(cmd_val, val);
+      autoSleepMillis = 0;
       debug(F("BLE Cmd: %s Value: %s Uid: %s App Ver: %s\n"), cmd_key, cmd_val, uid, APP_VER);
       // validate data received from mobile device!
       if (strcasecmp(cmd_key, "connect") == 0) {
@@ -565,7 +567,7 @@ void run() {
           strcpy(buf, PROFILES_DIR);
           strcat(buf, PROFILE_FILE);
           loadSettings(buf);
-          applySettings();
+          //applySettings();
           long l = playSound(STARTUP_WAV);
           delay(l+100);
           playLoop();
@@ -623,7 +625,7 @@ void run() {
            memset(buf, 0, sizeof(buf));
          }
          loadSettings(cmd_val);    
-         applySettings();
+         //applySettings();
          long l = playSound(STARTUP_WAV);
          delay(l+100);
          playLoop();
@@ -699,7 +701,7 @@ void run() {
         gotoSleep();  
       } else { 
         parseSetting(cmd_key, cmd_val);
-        applySettings();
+        //applySettings();
         if (strcasecmp(cmd_key, "loop") == 0) {
           playLoop();
         }  
@@ -710,7 +712,7 @@ void run() {
     }
 
     // Check sound glove buttons
-    for (byte i = 0; i < 3; i++) {
+    for (byte i = 0; i < 6; i++) {
       
       if (!ControlButtons[i].isPTT()) {
 
@@ -721,6 +723,7 @@ void run() {
           if (whichButton != 1 && whichButton != 2) {
             continue;
           }
+            
           Serial.print("BUTTON PRESSED: ");
           Serial.print(whichButton);
           Serial.print(" TYPE: ");
@@ -1103,8 +1106,9 @@ void run() {
   if (SLEEP_TIME > 0 && (autoSleepMillis >= (SLEEP_TIME * 60000))) {
       gotoSleep();
   }
-  
+
 }
+
 
 bool buttonHeld(uint16_t msecs) {
     elapsedMillis duration = 0;

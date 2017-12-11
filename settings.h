@@ -10,15 +10,16 @@ void configureButton(byte a) {
     char buf[25];
     byte pin = CONTROL_BUTTON_PINS[a];
     
-    Serial.print("Pin: ");
+    Serial.print("** Configure Button for Pin: ");
     Serial.println(pin);
     if (pin > 0) {
 
       // setup physical button
       ControlButtons[a].setup(pin);
+      
       strcpy(buf, CONTROL_BUTTON_SETTINGS[a]);
       char *part_token, *part_ptr;
-      Serial.print("SETTINGS ");
+      Serial.print("-- SETTINGS: ");
       Serial.println(buf);
       part_token = strtok_r(buf, ";", &part_ptr);
       // button_type,data(sound)
@@ -26,7 +27,7 @@ void configureButton(byte a) {
       Serial.println(part_token);
       byte b = 0;
 
-      while (part_token && b < 3) {
+      while (part_token && b < 2) {
         char *button_token, *button_ptr;
         button_token = strtok_r(part_token, ",", &button_ptr);
         Serial.print("Intitial button token: ");
@@ -144,6 +145,7 @@ void parseSetting(const char *settingName, char *settingValue)
     } else if (MASTER_VOLUME < 0) {
       MASTER_VOLUME = 0;
     }
+    audioShield.volume(readVolume());
   } else if (strcasecmp(settingName, "lineout") == 0) {
     LINEOUT = (byte)atoi(settingValue);
     if (LINEOUT < 13) {
@@ -151,6 +153,7 @@ void parseSetting(const char *settingName, char *settingValue)
     } else if (LINEOUT > 31) {
       LINEOUT = 31;
     }
+    audioShield.lineOutLevel(LINEOUT);
   } else if (strcasecmp(settingName, "linein") == 0) {
     LINEIN = (byte)atoi(settingValue);
     if (LINEIN < 0) {
@@ -158,6 +161,7 @@ void parseSetting(const char *settingName, char *settingValue)
     } else if (LINEIN > 15) {
       LINEIN = 15;
     }  
+    audioShield.lineInLevel(LINEIN);
   } else if ((strcasecmp(settingName, "high_pass") == 0) || (strcasecmp(settingName, "highpass") == 0)) {
     HIPASS = (byte)atoi(settingValue);
     if (HIPASS < 0) { 
@@ -165,8 +169,14 @@ void parseSetting(const char *settingName, char *settingValue)
     } else if (HIPASS > 1) {
       HIPASS = 1;
     }
+    if (HIPASS == 0) {
+      audioShield.adcHighPassFilterDisable();
+    } else {
+      audioShield.adcHighPassFilterEnable();
+    }
   } else if (strcasecmp(settingName, "mic_gain") == 0) {
-    MIC_GAIN = atoi(settingValue);  
+    MIC_GAIN = atoi(settingValue);
+    audioShield.micGain(MIC_GAIN);  
   } else if (strcasecmp(settingName, "button_click") == 0) {
     memset(BUTTON_WAV, 0, sizeof(BUTTON_WAV));
     strcpy(BUTTON_WAV, settingValue);
@@ -181,17 +191,28 @@ void parseSetting(const char *settingName, char *settingValue)
     strcpy(LOOP_WAV, settingValue);
   } else if (strcasecmp(settingName, "noise_gain") == 0) {
     NOISE_GAIN = atof(settingValue);
+    voiceMixer.gain(3, 1);
   } else if (strcasecmp(settingName, "voice_gain") == 0) {
     VOICE_GAIN = atof(settingValue);
+    voiceMixer.gain(0, VOICE_GAIN);
+    voiceMixer.gain(1, VOICE_GAIN);
   } else if (strcasecmp(settingName, "dry_gain") == 0) {
     DRY_GAIN = atof(settingValue);  
+    voiceMixer.gain(2, DRY_GAIN);
   } else if (strcasecmp(settingName, "effects_gain") == 0) {
     EFFECTS_GAIN = atof(settingValue);
+    effectsMixer.gain(0, EFFECTS_GAIN);
+    effectsMixer.gain(1, EFFECTS_GAIN);
+    // BLE connect sound
+    effectsMixer.gain(2, EFFECTS_GAIN);
   } else if (strcasecmp(settingName, "loop_gain") == 0) {
     LOOP_GAIN = atof(settingValue);
     if (LOOP_GAIN < 0 or LOOP_GAIN > 32767) {
       LOOP_GAIN = 4;
     }
+    // chatter loop from SD card
+    loopMixer.gain(0, LOOP_GAIN);
+    loopMixer.gain(1, LOOP_GAIN);
   } else if (strcasecmp(settingName, "silence_time") == 0) {
     SILENCE_TIME = atoi(settingValue);
   } else if (strcasecmp(settingName, "voice_start") == 0) {
@@ -199,12 +220,17 @@ void parseSetting(const char *settingName, char *settingValue)
   } else if (strcasecmp(settingName, "voice_stop") == 0) {  
     VOICE_STOP = atof(settingValue);
   } else if (strcasecmp(settingName, "input") == 0) {
+      // This is actually set in the SETTINGS.TXT file but 
+      // is here for older systems where there could be 
+      // both a line-in and a mic input
       AUDIO_INPUT = (byte)atoi(settingValue);
       if (AUDIO_INPUT > 1) {
         AUDIO_INPUT = 1;
       } else if (AUDIO_INPUT < 0) {
         AUDIO_INPUT = 0;
       }
+      // tell the audio shield which input to use
+      audioShield.inputSelect(AUDIO_INPUT);
   } else if (strcasecmp(settingName, "eq") == 0) {
     EQ = (byte)atoi(settingValue);
     if (EQ < 0) {
@@ -212,6 +238,12 @@ void parseSetting(const char *settingName, char *settingValue)
     } else if (EQ > 1) {
       EQ = 1;
     }
+    // Turn on the 5-band graphic equalizer (there is also a 7-band parametric...see the Teensy docs)
+    if (EQ == 0) {
+      audioShield.eqSelect(FLAT_FREQUENCY);
+    } else {
+      audioShield.eqSelect(GRAPHIC_EQUALIZER);
+    }  
   } else if (strcasecmp(settingName, "eq_bands") == 0) {
     // clear bands and prep for setting
     for (int i = 0; i < EQ_BANDS_SIZE; i++) {
@@ -225,7 +257,12 @@ void parseSetting(const char *settingName, char *settingValue)
       i++;
       band = strtok_r(NULL, ",", &ptr);
     }
-  } else if (strcasecmp(settingName, "bitcrushers") == 0) {
+    // Bands (from left to right) are: Low, Low-Mid, Mid, High-Mid, High.
+    // Valid values are -1 (-11.75dB) to 1 (+12dB)
+    // The settings below pull down the lows and highs and push up the mids for 
+    // more of a "tin-can" sound.
+    audioShield.eqBands(EQ_BANDS[0], EQ_BANDS[1], EQ_BANDS[2], EQ_BANDS[3], EQ_BANDS[4]);
+  } else if (strcasecmp(settingName, "bitcrushers") == 0 || strcasecmp(settingName, "bitcrusher") == 0) {
     char *token, *ptr;
     token = strtok_r(settingValue, ",", &ptr);
     byte i = 0;
@@ -234,6 +271,10 @@ void parseSetting(const char *settingName, char *settingValue)
       i++;
       token = strtok_r(NULL, ",", &ptr);
     }
+    // You can modify these values to process the voice 
+    // input.  See the Teensy bitcrusher demo for details.
+    bitcrusher1.bits(BITCRUSHER[0]);
+    bitcrusher1.sampleRate(BITCRUSHER[1]);
   } else if (strcasecmp(settingName, "effects_dir") == 0) {
     memset(EFFECTS_DIR, 0, sizeof(EFFECTS_DIR));
     strcpy(EFFECTS_DIR, settingValue);
@@ -371,6 +412,20 @@ void parseSetting(const char *settingName, char *settingValue)
         configureButton(b);
       }
     
+  } else if (strcasecmp(settingName, "buttons") == 0) {
+      char *token, *ptr;
+      token = strtok_r(settingValue, "|", &ptr);
+      byte a = 0;
+      while (token && a < 6) {
+        strcpy(CONTROL_BUTTON_SETTINGS[a], token);
+        Serial.print(" ---- COPIED SETTING TO BUTTON ");
+        Serial.print(a);
+        Serial.print(" -> ");
+        Serial.println(CONTROL_BUTTON_SETTINGS[a]);
+        configureButton(a);
+        token = strtok_r(NULL, "|", &ptr);
+        a++;
+      }
   }
   
 }
@@ -1035,6 +1090,17 @@ int loadSettingsFile(const char *filename, char results[][SETTING_ENTRY_MAX], in
   int c = 0;
   int tries = 0;
 
+  autoSleepMillis = 0;
+  voiceOff();
+  // Setup control glove buttons
+  button_initialized = false;
+  PTT_BUTTON = NULL;
+  WAKE_BUTTON = NULL;
+  // clear control buttons
+  for (byte i = 0; i < 6; i++) {
+    ControlButtons[i].reset();
+    ControlButtons[i].setPin(0);
+  }
   // Try up to 3 times to read the file
   while (!myFile && tries < 2) {
     myFile = openFile(filename, FILE_READ);
@@ -1124,10 +1190,11 @@ int loadSettings(const char *filename)
 /***
  * Apply settings
  */
+ /*
 void applySettings() 
 {
-
-  autoSleepMillis = 0;
+*/
+  /*
   
   // Turn on the 5-band graphic equalizer (there is also a 7-band parametric...see the Teensy docs)
   if (EQ == 0) {
@@ -1140,6 +1207,8 @@ void applySettings()
     // more of a "tin-can" sound.
     audioShield.eqBands(EQ_BANDS[0], EQ_BANDS[1], EQ_BANDS[2], EQ_BANDS[3], EQ_BANDS[4]);
   }
+  */
+  /*
   // tell the audio shield which input to use
   audioShield.inputSelect(AUDIO_INPUT);
   // adjust the gain of the input
@@ -1149,6 +1218,8 @@ void applySettings()
   } else {
     audioShield.micGain(MIC_GAIN);
   }  
+  */
+  /*
   // You can modify these values to process the voice 
   // input.  See the Teensy bitcrusher demo for details.
   bitcrusher1.bits(BITCRUSHER[0]);
@@ -1156,14 +1227,20 @@ void applySettings()
   //bitcrusher2.bits(BITCRUSHER[2]);
   //bitcrusher2.sampleRate(BITCRUSHER[3]);
   // Bitcrusher 1 input (fed by mic/line-in)
+  */
+  /*
   voiceMixer.gain(0, VOICE_GAIN);
   voiceMixer.gain(1, VOICE_GAIN);
   // Dry (unprocessed) voice input
   voiceMixer.gain(2, DRY_GAIN);
+  */
+  /*
   // Pink noise channel
   //voiceMixer.gain(1, NOISE_GAIN);
   // Feed from effects mixer
   voiceMixer.gain(3, 1);
+  */
+  /*
   // stereo channels for SD card...adjust gain as 
   // necessary to match voice level
   effectsMixer.gain(0, EFFECTS_GAIN);
@@ -1172,18 +1249,21 @@ void applySettings()
   effectsMixer.gain(2, EFFECTS_GAIN);
   // Feed from loop mixer
   effectsMixer.gain(3, 1);
+  */
+  /*
   // chatter loop from SD card
   loopMixer.gain(0, LOOP_GAIN);
   loopMixer.gain(1, LOOP_GAIN);
-  // Pink noise channel
-  loopMixer.gain(3, NOISE_GAIN);
-  audioShield.volume(readVolume());
-  audioShield.lineOutLevel(LINEOUT);
+  */
+  //audioShield.volume(readVolume());
+  //audioShield.lineOutLevel(LINEOUT);
+  /*
   if (HIPASS == 0) {
     audioShield.adcHighPassFilterDisable();
   } else {
     audioShield.adcHighPassFilterEnable();
   }
+  */
   // Initialize PTT button
   /*
   if (BUTTON_PIN && BUTTON_PIN > 0) {
@@ -1193,18 +1273,21 @@ void applySettings()
     snoozeDigital.pinMode(BUTTON_PIN, INPUT_PULLUP, FALLING);
   }
   */
+  /*
+  autoSleepMillis = 0;
   voiceOff();
-
   // Setup control glove buttons
   button_initialized = false;
   PTT_BUTTON = NULL;
   WAKE_BUTTON = NULL;
-  
+*/
+  /*
   for (byte a = 0; a < 6; a++) {
     // need to clear button settings...
     configureButton(a);
   }
+  */
 
-}
+//}
 
   

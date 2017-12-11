@@ -96,7 +96,6 @@ byte lastRnd  = -1;                                       // Keeps track of the 
 //Bounce PTT = Bounce();                       // Used to read the PTT button (if attached)
 
 byte CONTROL_BUTTON_PINS[6] = {0,0,0,0,0,0};
-byte CONTROL_BUTTON_COUNT = 0;
 
 
 // this is temp for testing
@@ -123,17 +122,20 @@ byte CONTROL_BUTTON_COUNT = 0;
  *   NOTE:  Pin 3 CANNOT wake up...
  *          only digital pins (like 2) work!
  */
-char CONTROL_BUTTON_SETTINGS[6][SETTING_ENTRY_MAX] = {
-    "6;10",
-    "3;4",
-    "7;8",
+char CONTROL_BUTTON_SETTINGS[6][30] = {
+    "0",
+    "0",
+    "0",
     "0",
     "0",
     "0"  
 };
 
 
-ControlButton ControlButtons[3] = {
+ControlButton ControlButtons[6] = {
+  ControlButton(),
+  ControlButton(),
+  ControlButton(),
   ControlButton(),
   ControlButton(),
   ControlButton()

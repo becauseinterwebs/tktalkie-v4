@@ -26,19 +26,21 @@ ControlButton::ControlButton(byte buttonPin, byte interval)
 byte ControlButton::check()
 {
   this->_value = 0;
-  this->_button.update();
-  if (this->_button.fell()) {
-    elapsedMillis t = 0;
-    while (t < 350) {
-      this->_button.update();
-      if (this->_button.read() != 0) {
-        this->_value = 1;
-        return this->_value;
+  //if (this->_pin > 0) {
+    this->_button.update();
+    if (this->_button.fell()) {
+      elapsedMillis t = 0;
+      while (t < 350) {
+        this->_button.update();
+        if (this->_button.read() != 0) {
+          this->_value = 1;
+          return this->_value;
+        }
       }
+      this->_value = 2;
     }
-    this->_value = 2;
-    return this->_value;
-  }
+  //}
+  return this->_value;
 }
 
 void ControlButton::setup()
@@ -59,9 +61,13 @@ void ControlButton::setPin(byte buttonPin)
     pinMode(this->_pin, INPUT_PULLUP);
     this->_button.attach(this->_pin);
     this->_button.interval(this->_interval);
+    Serial.println("+++++++++++++++++++++++++++++");
+    Serial.print("THIS PIN SET TO: ");
+    Serial.print(this->_pin);
+    Serial.print(" with interval ");
+    Serial.println(this->_interval);
+    Serial.println("+++++++++++++++++++++++++++++");
   }  
-  Serial.print("THIS PIN SET TO: ");
-  Serial.println(this->_pin);
 }
 
 byte ControlButton::getPin() {
