@@ -224,8 +224,7 @@ void disconnectSound()
  */
 void loopOff() 
 {
-  loopMixer.gain(0, 0);
-  loopMixer.gain(1, 0);
+  effectsMixer.gain(1, 0);
 }
 
 /***
@@ -236,12 +235,10 @@ void loopOn()
   // gradually raise level to avoid pops 
   if (LOOP_GAIN > 1) {
     for (byte i=0; i<=LOOP_GAIN; i++) {
-      loopMixer.gain(2, i);
-      loopMixer.gain(3, i);
+      effectsMixer.gain(1, i);
     }
   }
-  loopMixer.gain(0, LOOP_GAIN);
-  loopMixer.gain(1, LOOP_GAIN);
+  effectsMixer.gain(1, LOOP_GAIN);
 }
 
 /***

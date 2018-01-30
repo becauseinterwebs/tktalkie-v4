@@ -243,50 +243,63 @@ void startup()
   char path[100];
   strcpy(path, PROFILES_DIR);
   strcat(path, PROFILE_FILE);
-  total = loadSettingsFile(path, profile_settings, MAX_FILE_COUNT);
+  total = loadSettingsFile(path, profile_settings, MAX_SETTINGS_COUNT);
+  debug(F("===========> %d lines read"), total);
 
   // Get flange processor ready but keep it off
   flange1.begin(FLANGE_BUFFER,FLANGE_DELAY*AUDIO_BLOCK_SAMPLES,FLANGE_OFFSET, FLANGE_DEPTH, FLANGE_FREQ);
   flange1.voices(FLANGE_DELAY_PASSTHRU,0,0);
   
   // Parse all of the settings
+  Serial.println("\n\n!!!!!!!!!!!!!!!!!!!!!!!!!! STARTUP CALL PROCESS SETTINGS !!!!!!!!!!!!!!!!!!!!!!!!!!!!");
   processSettings(profile_settings, total);
-
+  Serial.println("\n\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!! AFTER STARTUP PROCESS SETTINGS !!!!!!!!!!!!!!!!!!!!!!!!!!");
+  
   // apply the settings so we can do stuff
   //applySettings();
 
   // set the volume, either by config or volume pot
+  
   readVolume();
 
   // turn on outputs
+  Serial.println("--- UNMUTE");
   audioShield.unmuteLineout();
   audioShield.unmuteHeadphone();
 
+  Serial.println("--- GET EFFECTS GAIN");
   float prevVol = EFFECTS_GAIN;
 
   // turn on volume for startup sound 
   // if effects volume is at 0
+  Serial.println("--- SET EFFECTS GAIN");
   if (prevVol <= 0) {
     effectsMixer.gain(0, 1);
     effectsMixer.gain(1, 1);
   }
 
   // play startup sound
+  Serial.println("--- PLAY STARTUP SOUND");
   long l = playSound(STARTUP_WAV);
 
   // reset mixer volume if set to 0
+  Serial.println("--- RESET EFFECTS GAIN");
   if (prevVol <= 0) {
     effectsMixer.gain(0, EFFECTS_GAIN);
     effectsMixer.gain(1, EFFECTS_GAIN);
   }
   
   // add a smidge of delay ;)
+  Serial.println("--- DELAY");
   delay(l+100); 
 
   // play background loop
+  Serial.println("--- PLAY LOOP");
   playLoop();
 
   STATE = STATE_RUNNING;
+
+  Serial.println("----- END OF STARTUP");
 
 }
 
@@ -713,7 +726,8 @@ void run() {
 
     // Check sound glove buttons
     for (byte i = 0; i < 6; i++) {
-      
+
+      // The PTT button is a special case, so it is processed separately
       if (!ControlButtons[i].isPTT()) {
 
         byte whichButton = ControlButtons[i].check();
@@ -734,10 +748,14 @@ void run() {
             case 2:
               {
                 Serial.println(2);
-                char buffer[12];
-                char *sound = ControlButtons[i].buttons[whichButton-1].getSound(buffer);
-                Serial.println(sound);
-                playGloveSound(sound);
+                if (effectsPlayer.isPlaying()) {
+                  effectsPlayer.stop();
+                } else {
+                  char buffer[12];
+                  char *sound = ControlButtons[i].buttons[whichButton-1].getSound(buffer);
+                  Serial.println(sound);
+                  playGloveSound(sound);
+                }
               }  
               break;
             // Volume Up
@@ -859,8 +877,7 @@ void run() {
                 }
                 Serial.print("LOOP GAIN UP: ");
                 Serial.println(LOOP_GAIN);
-                loopMixer.gain(0, LOOP_GAIN);
-                loopMixer.gain(1, LOOP_GAIN);
+                effectsMixer.gain(1, LOOP_GAIN);
                 boop(540, 1);
               }
               break;  
@@ -873,8 +890,7 @@ void run() {
                 }
                 Serial.print("LOOP GAIN DOWN: ");
                 Serial.println(LOOP_GAIN);
-                loopMixer.gain(0, LOOP_GAIN);
-                loopMixer.gain(1, LOOP_GAIN);
+                effectsMixer.gain(1, LOOP_GAIN);
                 boop(540, 0);
               }
               break; 
@@ -952,25 +968,7 @@ void run() {
           }
         }  
     }  
-/*
-    switch (G2.check()) {
-      case 1:
-        playGloveSound("SOUND2");
-        break;
-      case 2:
-        playGloveSound("SOUND5");
-        break;
-    }
 
-    switch (G3.check()) {
-      case 1:
-        playGloveSound("SOUND3");
-        break;
-      case 2:
-        playGloveSound("SOUND6");
-        break;
-    }
-  */ 
     if (PTT_BUTTON >= 0 && button_initialized == false) {
       button_initialized = checkPTTButton();
       if (button_initialized) {

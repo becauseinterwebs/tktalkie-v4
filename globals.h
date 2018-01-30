@@ -35,13 +35,8 @@ AudioControlSGTL5000     audioShield;    //xy=846,428
 // GUItool: end automatically generated code
 */
 
-#include <Audio.h>
-#include <Wire.h>
-#include <SPI.h>
-#include <SD.h>
-#include <SerialFlash.h>
-
 // GUItool: begin automatically generated code
+/*
 AudioInputI2S            i2s1;           //xy=91.1111068725586,153.88888931274414
 AudioAnalyzeRMS          rms1;           //xy=210.1111068725586,217.88888931274414
 AudioSynthNoisePink      pink1;          //xy=266.6666717529297,385.55557441711426
@@ -73,39 +68,63 @@ AudioConnection          patchCord15(effectsMixer, 0, voiceMixer, 3);
 AudioConnection          patchCord16(voiceMixer, 0, i2s2, 0);
 AudioConnection          patchCord17(voiceMixer, 0, i2s2, 1);
 AudioControlSGTL5000     audioShield;    //xy=77.1111068725586,263.88888931274414
+*/
 // GUItool: end automatically generated code
 
-
+// GUItool: begin automatically generated code
+AudioInputI2S            i2s1;           //xy=91.1111068725586,153.88888931274414
+AudioAnalyzeRMS          rms1;           //xy=210.1111068725586,217.88888931274414
+AudioEffectBitcrusher    bitcrusher1;    //xy=283.1111068725586,89.88888931274414
+AudioSynthNoisePink      pink1;          //xy=340.6666717529297,314.5555725097656
+AudioPlaySdWav           loopPlayer;     //xy=347.111083984375,245.88888549804688
+AudioSynthWaveform       waveform1;      //xy=350.1111145019531,279.8888854980469
+AudioPlaySdWav           effectsPlayer;  //xy=356.1111068725586,210.88888931274414
+AudioEffectFlange        flange1;        //xy=418.1111068725586,88.88888931274414
+AudioEffectChorus        chorus1;        //xy=547.1111068725586,88.88888931274414
+AudioMixer4              effectsMixer;   //xy=575.111083984375,255.88888549804688
+AudioMixer4              voiceMixer;     //xy=712.1111068725586,117.88888931274414
+AudioOutputI2S           i2s2;           //xy=877.1111068725586,117.88888931274414
+AudioConnection          patchCord1(i2s1, 0, bitcrusher1, 0);
+AudioConnection          patchCord2(i2s1, 0, voiceMixer, 2);
+AudioConnection          patchCord3(i2s1, 1, rms1, 0);
+AudioConnection          patchCord4(bitcrusher1, flange1);
+AudioConnection          patchCord5(pink1, 0, effectsMixer, 3);
+AudioConnection          patchCord6(loopPlayer, 0, effectsMixer, 1);
+AudioConnection          patchCord7(waveform1, 0, effectsMixer, 2);
+AudioConnection          patchCord8(effectsPlayer, 0, effectsMixer, 0);
+AudioConnection          patchCord9(flange1, chorus1);
+AudioConnection          patchCord10(chorus1, 0, voiceMixer, 0);
+AudioConnection          patchCord11(chorus1, 0, voiceMixer, 1);
+AudioConnection          patchCord12(effectsMixer, 0, voiceMixer, 3);
+AudioConnection          patchCord13(voiceMixer, 0, i2s2, 0);
+AudioConnection          patchCord14(voiceMixer, 0, i2s2, 1);
+AudioControlSGTL5000     audioShield;    //xy=77.1111068725586,263.88888931274414
+// GUItool: end automatically generated code
 
 // version flag
-const char VERSION[5] = "3.5";
+const char VERSION[5] = "4.0";
 float APP_VER = 1.13;
       
 //elapsedMillis ms;                         // running timer...inputs are checked every 24 milliseconds
 elapsedMillis stopped;                      // used to tell how long user has stopped talking
 boolean speaking = false;                   // flag to let us know if the user is speaking or not
 
-const byte MAX_FILE_COUNT    = 99;
-const byte SETTING_ENTRY_MAX = 50;
+const byte MAX_FILE_COUNT     = 99;
+const byte MAX_SETTINGS_COUNT = 40;
+const byte SETTING_ENTRY_MAX  = 150;
 
 byte SOUND_EFFECTS_COUNT = 0;                             // This keeps count of how many valid WAV files were found.
-char SOUND_EFFECTS[MAX_FILE_COUNT][SETTING_ENTRY_MAX];   // This will hold an array of the WAV files on the SD card.
-                                                         // 99 is an arbitrary number.  You can change it as you need to.
+char SOUND_EFFECTS[MAX_FILE_COUNT][SETTING_ENTRY_MAX];    // This will hold an array of the WAV files on the SD card.
+                                                          // 99 is an arbitrary number.  You can change it as you need to.
 byte lastRnd  = -1;                                       // Keeps track of the last file played so that it is different each time
 
-//Bounce PTT = Bounce();                       // Used to read the PTT button (if attached)
-
-byte CONTROL_BUTTON_PINS[6] = {0,0,0,0,0,0};
-
-
-// this is temp for testing
 /***************************
- * BUTTON VALUES
+ * BUTTON TYPE VALUES
  *   1  = PTT (SLEEP/WAKE unless otherwise configured)
- *   2  = Play Specified Sound
+ *   2  = Play/Stop Specified Sound
  *   3  = Spkr Volume Up 
  *   4  = Spkr Volume Down 
- *   5  = Mute
+ *   5  = Mute Everything
  *   6  = Sleep/Wake (Overrides PTT)
  *   7  = LineOut Volume Up
  *   8  = LineOut Volume Down
@@ -118,28 +137,22 @@ byte CONTROL_BUTTON_PINS[6] = {0,0,0,0,0,0};
  *   15 = Voice gain down
  *   16 = Effects gain up
  *   17 = Effects gain down
+ *   18 = Mute Loop
  *   
  *   NOTE:  Pin 3 CANNOT wake up...
  *          only digital pins (like 2) work!
  */
-char CONTROL_BUTTON_SETTINGS[6][30] = {
-    "0",
-    "0",
-    "0",
-    "0",
-    "0",
-    "0"  
-};
 
+// These define the pins the (up to) 6 control buttons can be connected to
+// NOTE:  Only digital pins can be used for waking:
+//        2,4,6,7,9,10,11,13,16,21,22,26,30,33
+byte CONTROL_BUTTON_PINS[6] = {0,0,0,0,0,0};
 
-ControlButton ControlButtons[6] = {
-  ControlButton(),
-  ControlButton(),
-  ControlButton(),
-  ControlButton(),
-  ControlButton(),
-  ControlButton()
-}; 
+// Start with all of the button types set to nothing 
+char CONTROL_BUTTON_SETTINGS[6][30] = { "0","0","0","0","0","0" };
+
+// This could be turned into a management class, but there is not a lot of stuff to do with it...so....
+ControlButton ControlButtons[6] = { ControlButton(), ControlButton(), ControlButton(), ControlButton(), ControlButton(), ControlButton() }; 
 
 boolean silent = false;                      // used for PTT and to switch back to Voice Activated mode
 boolean button_initialized = false;          // flag that lets us know if the PTT has been pushed or not to go into PTT mode
@@ -211,7 +224,7 @@ byte  PTT_BUTTON;
 byte  WAKE_BUTTON;
                                    
 // Sound played when going into sleep mode
-char     SLEEP_SOUND[SETTING_ENTRY_MAX];
+char  SLEEP_SOUND[SETTING_ENTRY_MAX];
 
 #define FX_DELAY 16
 

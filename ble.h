@@ -42,8 +42,22 @@ void btprint(const __FlashStringHelper *fmt, ... ) {
   if (ECHO == true) {
     Serial.print(buf);
   }
-  Serial1.print(buf);
+  // break into chunks
+  int l = strlen(buf);
+  int a = 0;
+  while (a < l) {
+    int max = a + 20;
+    if (max > l) {
+      max = l;
+    }
+    for (int b = a; b < max; b++) {
+      a++;
+      Serial1.print(buf[b]);
+    }
+    delay(30);      
+  }
 }
+
 
 /**
  * Shortcut to send output to in JSON format
@@ -118,7 +132,7 @@ void sendConfig()
      char filename[SETTING_ENTRY_MAX];
      strcpy(filename, PROFILES_DIR);
      strcat(filename, files[i]);
-     byte total = loadSettingsFile(filename, entries, MAX_FILE_COUNT);
+     byte total = loadSettingsFile(filename, entries, MAX_SETTINGS_COUNT);
      for (byte x = 0; x < total; x++) {
         char *key, *value, *ptr;
         char entry[SETTING_ENTRY_MAX];

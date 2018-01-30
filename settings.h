@@ -134,6 +134,8 @@ void parseSetting(const char *settingName, char *settingValue)
 {
 
   debug(F("Parse Setting: %s = %s\n"), settingName, settingValue);
+
+  
   
   if (strcasecmp(settingName, "name") == 0) {
     memset(PROFILE_NAME, 0, sizeof(PROFILE_NAME));
@@ -191,7 +193,7 @@ void parseSetting(const char *settingName, char *settingValue)
     strcpy(LOOP_WAV, settingValue);
   } else if (strcasecmp(settingName, "noise_gain") == 0) {
     NOISE_GAIN = atof(settingValue);
-    voiceMixer.gain(3, 1);
+    effectsMixer.gain(3, NOISE_GAIN);
   } else if (strcasecmp(settingName, "voice_gain") == 0) {
     VOICE_GAIN = atof(settingValue);
     voiceMixer.gain(0, VOICE_GAIN);
@@ -202,8 +204,8 @@ void parseSetting(const char *settingName, char *settingValue)
   } else if (strcasecmp(settingName, "effects_gain") == 0) {
     EFFECTS_GAIN = atof(settingValue);
     effectsMixer.gain(0, EFFECTS_GAIN);
-    effectsMixer.gain(1, EFFECTS_GAIN);
-    // BLE connect sound
+    //effectsMixer.gain(1, EFFECTS_GAIN);
+    // Waveform (BLE) connect sound
     effectsMixer.gain(2, EFFECTS_GAIN);
   } else if (strcasecmp(settingName, "loop_gain") == 0) {
     LOOP_GAIN = atof(settingValue);
@@ -211,8 +213,9 @@ void parseSetting(const char *settingName, char *settingValue)
       LOOP_GAIN = 4;
     }
     // chatter loop from SD card
-    loopMixer.gain(0, LOOP_GAIN);
-    loopMixer.gain(1, LOOP_GAIN);
+    effectsMixer.gain(1, LOOP_GAIN);
+    //loopMixer.gain(0, LOOP_GAIN);
+    //loopMixer.gain(1, LOOP_GAIN);
   } else if (strcasecmp(settingName, "silence_time") == 0) {
     SILENCE_TIME = atoi(settingValue);
   } else if (strcasecmp(settingName, "voice_start") == 0) {
@@ -418,10 +421,6 @@ void parseSetting(const char *settingName, char *settingValue)
       byte a = 0;
       while (token && a < 6) {
         strcpy(CONTROL_BUTTON_SETTINGS[a], token);
-        Serial.print(" ---- COPIED SETTING TO BUTTON ");
-        Serial.print(a);
-        Serial.print(" -> ");
-        Serial.println(CONTROL_BUTTON_SETTINGS[a]);
         configureButton(a);
         token = strtok_r(NULL, "|", &ptr);
         a++;
@@ -618,17 +617,27 @@ char *settingsToJson(char result[])
     dtostrf(FLANGE_FREQ, 0, 4, buf);
     sprintf(tmp, num_template, "flange_freq", buf);
     strcat(result, tmp);
-
-    char buttons[30];
+/*
+    strcat(result, "\"buttons\": { \"pins\":[");
     for (byte i = 0; i < 6; i++) {
-      strcat(buttons, CONTROL_BUTTON_SETTINGS[i]);
+      strcat(result, CONTROL_BUTTON_PINS[i]);
       if (i < 5) {
-        strcat(buttons, "|"); 
+        strcat(result, ",");
       }
     }
-    
-    sprintf(tmp, str_template, "buttons", buttons);
-    strcat(result, tmp);
+    strcat(result, "],\"settings\":[");
+    for (byte i = 0; i < 6; i++) {
+      strcat(result, "\"");
+      strcat(result, CONTROL_BUTTON_SETTINGS[i]);
+      strcat(result, "\"");
+      if (i < 5) {
+        strcat(result, ","); 
+      }
+    }
+    strcat(result, "]}");
+    */
+    //sprintf(tmp, str_template, "buttons", buttons);
+    //strcat(result, tmp);
     
   }
   
@@ -1079,7 +1088,7 @@ boolean deleteProfile(char *filename)
 /***
  * Read settings from specified file
  */
-int loadSettingsFile(const char *filename, char results[][SETTING_ENTRY_MAX], int max) 
+int loadSettingsFile(const char *filename, char results[][SETTING_ENTRY_MAX], const byte max) 
 {
   debug(F("Load Settings File %s\n"), filename);
   char character;
@@ -1089,7 +1098,6 @@ int loadSettingsFile(const char *filename, char results[][SETTING_ENTRY_MAX], in
   int index = 0;
   int c = 0;
   int tries = 0;
-
   autoSleepMillis = 0;
   voiceOff();
   // Setup control glove buttons
@@ -1100,6 +1108,8 @@ int loadSettingsFile(const char *filename, char results[][SETTING_ENTRY_MAX], in
   for (byte i = 0; i < 6; i++) {
     ControlButtons[i].reset();
     ControlButtons[i].setPin(0);
+    // set to nothing...
+    strcpy(CONTROL_BUTTON_SETTINGS[i], "0");
   }
   // Try up to 3 times to read the file
   while (!myFile && tries < 2) {
@@ -1137,6 +1147,7 @@ int loadSettingsFile(const char *filename, char results[][SETTING_ENTRY_MAX], in
             strcat(buf, "=");
             strcat(buf, settingValue);
             strcpy(results[index], buf);
+            debug(F("%d of %d lines -> setting %s\n"), index, max, buf);
             index++;
           } else {
             break;
@@ -1158,6 +1169,7 @@ int loadSettingsFile(const char *filename, char results[][SETTING_ENTRY_MAX], in
       }
     }
   }
+  debug(F("File %s loaded"), filename);
   return index;
 }
 
@@ -1166,6 +1178,7 @@ int loadSettingsFile(const char *filename, char results[][SETTING_ENTRY_MAX], in
  */
 void processSettings(char settings[][SETTING_ENTRY_MAX], const int max)
 {
+  AudioNoInterrupts();
   for (int i = 0; i < max; i++) {
     char entry[SETTING_ENTRY_MAX];
     strcpy(entry, settings[i]);
@@ -1174,6 +1187,9 @@ void processSettings(char settings[][SETTING_ENTRY_MAX], const int max)
     value = strtok_r(NULL, "=", &ptr);
     parseSetting(key, value);
   }
+  Serial.println("----- AFTER PROCESS SETTINGS ");
+  AudioInterrupts();
+  Serial.println("----- AFTER AUDIO INTERRUPT ");
 }
 
 /**
@@ -1182,7 +1198,7 @@ void processSettings(char settings[][SETTING_ENTRY_MAX], const int max)
 int loadSettings(const char *filename) 
 {
   char settings[MAX_FILE_COUNT][SETTING_ENTRY_MAX];
-  int total = loadSettingsFile(filename, settings, MAX_FILE_COUNT);
+  int total = loadSettingsFile(filename, settings, MAX_SETTINGS_COUNT);
   processSettings(settings, total);
   return total;
 }
