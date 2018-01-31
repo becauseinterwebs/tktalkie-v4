@@ -130,7 +130,7 @@ int listDirectories(const char *path, char directories[][SETTING_ENTRY_MAX])
  * If filter is specified, only file names containing
  * the filter text are returned.
  */
- int listFiles(const char *path, char files[][SETTING_ENTRY_MAX], int max, const char *match, boolean recurse, boolean echo) 
+ int listFiles(const char *path, char files[][12], int max, const char *match, boolean recurse, boolean echo) 
 {
   char filter[SETTING_ENTRY_MAX];
   strcpy(filter, match);
@@ -158,7 +158,7 @@ int listDirectories(const char *path, char directories[][SETTING_ENTRY_MAX])
        // Filter out folders with ~ (backups)
        char *ret = strstr(entry.name(), "~");
        if (ret == NULL) {
-         if (echo || DEBUG) {
+         if (echo || Config.debug) {
           Serial.print(dirSep);
           Serial.print(entry.name());
           Serial.println("/");
@@ -182,7 +182,7 @@ int listDirectories(const char *path, char directories[][SETTING_ENTRY_MAX])
           fname[0] ='\0';
         }
        if (strcasecmp(fname, "") != 0) {
-            if (echo || DEBUG) {
+            if (echo || Config.debug) {
               Serial.println(dirSep + entry.name());
             }
             if (index < max) {

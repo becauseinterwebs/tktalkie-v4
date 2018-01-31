@@ -8,7 +8,7 @@ void configureButton(byte a) {
     ControlButtons[a].setPin(0);
     byte buttonNum = 0;
     char buf[25];
-    byte pin = CONTROL_BUTTON_PINS[a];
+    byte pin = Config.buttons[a];
     
     Serial.print("** Configure Button for Pin: ");
     Serial.println(pin);
@@ -45,10 +45,10 @@ void configureButton(byte a) {
             {
               debug(F("PTT Button on pin: %d\n"), pin);
               Serial.println(" -> PTT Button");
-              PTT_BUTTON = a;
+              App.ptt_button = a;
               ControlButtons[a].setPTT(true);
-              if (WAKE_BUTTON == NULL) {
-                WAKE_BUTTON = a;
+              if (App.wake_button == NULL) {
+                App.wake_button = a;
                 snoozeDigital.pinMode(pin, INPUT_PULLUP, FALLING);
               }
             }  
@@ -65,7 +65,7 @@ void configureButton(byte a) {
               debug(F("Sleep Button on pin: %d\n"), pin);
               Serial.print("Sleep Button on pin: ");
               Serial.println(pin);
-              WAKE_BUTTON = a;
+              App.wake_button = a;
               snoozeDigital.pinMode(pin, INPUT_PULLUP, FALLING);
             }  
             break;   
@@ -620,7 +620,7 @@ char *settingsToJson(char result[])
 /*
     strcat(result, "\"buttons\": { \"pins\":[");
     for (byte i = 0; i < 6; i++) {
-      strcat(result, CONTROL_BUTTON_PINS[i]);
+      strcat(result, Config.buttons[i]);
       if (i < 5) {
         strcat(result, ",");
       }
@@ -1088,6 +1088,7 @@ boolean deleteProfile(char *filename)
 /***
  * Read settings from specified file
  */
+ /*
 int loadSettingsFile(const char *filename, char results[][SETTING_ENTRY_MAX], const byte max) 
 {
   debug(F("Load Settings File %s\n"), filename);
@@ -1102,8 +1103,8 @@ int loadSettingsFile(const char *filename, char results[][SETTING_ENTRY_MAX], co
   voiceOff();
   // Setup control glove buttons
   button_initialized = false;
-  PTT_BUTTON = NULL;
-  WAKE_BUTTON = NULL;
+  App.ptt_button = NULL;
+  App.wake_button = NULL;
   // clear control buttons
   for (byte i = 0; i < 6; i++) {
     ControlButtons[i].reset();
@@ -1172,7 +1173,15 @@ int loadSettingsFile(const char *filename, char results[][SETTING_ENTRY_MAX], co
   debug(F("File %s loaded"), filename);
   return index;
 }
-
+*/
+void loadSettingsFile()
+{
+  char path[100];
+  strcpy(path, PROFILES_DIR);
+  strcat(path, Settings.profile_file);
+  //total = loadSettingsFile(path, profile_settings, MAX_SETTINGS_COUNT);
+  //debug(F("===========> %d lines read"), total);
+}
 /**
  * Process a list of settings values
  */
@@ -1294,8 +1303,8 @@ void applySettings()
   voiceOff();
   // Setup control glove buttons
   button_initialized = false;
-  PTT_BUTTON = NULL;
-  WAKE_BUTTON = NULL;
+  App.ptt_button = NULL;
+  App.wake_button = NULL;
 */
   /*
   for (byte a = 0; a < 6; a++) {

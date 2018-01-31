@@ -8,7 +8,7 @@
  * This code is adapted from http://playground.arduino.cc/Main/Printf
  */
 void debug(const __FlashStringHelper *fmt, ... ) {
-  if (DEBUG != true) {
+  if (Config.debug != true) {
     return;
   }
   char buf[256]; // resulting string limited to 1000 chars
