@@ -101,7 +101,7 @@ void showFile(const char *filename) {
  */
 String dirSep = "";
 
-int listDirectories(const char *path, char directories[][SETTING_ENTRY_MAX])
+int listDirectories(const char *path, char directories[][14])
 {
    int index = 0;
    File dir = SD.open(path);
@@ -130,7 +130,7 @@ int listDirectories(const char *path, char directories[][SETTING_ENTRY_MAX])
  * If filter is specified, only file names containing
  * the filter text are returned.
  */
- int listFiles(const char *path, char files[][12], int max, const char *match, boolean recurse, boolean echo) 
+ int listFiles(const char *path, char files[][14], int max, const char *match, boolean recurse, boolean echo) 
 {
   char filter[SETTING_ENTRY_MAX];
   strcpy(filter, match);

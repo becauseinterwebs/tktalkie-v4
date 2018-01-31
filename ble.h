@@ -6,11 +6,11 @@
  * Send output to BLE
  */
 void btprint(const char *str) {
-  if (ECHO == true) {
+  if (Config.echo == true) {
     Serial.print("TX: ");
     Serial.println(str);
   }
-  if (BT_CONNECTED == true) {
+  if (App.ble_connected == true) {
     Serial1.print(str);
   }
 }
@@ -19,11 +19,11 @@ void btprint(const char *str) {
  * Send output to BLE
  */
 void btprintln(const char *str) {
-  if (ECHO == true) {
+  if (Config.echo == true) {
     Serial.print("TX: ");
     Serial.println(str);
   }
-  if (BT_CONNECTED == true) {
+  if (App.ble_connected == true) {
     Serial1.print(str);
     Serial1.print("\n");
   }
@@ -39,7 +39,7 @@ void btprint(const __FlashStringHelper *fmt, ... ) {
   vsnprintf(buf, sizeof(buf), (const char *)fmt, args); // for the rest of the world
 #endif
   va_end(args);
-  if (ECHO == true) {
+  if (Config.echo == true) {
     Serial.print(buf);
   }
   // break into chunks
@@ -77,6 +77,7 @@ void sendToApp(const char *cmd, const char *value)
 void sendConfig() 
 {
 
+/*
   debug(F("Sending config\n"));
 
   btprint(F("{\"cmd\":\"config\", \"data\": { \"ver\":\"%s\","), VERSION);
@@ -84,7 +85,7 @@ void sendConfig()
   // get sound files
   char files[MAX_FILE_COUNT][SETTING_ENTRY_MAX];
   
-  byte count = listFiles(SOUNDS_DIR, files, MAX_FILE_COUNT, SOUND_EXT, false, false);
+  byte count = listFiles(Settings.sounds_dir, files, MAX_FILE_COUNT, SOUND_EXT, false, false);
 
   // Add sound files
   char buffer[1024];
@@ -96,12 +97,12 @@ void sendConfig()
   memset(files, 0, sizeof(files));
 
   // Add effects 
-  char *effects = arrayToStringJson(buffer, SOUND_EFFECTS, SOUND_EFFECTS_COUNT);
+  char *effects = arrayToStringJson(buffer, Settings.sound_effects, SOUND_EFFECTS_COUNT);
   btprint(F("\"effects\":%s,"), effects);
   memset(buffer, 0, sizeof(buffer));
 
   // get loop files 
-  count = listFiles(LOOP_DIR, files, MAX_FILE_COUNT, SOUND_EXT, false, false);
+  count = listFiles(Settings.loop_dir, files, MAX_FILE_COUNT, SOUND_EXT, false, false);
   
   // Add loops 
   char *loops = arrayToStringJson(buffer, files, count);
@@ -161,5 +162,6 @@ void sendConfig()
             
   // end
   btprint("}}\n");
+  */
 }
 

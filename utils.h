@@ -58,7 +58,7 @@ char *arrayToString(char result[], const char arr[][SETTING_ENTRY_MAX], int len)
 /**
  * Convert array of char strings to comma-delimited char-based string 
  */
-char *arrayToStringJson(char result[], const char arr[][SETTING_ENTRY_MAX], int len) 
+char *arrayToStringJson(char result[], const char arr[][14], int len) 
 {
   strcpy(result, "[");
   for (int i = 0 ; i < len; i++) {

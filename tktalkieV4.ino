@@ -138,21 +138,28 @@ void startup()
   Serial.println(F("----------------------------------------------\n"));
   
   // make sure we have a profile to load
-  memset(Settings.profile_file, 0, sizeof(Settings.profile_file));
+  //memset(Settings.profile_file, 0, sizeof(Settings.profile_file));
 
+  File file = SD.open("SETTINGS.TXT");
 
   const size_t bufferSize = JSON_ARRAY_SIZE(6) + JSON_OBJECT_SIZE(6) + 120;
   DynamicJsonBuffer jsonBuffer(bufferSize);
   
-  const char* json = "{\"profile\":\"123456789012\",\"access_code\":\"1111111111111111111111111\",\"debug\":1,\"input\":\"both\",\"echo\":0,\"buttons\":[1,2,3,4,5,6]}";
+  //const char* json = "{\"profile\":\"123456789012\",\"access_code\":\"1111111111111111111111111\",\"debug\":1,\"input\":\"both\",\"echo\":0,\"buttons\":[1,2,3,4,5,6]}";
   
-  JsonObject& root = jsonBuffer.parseObject(json);
-  
-  Config.profile = root["profile"]; // "123456789012"
-  Config.access_code = root["access_code"]; // "1111111111111111111111111"
-  Config.debug = root["debug"]; // 1
-  Config.input = root["input"]; // "both"
-  Config.echo = root["echo"]; // 0
+  JsonObject& root = jsonBuffer.parseObject(file);
+
+  if (!root.success()) {
+    Serial.println(F("Failed to read file, using default configuration"));
+  }
+
+  file.close();
+    
+  strlcpy(Config.profile, (root["profile"] | ""), sizeof(Config.profile)); // "123456789012"
+  strlcpy(Config.access_code, (root["access_code"] | "1138"), sizeof(Config.access_code)); // "1111111111111111111111111"
+  Config.debug = (root["debug"] | 0 == 1) ? true : false; // 1
+  strlcpy(Config.input, (root["input"] | "BOTH"), sizeof(Config.input)); // "both"
+  Config.echo = (root["echo"] | 0 == 1) ? true : false; // 0
   
   JsonArray& buttons = root["buttons"];
   Config.buttons[0] = buttons[0]; // 1
@@ -162,38 +169,39 @@ void startup()
   Config.buttons[4] = buttons[4]; // 5
   Config.buttons[5] = buttons[5]; // 6
 
-  debug(F("Got startup value Config.debug: %s\n"), (Config.debug == true ? "true" : "false"));
+  debug(F("Got startup value Config.debug: %s\n"), Config.debug);
   debug(F("Got startup value PROFILE: %s\n"), Config.profile);
-  debug(F("Got startup  value ECHO: %s\n"), (Config.echo == true ? "true" : "false"));
+  debug(F("Got startup  value ECHO: %s\n"), Config.echo);
   if (strcasecmp(Config.input, "") == 0) {
-    Config.input = "BOTH";
+    strlcpy(Config.input, "BOTH", sizeof(Config.input));
   }
   debug(F("Got startup value INPUT TYPE: %s\n"), Config.input);
 
-  Settings.profile_file = Config.profile;
+  //strlcpy(Settings.profile_file, Config.profile, sizeof(Settings.profile_file));
   
-  if (strcasecmp(Settings.profile_file, "") == 0) {
+  if (strcasecmp(Config.profile, "") == 0) {
     // No profile specified, try to find one and load it
-    char files[MAX_FILE_COUNT][SETTING_ENTRY_MAX];
-    total = listFiles(PROFILES_DIR, files, MAX_FILE_COUNT, FILE_EXT, false, false);
+    char files[MAX_FILE_COUNT][14];
+    byte total = listFiles(PROFILES_DIR, files, MAX_FILE_COUNT, FILE_EXT, false, false);
     if (total > 0) {
-      memset(Settings.profile_file, 0, sizeof(Settings.profile_file));
-      strcpy(Settings.profile_file, files[0]);
+      memset(Config.profile, 0, sizeof(Config.profile));
+      strcpy(Config.profile, files[0]);
     } else {
-      debug(F("NO PROFILES LISTED\n"));
+      debug(F("No profiles found\n"));
     }
   }
 
-  if (strcasecmp(Settings.profile_file, "") == 0) {
+  if (strcasecmp(Config.profile, "") == 0) {
     debug(F("NO PROFILE FILE FOUND...USING DEFAULTS!\n"));
+    strlcpy(Config.profile, "DEFAULT.TXT", sizeof(Config.profile));
   } else {
-    debug(F("PROFILE: %s\n"), Settings.profile_file);
+    debug(F("PROFILE: %s\n"), Config.profile);
   }
 
   debug(F("Read access code %s\n"), Config.access_code);
   
   // Load settings from specified file
-  loadSettingsFile();
+  loadSettingsFile(Config.profile);
   
   // Get flange processor ready but keep it off
   flange1.begin(Settings.flange_buffer,Settings.flange_delay*AUDIO_BLOCK_SAMPLES,Settings.flange_offset, Settings.flange_depth, Settings.flange_freq);
@@ -423,9 +431,13 @@ void run() {
       // Check if there is a parameter and process 
       // commands with values first
       if (strcasecmp(cmd_key, "config") == 0) {
-        for (int i = 0; i < STARTUP_SETTINGS_COUNT; i++) {
+        /*
+        for (int i = 0; i < 6; i++) {
           Serial.println(STARTUP_SETTINGS[i]);
         }
+        */
+        Serial.println(Config.profile);
+        Serial.println(Config.debug);
       } else if (strcasecmp(cmd_key, "save") == 0) {
         if (strcasecmp(cmd_val, "") != 0) {
             char *ptr, *pfile, *pname;
@@ -459,9 +471,8 @@ void run() {
       } else if (strcasecmp(cmd_key, "access_code") == 0) {
            if (strcasecmp(cmd_val, "") != 0) {
               memset(Config.access_code, 0, sizeof(Config.access_code));
-              strcpy(Config.access_code, cmd_val);
-              setSettingValue("access_code", Config.access_code);
-              saveSettings();
+              strlcpy(Config.access_code, cmd_val, sizeof(Config.access_code));
+              saveConfig();
           }
       } else if (strcasecmp(cmd_key, "debug") == 0) {
            if (strcasecmp(cmd_val, "") == 0) {
@@ -476,24 +487,16 @@ void run() {
                 strcpy(val, "1");
                 Config.debug = true;
               }
-              setSettingValue("debug", val);
-              saveSettings();
+              saveConfig();
           }
       } else if (strcasecmp(cmd_key, "echo") == 0) {
            if (strcasecmp(cmd_val, "") == 0) {
               Serial.print("ECHO=");
-              Serial.println(ECHO == true ? "1" : "0");
+              Serial.println(Config.echo == true ? "1" : "0");
            } else {
               int i = atoi(cmd_val);
-              char val[2] = "0";
-              if (i == 0) {
-                ECHO = false;
-              } else {
-                strcpy(val, "1");
-                ECHO = true;
-              }
-              setSettingValue("echo", val);
-              saveSettings();
+              Config.echo = i == 1 ? true : false;
+              saveConfig();
           }
       } else if (strcasecmp(cmd_key, "default") == 0) {
           if (strcasecmp(cmd_val, "") == 0) {
@@ -560,11 +563,11 @@ void run() {
       } else if (strcasecmp(cmd_key, "mute") == 0) {
          audioShield.muteHeadphone();
          audioShield.muteLineout();
-         MUTED = true;
+         App.muted = true;
       } else if (strcasecmp(cmd_key, "unmute") == 0) {
          audioShield.unmuteHeadphone();
          audioShield.unmuteLineout();
-         MUTED = false;
+         App.muted = false;
       } else if (strcasecmp(cmd_key, "backup") == 0) {
          if (strcasecmp(cmd_val, "") == 0) {
            strcpy(cmd_val, Settings.profile_file);
@@ -601,36 +604,36 @@ void run() {
           Serial.println(F("--------------------------------------------------------------------------------"));
           Serial.println(F(""));
       } else if (strcasecmp(cmd_key, "files") == 0) {
-          char temp[MAX_FILE_COUNT][SETTING_ENTRY_MAX];
+          char temp[MAX_FILE_COUNT][14];
           listFiles("/", temp, MAX_FILE_COUNT, "", true, true);
       } else if (strcasecmp(cmd_key, "show") == 0) {
           showFile(cmd_val);
       } else if (strcasecmp(cmd_key, "sounds") == 0) {
-          char temp[MAX_FILE_COUNT][SETTING_ENTRY_MAX];
-          int count = listFiles(SOUNDS_DIR, temp, MAX_FILE_COUNT, SOUND_EXT, false, true);
+          char temp[MAX_FILE_COUNT][14];
+          int count = listFiles(Settings.sounds_dir, temp, MAX_FILE_COUNT, SOUND_EXT, false, true);
           if (strcasecmp(cmd_val, "1") == 0) {
             char buffer[1024];
             char *files = arrayToStringJson(buffer, temp, count);
             sendToApp("sounds", files);
           }
       } else if (strcasecmp(cmd_key, "effects") == 0) {
-          char temp[MAX_FILE_COUNT][SETTING_ENTRY_MAX];
-          int count = listFiles(EFFECTS_DIR, temp, MAX_FILE_COUNT, SOUND_EXT, false, true);
+          char temp[MAX_FILE_COUNT][14];
+          int count = listFiles(Settings.effects_dir, temp, MAX_FILE_COUNT, SOUND_EXT, false, true);
           if (strcasecmp(cmd_val, "1") == 0) {
             char buffer[1024];
             char *files = arrayToStringJson(buffer, temp, count);
             sendToApp("effects", files);
           }
       } else if (strcasecmp(cmd_key, "loops") == 0) {
-          char temp[MAX_FILE_COUNT][SETTING_ENTRY_MAX];
-          int count = listFiles(LOOP_DIR, temp, MAX_FILE_COUNT, SOUND_EXT, false, true);
+          char temp[MAX_FILE_COUNT][14];
+          int count = listFiles(Settings.loop_dir, temp, MAX_FILE_COUNT, SOUND_EXT, false, true);
           if (strcasecmp(cmd_val, "1") == 0) {
             char buffer[1024];
             char *files = arrayToStringJson(buffer, temp, count);
             sendToApp("loops", files);
           }
       } else if (strcasecmp(cmd_key, "profiles") == 0) {
-          char temp[MAX_FILE_COUNT][SETTING_ENTRY_MAX];
+          char temp[MAX_FILE_COUNT][14];
           int count = listFiles(PROFILES_DIR, temp, MAX_FILE_COUNT, FILE_EXT, false, false);
           char buffer[1024];
           char *def = getSettingValue(buffer, "profile");
@@ -645,7 +648,7 @@ void run() {
             Serial.println("");
           }
       } else if (strcasecmp(cmd_key, "ls") == 0) {
-          char paths[MAX_FILE_COUNT][SETTING_ENTRY_MAX];
+          char paths[MAX_FILE_COUNT][14];
           char buffer[1024];
           // return a list of directories on the card
           int count = listDirectories("/", paths);
@@ -700,7 +703,7 @@ void run() {
                 if (effectsPlayer.isPlaying()) {
                   effectsPlayer.stop();
                 } else {
-                  char buffer[12];
+                  char buffer[14];
                   char *sound = ControlButtons[i].buttons[whichButton-1].getSound(buffer);
                   Serial.println(sound);
                   playGloveSound(sound);
@@ -736,14 +739,14 @@ void run() {
             // mute  
             case 5:
               {
-                if (MUTED) {
+                if (App.muted) {
                   audioShield.unmuteHeadphone();
                   audioShield.unmuteLineout();
-                  MUTED = false;
+                  App.muted = false;
                 } else {
                   audioShield.muteHeadphone();
                   audioShield.muteLineout();
-                  MUTED = true;  
+                  App.muted = true;  
                 }
               }
               break;
@@ -918,9 +921,9 @@ void run() {
         }  
     }  
 
-    if (App.ptt_button >= 0 && button_initialized == false) {
-      button_initialized = checkPTTButton();
-      if (button_initialized) {
+    if (App.ptt_button >= 0 && App.button_initialized == false) {
+      App.button_initialized = checkPTTButton();
+      if (App.button_initialized) {
         // turn voice on with background noise
         voiceOn();
       }
@@ -928,20 +931,20 @@ void run() {
       ControlButtons[App.ptt_button].update();
     }
     
-    if (App.ptt_button >= 0 && button_initialized) {
+    if (App.ptt_button >= 0 && App.button_initialized) {
 
       float val = 0;
       
       // Check if there is silence.  If not, set a flag so that
       // we don't switch back to Voice Activated mode accidentally ;)
-      if (speaking == true && silent == true) {
+      if (App.speaking == true && App.silent == true) {
           if (rms1.available()) {
             val = rms1.read();
             // This check is here to make sure we don't get false readings
             // when the button click noise is played which would prevent 
             // the switch back to Voice Activated mode
-            if ((val-Settings.Settings.voice_stop) >= .1) {
-              silent = false;
+            if ((val-Settings.voice_stop) >= .1) {
+              App.silent = false;
             }
           }
       }
@@ -949,7 +952,7 @@ void run() {
       // Play notification sound if there has been silence for 2 or 5 seconds:
       //    2 seconds: switching back to VA mode
       //    5 seconds: go into sleep mode
-      if (speaking == true && silent == true && (stopped == 2000 || (stopped == 5000 && App.ptt_button == App.wake_button))) {
+      if (App.speaking == true && App.silent == true && (stopped == 2000 || (stopped == 5000 && App.ptt_button == App.wake_button))) {
           connectSound();
       }
   
@@ -973,12 +976,12 @@ void run() {
       //        it will NOT switch back...or if you talk and pause for 
       //        2 seconds or more it will NOT switch back.
       if (ControlButtons[App.ptt_button].rose()) {
-        if (silent == true && stopped >= 5000 && App.ptt_button == App.wake_button) {
+        if (App.silent == true && stopped >= 5000 && App.ptt_button == App.wake_button) {
           gotoSleep();
           return;
-        } else if (silent == true && stopped >= 2000) {
+        } else if (App.silent == true && stopped >= 2000) {
           voiceOff();
-          button_initialized = false;
+          App.button_initialized = false;
           return;
         } else {
           stopped = 0;
@@ -1006,14 +1009,14 @@ void run() {
 
              debug(F("Voice start: %4f\n"), val);
              
-            // If user is not currently speaking, then they just started talking :)
-            if (speaking == false) {
+            // If user is not currently App.speaking, then they just started talking :)
+            if (App.speaking == false) {
   
               voiceOn();
           
             }
   
-          } else if (speaking == true) {
+          } else if (App.speaking == true) {
 
               debug(F("Voice val: %4f\n"), val);
               

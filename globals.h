@@ -78,16 +78,16 @@ byte lastRnd  = -1;                                       // Keeps track of the 
 
 struct Settings_t {
   char     profile_name[50] = "Default Profile";
-  char     profile_file[12] = "DEFAULT.TXT";
+  char     profile_file[14] = "DEFAULT.TXT";
   float    volume           = 0.5; 
   byte     lineout          = 29; // Valid values 13 to 31. Default teensy setting is 29.
   byte     linein           = 5;  // Value values 0 to 15. Default teensy setting is 5;
   byte     hipass           = 0;  // off by default, 1 = on
   byte     mic_gain         = 3;
-  char     startup_wav[12];
-  char     loop_wav[12];
-  char     button_wav[12];
-  char     sleep_sound[12];
+  char     startup_wav[14];
+  char     loop_wav[14];
+  char     button_wav[14];
+  char     sleep_sound[14];
   byte     audio_input      = AUDIO_INPUT_MIC;
   byte     eq               = 0;
   float    eq_bands[5]      = { -1.0,0,1,0,-1.0 };
@@ -122,20 +122,20 @@ struct Settings_t {
   short  flange_buffer[FX_DELAY*AUDIO_BLOCK_SAMPLES];
   
   char control_button_settings[6][30] = { "0","0","0","0","0","0" };
-  char sound_effects[MAX_FILE_COUNT][12];
+  char sound_effects[MAX_FILE_COUNT][14];
  
 } Settings;
 
 struct Config_t {
-  char profile[12] = "DEFAULT.TXT";
+  char profile[14] = "DEFAULT.TXT";
   // These define the pins the (up to) 6 control buttons can be connected to
 // NOTE:  Only digital pins can be used for waking:
 //        2,4,6,7,9,10,11,13,16,21,22,26,30,33
   byte buttons[6] = {0,0,0,0,0,0};
   boolean debug     = false;          // Set to true to have debug messages printed out...useful for testing
   boolean echo      = false;          // Set to true to have BLE TX/RX messages displayed in serial monitor
-  char input_type[5]         = "BOTH";  // Set to "MIC", "LINE" or "BOTH" (default)
-  char output_type[5]        = "BOTH";  // Set to "SPKR", "LINE" or "BOTH" (default)
+  char input[5]         = "BOTH";  // Set to "MIC", "LINE" or "BOTH" (default)
+  char output[5]        = "BOTH";  // Set to "SPKR", "LINE" or "BOTH" (default)
   char access_code[25] = "1138";      // the password for remote apps to access this device (specified in global settings file)
 } Config;
 

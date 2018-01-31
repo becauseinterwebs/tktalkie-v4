@@ -2,7 +2,7 @@
  * Routines to handle reading/handling settings
  */
 
-void configureButton(byte a) {
+void ConfigureButton(byte a) {
   
     ControlButtons[a].setPTT(false);
     ControlButtons[a].setPin(0);
@@ -17,7 +17,7 @@ void configureButton(byte a) {
       // setup physical button
       ControlButtons[a].setup(pin);
       
-      strcpy(buf, CONTROL_BUTTON_SETTINGS[a]);
+      strcpy(buf, Settings.control_button_settings[a]);
       char *part_token, *part_ptr;
       Serial.print("-- SETTINGS: ");
       Serial.println(buf);
@@ -128,7 +128,7 @@ void configureButton(byte a) {
 }
 
 /***
- * Parse and set a configuration setting
+ * Parse and set a Configuration setting
  */
 void parseSetting(const char *settingName, char *settingValue) 
 {
@@ -138,125 +138,127 @@ void parseSetting(const char *settingName, char *settingValue)
   
   
   if (strcasecmp(settingName, "name") == 0) {
-    memset(PROFILE_NAME, 0, sizeof(PROFILE_NAME));
-    strcpy(PROFILE_NAME, settingValue);
+    memset(Settings.profile_name, 0, sizeof(Settings.profile_name));
+    strcpy(Settings.profile_name, settingValue);
   } else if (strcasecmp(settingName, "volume") == 0) {
-    MASTER_VOLUME = atof(settingValue);  
-    if (MASTER_VOLUME > 1) { 
-      MASTER_VOLUME = 1;
-    } else if (MASTER_VOLUME < 0) {
-      MASTER_VOLUME = 0;
+    Settings.volume = atof(settingValue);  
+    if (Settings.volume > 1) { 
+      Settings.volume = 1;
+    } else if (Settings.volume < 0) {
+      Settings.volume = 0;
     }
     audioShield.volume(readVolume());
   } else if (strcasecmp(settingName, "lineout") == 0) {
-    LINEOUT = (byte)atoi(settingValue);
-    if (LINEOUT < 13) {
-      LINEOUT = 13;  
-    } else if (LINEOUT > 31) {
-      LINEOUT = 31;
+    Settings.lineout = (byte)atoi(settingValue);
+    if (Settings.lineout < 13) {
+      Settings.lineout = 13;  
+    } else if (Settings.lineout > 31) {
+      Settings.lineout = 31;
     }
-    audioShield.lineOutLevel(LINEOUT);
+    audioShield.lineOutLevel(Settings.lineout);
   } else if (strcasecmp(settingName, "linein") == 0) {
-    LINEIN = (byte)atoi(settingValue);
-    if (LINEIN < 0) {
-      LINEIN = 0;  
-    } else if (LINEIN > 15) {
-      LINEIN = 15;
+    Settings.linein = (byte)atoi(settingValue);
+    if (Settings.linein < 0) {
+      Settings.linein = 0;  
+    } else if (Settings.linein > 15) {
+      Settings.linein = 15;
     }  
-    audioShield.lineInLevel(LINEIN);
+    audioShield.lineInLevel(Settings.linein);
   } else if ((strcasecmp(settingName, "high_pass") == 0) || (strcasecmp(settingName, "highpass") == 0)) {
-    HIPASS = (byte)atoi(settingValue);
-    if (HIPASS < 0) { 
-      HIPASS = 0;
-    } else if (HIPASS > 1) {
-      HIPASS = 1;
+    Settings.hipass = (byte)atoi(settingValue);
+    if (Settings.hipass < 0) { 
+      Settings.hipass = 0;
+    } else if (Settings.hipass > 1) {
+      Settings.hipass = 1;
     }
-    if (HIPASS == 0) {
+    if (Settings.hipass == 0) {
       audioShield.adcHighPassFilterDisable();
     } else {
       audioShield.adcHighPassFilterEnable();
     }
   } else if (strcasecmp(settingName, "mic_gain") == 0) {
-    MIC_GAIN = atoi(settingValue);
-    audioShield.micGain(MIC_GAIN);  
+    Settings.mic_gain = atoi(settingValue);
+    audioShield.micGain(Settings.mic_gain);  
   } else if (strcasecmp(settingName, "button_click") == 0) {
-    memset(BUTTON_WAV, 0, sizeof(BUTTON_WAV));
-    strcpy(BUTTON_WAV, settingValue);
+    memset(Settings.button_wav, 0, sizeof(Settings.button_wav));
+    strcpy(Settings.button_wav, settingValue);
   } else if (strcasecmp(settingName, "startup") == 0) {
-    memset(STARTUP_WAV, 0, sizeof(STARTUP_WAV));
-    strcpy(STARTUP_WAV, settingValue);
+    memset(Settings.startup_wav, 0, sizeof(Settings.startup_wav));
+    strcpy(Settings.startup_wav, settingValue);
   } else if (strcasecmp(settingName, "startup_sound") == 0) {
-    memset(STARTUP_WAV, 0, sizeof(STARTUP_WAV));
-    strcpy(STARTUP_WAV, settingValue);  
+    memset(Settings.startup_wav, 0, sizeof(Settings.startup_wav));
+    strcpy(Settings.startup_wav, settingValue);  
   } else if (strcasecmp(settingName, "loop") == 0) {
-    memset(LOOP_WAV, 0, sizeof(LOOP_WAV));
-    strcpy(LOOP_WAV, settingValue);
+    memset(Settings.loop_wav, 0, sizeof(Settings.loop_wav));
+    strcpy(Settings.loop_wav, settingValue);
   } else if (strcasecmp(settingName, "noise_gain") == 0) {
-    NOISE_GAIN = atof(settingValue);
-    effectsMixer.gain(3, NOISE_GAIN);
+    Settings.noise_gain = atof(settingValue);
+    effectsMixer.gain(3, Settings.noise_gain);
   } else if (strcasecmp(settingName, "voice_gain") == 0) {
-    VOICE_GAIN = atof(settingValue);
-    voiceMixer.gain(0, VOICE_GAIN);
-    voiceMixer.gain(1, VOICE_GAIN);
+    Settings.voice_gain = atof(settingValue);
+    voiceMixer.gain(0, Settings.voice_gain);
+    voiceMixer.gain(1, Settings.voice_gain);
   } else if (strcasecmp(settingName, "dry_gain") == 0) {
-    DRY_GAIN = atof(settingValue);  
-    voiceMixer.gain(2, DRY_GAIN);
+    Settings.dry_gain = atof(settingValue);  
+    voiceMixer.gain(2, Settings.dry_gain);
   } else if (strcasecmp(settingName, "effects_gain") == 0) {
-    EFFECTS_GAIN = atof(settingValue);
-    effectsMixer.gain(0, EFFECTS_GAIN);
-    //effectsMixer.gain(1, EFFECTS_GAIN);
+    Settings.effects_gain = atof(settingValue);
+    effectsMixer.gain(0, Settings.effects_gain);
+    //effectsMixer.gain(1, Settings.effects_gain);
     // Waveform (BLE) connect sound
-    effectsMixer.gain(2, EFFECTS_GAIN);
+    effectsMixer.gain(2, Settings.effects_gain);
   } else if (strcasecmp(settingName, "loop_gain") == 0) {
-    LOOP_GAIN = atof(settingValue);
-    if (LOOP_GAIN < 0 or LOOP_GAIN > 32767) {
-      LOOP_GAIN = 4;
+    Settings.loop_gain = atof(settingValue);
+    if (Settings.loop_gain < 0 or Settings.loop_gain > 32767) {
+      Settings.loop_gain = 4;
     }
     // chatter loop from SD card
-    effectsMixer.gain(1, LOOP_GAIN);
-    //loopMixer.gain(0, LOOP_GAIN);
-    //loopMixer.gain(1, LOOP_GAIN);
+    effectsMixer.gain(1, Settings.loop_gain);
+    //loopMixer.gain(0, Settings.loop_gain);
+    //loopMixer.gain(1, Settings.loop_gain);
   } else if (strcasecmp(settingName, "silence_time") == 0) {
-    SILENCE_TIME = atoi(settingValue);
+    Settings.silence_time = atoi(settingValue);
   } else if (strcasecmp(settingName, "voice_start") == 0) {
-    VOICE_START = atof(settingValue);
+    Settings.voice_start = atof(settingValue);
   } else if (strcasecmp(settingName, "voice_stop") == 0) {  
-    VOICE_STOP = atof(settingValue);
+    Settings.voice_stop = atof(settingValue);
   } else if (strcasecmp(settingName, "input") == 0) {
       // This is actually set in the SETTINGS.TXT file but 
       // is here for older systems where there could be 
       // both a line-in and a mic input
-      AUDIO_INPUT = (byte)atoi(settingValue);
-      if (AUDIO_INPUT > 1) {
-        AUDIO_INPUT = 1;
-      } else if (AUDIO_INPUT < 0) {
-        AUDIO_INPUT = 0;
+      /*
+      Config.input = (byte)atoi(settingValue);
+      if (Config.input > 1) {
+        Config.input = 1;
+      } else if (Config.input < 0) {
+        Config.input = 0;
       }
       // tell the audio shield which input to use
-      audioShield.inputSelect(AUDIO_INPUT);
+      audioShield.inputSelect(Config.input);
+      */
   } else if (strcasecmp(settingName, "eq") == 0) {
-    EQ = (byte)atoi(settingValue);
-    if (EQ < 0) {
-      EQ = 0;
-    } else if (EQ > 1) {
-      EQ = 1;
+    Settings.eq = (byte)atoi(settingValue);
+    if (Settings.eq < 0) {
+      Settings.eq = 0;
+    } else if (Settings.eq > 1) {
+      Settings.eq = 1;
     }
     // Turn on the 5-band graphic equalizer (there is also a 7-band parametric...see the Teensy docs)
-    if (EQ == 0) {
+    if (Settings.eq == 0) {
       audioShield.eqSelect(FLAT_FREQUENCY);
     } else {
       audioShield.eqSelect(GRAPHIC_EQUALIZER);
     }  
   } else if (strcasecmp(settingName, "eq_bands") == 0) {
     // clear bands and prep for setting
-    for (int i = 0; i < EQ_BANDS_SIZE; i++) {
-      EQ_BANDS[i] = 0;
+    for (int i = 0; i < 6; i++) {
+      Settings.eq_bands[i] = 0;
     }
     char *band, *ptr;
     band = strtok_r(settingValue, ",", &ptr);
     byte i = 0;
-    while (band && i < EQ_BANDS_SIZE) {
-      EQ_BANDS[i] = atof(band);
+    while (band && i < 6) {
+      Settings.eq_bands[i] = atof(band);
       i++;
       band = strtok_r(NULL, ",", &ptr);
     }
@@ -264,60 +266,60 @@ void parseSetting(const char *settingName, char *settingValue)
     // Valid values are -1 (-11.75dB) to 1 (+12dB)
     // The settings below pull down the lows and highs and push up the mids for 
     // more of a "tin-can" sound.
-    audioShield.eqBands(EQ_BANDS[0], EQ_BANDS[1], EQ_BANDS[2], EQ_BANDS[3], EQ_BANDS[4]);
+    audioShield.eqBands(Settings.eq_bands[0], Settings.eq_bands[1], Settings.eq_bands[2], Settings.eq_bands[3], Settings.eq_bands[4]);
   } else if (strcasecmp(settingName, "bitcrushers") == 0 || strcasecmp(settingName, "bitcrusher") == 0) {
     char *token, *ptr;
     token = strtok_r(settingValue, ",", &ptr);
     byte i = 0;
-    while (token && i < (BITCRUSHER_SIZE+1)) {
-      BITCRUSHER[i] = atoi(token);
+    while (token && i < (3)) {
+      Settings.bitcrusher[i] = atoi(token);
       i++;
       token = strtok_r(NULL, ",", &ptr);
     }
     // You can modify these values to process the voice 
     // input.  See the Teensy bitcrusher demo for details.
-    bitcrusher1.bits(BITCRUSHER[0]);
-    bitcrusher1.sampleRate(BITCRUSHER[1]);
+    bitcrusher1.bits(Settings.bitcrusher[0]);
+    bitcrusher1.sampleRate(Settings.bitcrusher[1]);
   } else if (strcasecmp(settingName, "effects_dir") == 0) {
-    memset(EFFECTS_DIR, 0, sizeof(EFFECTS_DIR));
-    strcpy(EFFECTS_DIR, settingValue);
-    fixPath(EFFECTS_DIR);
+    memset(Settings.effects_dir, 0, sizeof(Settings.effects_dir));
+    strcpy(Settings.effects_dir, settingValue);
+    fixPath(Settings.effects_dir);
     loadSoundEffects();
   } else if (strcasecmp(settingName, "sounds_dir") == 0) {
-    memset(SOUNDS_DIR, 0, sizeof(SOUNDS_DIR));
-    strcpy(SOUNDS_DIR, settingValue);
-    fixPath(SOUNDS_DIR);
+    memset(Settings.sounds_dir, 0, sizeof(Settings.sounds_dir));
+    strcpy(Settings.sounds_dir, settingValue);
+    fixPath(Settings.sounds_dir);
   } else if (strcasecmp(settingName, "loop_dir") == 0) {
-    memset(LOOP_DIR, 0, sizeof(LOOP_DIR));
-    strcpy(LOOP_DIR, settingValue);
-    fixPath(LOOP_DIR);
+    memset(Settings.loop_dir, 0, sizeof(Settings.loop_dir));
+    strcpy(Settings.loop_dir, settingValue);
+    fixPath(Settings.loop_dir);
   } else if (strcasecmp(settingName, "mute_loop") == 0) {
-      MUTE_LOOP = (byte)atoi(settingValue);
-      if (MUTE_LOOP > 1) {
-        MUTE_LOOP = 1;
-      } else if (MUTE_LOOP < 0) {
-        MUTE_LOOP = 0;
+      Settings.mute_loop = (byte)atoi(settingValue);
+      if (Settings.mute_loop > 1) {
+        Settings.mute_loop = 1;
+      } else if (Settings.mute_loop < 0) {
+        Settings.mute_loop = 0;
       }
   } else if (strcasecmp(settingName, "mute_effects") == 0) {
-      MUTE_EFFECTS = (byte)atoi(settingValue);
-      if (MUTE_EFFECTS > 1) {
-        MUTE_EFFECTS = 1;
-      } else if (MUTE_EFFECTS < 0) {
-        MUTE_EFFECTS = 0;
+      Settings.mute_effects = (byte)atoi(settingValue);
+      if (Settings.mute_effects > 1) {
+        Settings.mute_effects = 1;
+      } else if (Settings.mute_effects < 0) {
+        Settings.mute_effects = 0;
       }
   } else if (strcasecmp(settingName, "sleep_time") == 0) {
-      SLEEP_TIME = (byte)atoi(settingValue);
-      if (SLEEP_TIME < 0) {
-        SLEEP_TIME = 0;
+      Settings.sleep_time = (byte)atoi(settingValue);
+      if (Settings.sleep_time < 0) {
+        Settings.sleep_time = 0;
       }
   } else if (strcasecmp(settingName, "sleep_sound") == 0) {
-      memset(SLEEP_SOUND, 0, sizeof(SLEEP_SOUND));
-      strcpy(SLEEP_SOUND, settingValue);
+      memset(Settings.sleep_sound, 0, sizeof(Settings.sleep_sound));
+      strcpy(Settings.sleep_sound, settingValue);
   } else if (strcasecmp(settingName, "chorus") == 0) {
       if (strcasecmp(settingValue, "0") == 0) {
         chorus1.voices(0);
       } else if (strcasecmp(settingValue, "1") == 0) {
-        chorus1.voices(CHORUS_VOICES);
+        chorus1.voices(Settings.chorus_voices);
       } else {
         char *token, *ptr;
         token = strtok_r(settingValue, ",", &ptr);
@@ -325,94 +327,94 @@ void parseSetting(const char *settingName, char *settingValue)
         while (token && i < 3) {
           switch (i) {
             case 0:
-              CHORUS_DELAY = (byte)atoi(token);
+              Settings.chorus_delay = (byte)atoi(token);
               break;
             case 1:
-              CHORUS_VOICES = (byte)atoi(token);
+              Settings.chorus_voices = (byte)atoi(token);
               break;
           }
           i++;
           token = strtok_r(NULL, ",", &ptr);
         }  
-        if (CHORUS_DELAY > 32) {
-          CHORUS_DELAY = 32;
+        if (Settings.chorus_delay > 32) {
+          Settings.chorus_delay = 32;
         }
-        if (CHORUS_DELAY < 1) {
-          CHORUS_DELAY = 1;
+        if (Settings.chorus_delay < 1) {
+          Settings.chorus_delay = 1;
         }
-        if (CHORUS_VOICES < 0) {
-          CHORUS_VOICES = 0;
+        if (Settings.chorus_voices < 0) {
+          Settings.chorus_voices = 0;
         }
-        if(!chorus1.begin(CHORUS_BUFFER,CHORUS_DELAY*AUDIO_BLOCK_SAMPLES,CHORUS_VOICES)) {
+        if(!chorus1.begin(Settings.chorus_buffer,Settings.chorus_delay*AUDIO_BLOCK_SAMPLES,Settings.chorus_voices)) {
            Serial.println("chorus: startup failed");
         }
       }
   } else if (strcasecmp(settingName, "chorus_delay") == 0) {
-      CHORUS_DELAY = (byte)atoi(settingValue);
-      if (CHORUS_DELAY > 32) {
-        CHORUS_DELAY = 32;
+      Settings.chorus_delay = (byte)atoi(settingValue);
+      if (Settings.chorus_delay > 32) {
+        Settings.chorus_delay = 32;
       }
-      if (CHORUS_DELAY < 1) {
-        CHORUS_DELAY = 1;
+      if (Settings.chorus_delay < 1) {
+        Settings.chorus_delay = 1;
       }
-      if(!chorus1.begin(CHORUS_BUFFER,CHORUS_DELAY * AUDIO_BLOCK_SAMPLES,CHORUS_VOICES)) {
+      if(!chorus1.begin(Settings.chorus_buffer,Settings.chorus_delay * AUDIO_BLOCK_SAMPLES,Settings.chorus_voices)) {
          Serial.println("chorus_delay: Startup failed");
       }
   } else if (strcasecmp(settingName, "chorus_voices") == 0) {
-      CHORUS_VOICES = (byte)atoi(settingValue);
-      if (CHORUS_VOICES < 0) {
-        CHORUS_VOICES = 0;
+      Settings.chorus_voices = (byte)atoi(settingValue);
+      if (Settings.chorus_voices < 0) {
+        Settings.chorus_voices = 0;
       }
-      chorus1.voices(CHORUS_VOICES);
+      chorus1.voices(Settings.chorus_voices);
   } else if (strcasecmp(settingName, "flange_delay") == 0) {
-      FLANGE_DELAY = (byte)atoi(settingValue);
-      if (FLANGE_DELAY > 32) {
-        FLANGE_DELAY = 32;
+      Settings.flange_delay = (byte)atoi(settingValue);
+      if (Settings.flange_delay > 32) {
+        Settings.flange_delay = 32;
       }
-      if (FLANGE_DELAY < 0) {
-        FLANGE_DELAY = 0;
+      if (Settings.flange_delay < 0) {
+        Settings.flange_delay = 0;
       }
-      flange1.begin(FLANGE_BUFFER,FLANGE_DELAY*AUDIO_BLOCK_SAMPLES,FLANGE_OFFSET,FLANGE_DEPTH,FLANGE_FREQ);    
+      flange1.begin(Settings.flange_buffer,Settings.flange_delay*AUDIO_BLOCK_SAMPLES,Settings.flange_offset,Settings.flange_depth,Settings.flange_freq);    
   } else if (strcasecmp(settingName, "flange_freq") == 0) {
-      FLANGE_FREQ = atof(settingValue);
-      if (FLANGE_FREQ < 0) {
-        FLANGE_FREQ = 0;
+      Settings.flange_freq = atof(settingValue);
+      if (Settings.flange_freq < 0) {
+        Settings.flange_freq = 0;
       }
-      if (FLANGE_FREQ > 10) {
-        FLANGE_FREQ = 10;
+      if (Settings.flange_freq > 10) {
+        Settings.flange_freq = 10;
       }
-      flange1.voices(FLANGE_OFFSET,FLANGE_DEPTH,FLANGE_FREQ);
+      flange1.voices(Settings.flange_offset,Settings.flange_depth,Settings.flange_freq);
   } else if (strcasecmp(settingName, "flange_depth") == 0) {
-      FLANGE_DEPTH = (byte)atoi(settingValue);
-      if (FLANGE_DEPTH < 0) {
-        FLANGE_DEPTH = 0;
+      Settings.flange_depth = (byte)atoi(settingValue);
+      if (Settings.flange_depth < 0) {
+        Settings.flange_depth = 0;
       }
-      if (FLANGE_DEPTH > 255) {
-        FLANGE_DEPTH = 255;
+      if (Settings.flange_depth > 255) {
+        Settings.flange_depth = 255;
       }
-      flange1.voices(FLANGE_OFFSET,FLANGE_DEPTH,FLANGE_FREQ);
+      flange1.voices(Settings.flange_offset,Settings.flange_depth,Settings.flange_freq);
   } else if (strcasecmp(settingName, "flange_idx") == 0) {
-      FLANGE_OFFSET = (byte)atoi(settingValue);// * FLANGE_DELAY_LENGTH;
-      if (FLANGE_OFFSET < 1) {
-        FLANGE_OFFSET = 1;
+      Settings.flange_offset = (byte)atoi(settingValue);// * Settings.flange_delay_LENGTH;
+      if (Settings.flange_offset < 1) {
+        Settings.flange_offset = 1;
       }
-      if (FLANGE_OFFSET > 128) {
-        FLANGE_OFFSET = 128;
+      if (Settings.flange_offset > 128) {
+        Settings.flange_offset = 128;
       }
-      flange1.voices(FLANGE_OFFSET,FLANGE_DEPTH,FLANGE_FREQ);
+      flange1.voices(Settings.flange_offset,Settings.flange_depth,Settings.flange_freq);
   } else if (strcasecmp(settingName, "flange") == 0) {
       if (strcasecmp(settingValue, "0") == 0) {
-        flange1.voices(FLANGE_DELAY_PASSTHRU,0,0);
+        flange1.voices(Settings.FLANGE_DELAY_PASSTHRU,0,0);
       } else if (strcasecmp(settingValue, "1") == 0) {
-        flange1.voices(FLANGE_OFFSET,FLANGE_DEPTH,FLANGE_FREQ);
+        flange1.voices(Settings.flange_offset,Settings.flange_depth,Settings.flange_freq);
       }
   } else if (strcasecmp(settingName, "button") == 0) {
       char *token, *ptr;
       token = strtok_r(settingValue, ",", &ptr);
       byte b = (byte)atoi(token);
       if (b >= 0 && b <= 5) {
-        strcpy(CONTROL_BUTTON_SETTINGS[b], ptr);
-        configureButton(b);
+        strcpy(Settings.control_button_settings[b], ptr);
+        ConfigureButton(b);
       }
     
   } else if (strcasecmp(settingName, "buttons") == 0) {
@@ -420,8 +422,8 @@ void parseSetting(const char *settingName, char *settingValue)
       token = strtok_r(settingValue, "|", &ptr);
       byte a = 0;
       while (token && a < 6) {
-        strcpy(CONTROL_BUTTON_SETTINGS[a], token);
-        configureButton(a);
+        strcpy(Settings.control_button_settings[a], token);
+        ConfigureButton(a);
         token = strtok_r(NULL, "|", &ptr);
         a++;
       }
@@ -436,79 +438,79 @@ void parseSetting(const char *settingName, char *settingValue)
 char *settingsToJson(char result[]) 
 {
 
-  const char str_template[12] = "\"%s\":\"%s\"";
-  const char num_template[12] = "\"%s\":%s";
+  const char str_template[14] = "\"%s\":\"%s\"";
+  const char num_template[14] = "\"%s\":%s";
   char buf[20];
   char tmp[100];
 
-  sprintf(tmp, str_template, "name", PROFILE_NAME);
+  sprintf(tmp, str_template, "name", Settings.profile_name);
   strcpy(result, tmp);
   strcat(result, ",");
 
-  dtostrf(MASTER_VOLUME, 0, 4, buf);
+  dtostrf(Settings.volume, 0, 4, buf);
   sprintf(tmp, num_template, "volume", buf);
   strcat(result, tmp);
   strcat(result, ",");
 
-  sprintf(buf, "%d", MIC_GAIN);
+  sprintf(buf, "%d", Settings.mic_gain);
   sprintf(tmp, num_template, "mic_gain", buf);
   strcat(result, tmp);
   strcat(result, ",");
   
-  sprintf(buf, "%d", LINEIN);
+  sprintf(buf, "%d", Settings.linein);
   sprintf(tmp, num_template, "linein", buf);
   strcat(result, tmp);
   strcat(result, ",");
 
-  sprintf(buf, "%d", LINEOUT);
+  sprintf(buf, "%d", Settings.lineout);
   sprintf(tmp, num_template, "lineout", buf);
   strcat(result, tmp);
   strcat(result, ",");
 
-  sprintf(tmp, str_template, "startup", STARTUP_WAV);
+  sprintf(tmp, str_template, "startup", Settings.startup_wav);
   strcat(result, tmp);
   strcat(result, ",");
 
-  sprintf(tmp, str_template, "loop", LOOP_WAV);
+  sprintf(tmp, str_template, "loop", Settings.loop_wav);
   strcat(result, tmp);
   strcat(result, ",");
 
-  dtostrf(LOOP_GAIN, 0, 4, buf);
+  dtostrf(Settings.loop_gain, 0, 4, buf);
   sprintf(tmp, num_template, "loop_gain", buf);
   strcat(result, tmp);
   strcat(result, ",");
   
-  sprintf(buf, "%d", HIPASS);
+  sprintf(buf, "%d", Settings.hipass);
   sprintf(tmp, num_template, "high_pass", buf);
   strcat(result, tmp);
   strcat(result, ",");
   
-  dtostrf(VOICE_GAIN, 0, 4, buf);
+  dtostrf(Settings.voice_gain, 0, 4, buf);
   sprintf(tmp, num_template, "voice_gain", buf);
   strcat(result, tmp);
   strcat(result, ",");
 
-  dtostrf(DRY_GAIN, 0, 4, buf);
+  dtostrf(Settings.dry_gain, 0, 4, buf);
   sprintf(tmp, num_template, "dry_gain", buf);
   strcat(result, tmp);
   strcat(result, ",");
   
-  dtostrf(DRY_GAIN, 0, 4, buf);
+  dtostrf(Settings.dry_gain, 0, 4, buf);
   sprintf(tmp, num_template, "dry_gain", buf);
   strcat(result, tmp);
   strcat(result, ",");
   
-  dtostrf(VOICE_START, 0, 4, buf);
+  dtostrf(Settings.voice_start, 0, 4, buf);
   sprintf(tmp, num_template, "voice_start", buf);
   strcat(result, tmp);
   strcat(result, ",");
   
-  dtostrf(VOICE_STOP, 0, 4, buf);
+  dtostrf(Settings.voice_stop, 0, 4, buf);
   sprintf(tmp, num_template, "voice_stop", buf);
   strcat(result, tmp);
   strcat(result, ",");
   
-  sprintf(buf, "%d", SILENCE_TIME);
+  sprintf(buf, "%d", Settings.silence_time);
   sprintf(tmp, num_template, "silence_time", buf);
   strcat(result, tmp);
   strcat(result, ",");
@@ -519,102 +521,102 @@ char *settingsToJson(char result[])
   strcat(result, tmp);
   strcat(result, ",");
   */
-  sprintf(tmp, str_template, "button_click", BUTTON_WAV);
+  sprintf(tmp, str_template, "button_click", Settings.button_wav);
   strcat(result, tmp);
   strcat(result, ",");
   
-  sprintf(buf, "%d", AUDIO_INPUT);
+  sprintf(buf, "%d", Config.input);
   sprintf(tmp, num_template, "input", buf);
   strcat(result, tmp);
   strcat(result, ",");
   
-  dtostrf(EFFECTS_GAIN, 0, 4, buf);
+  dtostrf(Settings.effects_gain, 0, 4, buf);
   sprintf(tmp, num_template, "effects_gain", buf);
   strcat(result, tmp);
   strcat(result, ",");
 
-  sprintf(buf, "%d", EQ);
+  sprintf(buf, "%d", Settings.eq);
   sprintf(tmp, num_template, "eq", buf);
   strcat(result, tmp);
   strcat(result, ",");
 
   char buffer[SETTING_ENTRY_MAX];
-  char *bands = arrayToString(buffer, EQ_BANDS, EQ_BANDS_SIZE);
+  char *bands = arrayToString(buffer, Settings.eq_bands, 6);
   sprintf(tmp, str_template, "eq_bands", bands);
   strcat(result, tmp);
   strcat(result, ",");
   memset(buffer, 0, sizeof(buffer));
   
-  char *bitcrushers = arrayToString(buffer, BITCRUSHER, BITCRUSHER_SIZE);
+  char *bitcrushers = arrayToString(buffer, Settings.bitcrusher, 3);
   sprintf(tmp, str_template, "bitcrushers", bitcrushers);
   strcat(result, tmp);
   strcat(result, ",");
   memset(buffer, 0, sizeof(buffer));
   
-  dtostrf(NOISE_GAIN, 0, 4, buf);
+  dtostrf(Settings.noise_gain, 0, 4, buf);
   sprintf(tmp, num_template, "noise_gain", buf);
   strcat(result, tmp);
   strcat(result, ",");
 
-  sprintf(tmp, str_template, "effects_dir", EFFECTS_DIR);
+  sprintf(tmp, str_template, "effects_dir", Settings.effects_dir);
   strcat(result, tmp);
   strcat(result, ",");
 
-  sprintf(tmp, str_template, "sounds_dir", SOUNDS_DIR);
+  sprintf(tmp, str_template, "sounds_dir", Settings.sounds_dir);
   strcat(result, tmp);
   strcat(result, ",");
 
-  sprintf(tmp, str_template, "loop_dir", LOOP_DIR);
+  sprintf(tmp, str_template, "loop_dir", Settings.loop_dir);
   strcat(result, tmp);
   strcat(result, ",");
 
-  sprintf(buf, "%d", MUTE_LOOP);
+  sprintf(buf, "%d", Settings.mute_loop);
   sprintf(tmp, num_template, "mute_loop", buf);
   strcat(result, tmp);
 
   if (APP_VER > 1.13) {
-    sprintf(buf, "%d", MUTE_EFFECTS);
+    sprintf(buf, "%d", Settings.mute_effects);
     sprintf(tmp, num_template, "mute_effects", buf);
     strcat(result, tmp);
   }
 
   if (APP_VER > 1.14) {
     strcat(result, ",");
-    sprintf(buf, "%d", SLEEP_TIME);
+    sprintf(buf, "%d", Settings.sleep_time);
     sprintf(tmp, num_template, "sleep_time", buf);
     strcat(result, tmp);
     strcat(result, ",");
     
-    sprintf(tmp, str_template, "sleep_sound", SLEEP_SOUND);
+    sprintf(tmp, str_template, "sleep_sound", Settings.sleep_sound);
     strcat(result, tmp);
     strcat(result, ",");
 
-    sprintf(buf, "%d", CHORUS_DELAY);
+    sprintf(buf, "%d", Settings.chorus_delay);
     sprintf(tmp, num_template, "chorus_delay", buf);
     strcat(result, tmp);
     strcat(result, ",");
 
-    sprintf(buf, "%d", CHORUS_VOICES);
+    sprintf(buf, "%d", Settings.chorus_voices);
     sprintf(tmp, num_template, "chorus_voices", buf);
     strcat(result, tmp);
     strcat(result, ",");
 
-    sprintf(buf, "%d", FLANGE_DELAY);
+    sprintf(buf, "%d", Settings.flange_delay);
     sprintf(tmp, num_template, "flange_delay", buf);
     strcat(result, tmp);
     strcat(result, ",");
 
-    sprintf(buf, "%d", FLANGE_OFFSET);
+    sprintf(buf, "%d", Settings.flange_offset);
     sprintf(tmp, num_template, "flange_offset", buf);
     strcat(result, tmp);
     strcat(result, ",");
     
-    sprintf(buf, "%d", FLANGE_DEPTH);
+    sprintf(buf, "%d", Settings.flange_depth);
     sprintf(tmp, num_template, "flange_depth", buf);
     strcat(result, tmp);
     strcat(result, ",");
 
-    dtostrf(FLANGE_FREQ, 0, 4, buf);
+    dtostrf(Settings.flange_freq, 0, 4, buf);
     sprintf(tmp, num_template, "flange_freq", buf);
     strcat(result, tmp);
 /*
@@ -628,7 +630,7 @@ char *settingsToJson(char result[])
     strcat(result, "],\"settings\":[");
     for (byte i = 0; i < 6; i++) {
       strcat(result, "\"");
-      strcat(result, CONTROL_BUTTON_SETTINGS[i]);
+      strcat(result, Settings.control_button_settings[i]);
       strcat(result, "\"");
       if (i < 5) {
         strcat(result, ","); 
@@ -653,75 +655,75 @@ char *settingsToString(char result[])
   char buf[SETTING_ENTRY_MAX];
 
   strcpy(result, "[name=");
-  strcat(result, PROFILE_NAME);
+  strcat(result, Settings.profile_name);
   strcat(result, "]\n");
 
-  if (MASTER_VOLUME > 0) {
+  if (Settings.volume > 0) {
     strcat(result, "[volume=");
-    dtostrf(MASTER_VOLUME, 0, 4, buf);
+    dtostrf(Settings.volume, 0, 4, buf);
     strcat(result, buf);
     strcat(result, "]\n");
     memset(buf, 0, sizeof(buf));
   }
 
   strcat(result, "[linein=");
-  sprintf(buf, "%d", LINEIN);
+  sprintf(buf, "%d", Settings.linein);
   strcat(result, buf);
   strcat(result, "]\n");
   memset(buf, 0, sizeof(buf));
 
   strcat(result, "[lineout=");
-  sprintf(buf, "%d", LINEOUT);
+  sprintf(buf, "%d", Settings.lineout);
   strcat(result, buf);
   strcat(result, "]\n");
   memset(buf, 0, sizeof(buf));
 
   strcat(result, "[startup=");
-  strcat(result, STARTUP_WAV);
+  strcat(result, Settings.startup_wav);
   strcat(result, "]\n");
 
   strcat(result, "[loop=");
-  strcat(result, LOOP_WAV);
+  strcat(result, Settings.loop_wav);
   strcat(result, "]\n");
 
   strcat(result, "[loop_gain=");
-  dtostrf(LOOP_GAIN, 0, 4, buf);
+  dtostrf(Settings.loop_gain, 0, 4, buf);
   strcat(result, buf);
   strcat(result, "]\n");
   memset(buf, 0, sizeof(buf));  
 
   strcat(result, "[high_pass=");
-  sprintf(buf, "%d", HIPASS);
+  sprintf(buf, "%d", Settings.hipass);
   strcat(result, buf);
   strcat(result, "]\n");
   memset(buf, 0, sizeof(buf));
 
   strcat(result, "[voice_gain=");
-  dtostrf(VOICE_GAIN, 0, 4, buf);
+  dtostrf(Settings.voice_gain, 0, 4, buf);
   strcat(result, buf);
   strcat(result, "]\n");
   memset(buf, 0, sizeof(buf));
 
   strcat(result, "[dry_gain=");
-  dtostrf(DRY_GAIN, 0, 4, buf);
+  dtostrf(Settings.dry_gain, 0, 4, buf);
   strcat(result, buf);
   strcat(result, "]\n");
   memset(buf, 0, sizeof(buf));
   
   strcat(result, "[voice_start=");
-  dtostrf(VOICE_START, 0, 4, buf);
+  dtostrf(Settings.voice_start, 0, 4, buf);
   strcat(result, buf);
   strcat(result, "]\n");
   memset(buf, 0, sizeof(buf));
 
   strcat(result, "[voice_stop=");
-  dtostrf(VOICE_STOP, 0, 4, buf);
+  dtostrf(Settings.voice_stop, 0, 4, buf);
   strcat(result, buf);
   strcat(result, "]\n");
 
   memset(buf, 0, sizeof(buf));
   strcat(result, "[silence_time=");
-  sprintf(buf, "%d", SILENCE_TIME);
+  sprintf(buf, "%d", Settings.silence_time);
   strcat(result, buf);
   strcat(result, "]\n");
   memset(buf, 0, sizeof(buf));
@@ -734,126 +736,126 @@ char *settingsToString(char result[])
   memset(buf, 0, sizeof(buf));
 */
   strcat(result, "[button_click=");
-  strcat(result, BUTTON_WAV);
+  strcat(result, Settings.button_wav);
   strcat(result, "]\n");
 
   strcat(result, "[input=");
-  sprintf(buf, "%d", AUDIO_INPUT);
+  sprintf(buf, "%d", Config.input);
   strcat(result, buf);
   strcat(result, "]\n");
   memset(buf, 0, sizeof(buf));
 
   strcat(result, "[mic_gain=");
-  sprintf(buf, "%d", MIC_GAIN);
+  sprintf(buf, "%d", Settings.mic_gain);
   strcat(result, buf);
   strcat(result, "]\n");
   memset(buf, 0, sizeof(buf));
 
   strcat(result, "[effects_gain=");
-  dtostrf(EFFECTS_GAIN, 0, 4, buf);
+  dtostrf(Settings.effects_gain, 0, 4, buf);
   strcat(result, buf);
   strcat(result, "]\n");
   memset(buf, 0, sizeof(buf));
 
   strcat(result, "[eq=");
-  sprintf(buf, "%d", EQ);
+  sprintf(buf, "%d", Settings.eq);
   strcat(result, buf);
   strcat(result, "]\n");
   memset(buf, 0, sizeof(buf));
 
   strcat(result, "[eq_bands=");
-  char *bands = arrayToString(buf, EQ_BANDS, EQ_BANDS_SIZE);
+  char *bands = arrayToString(buf, Settings.eq_bands, 6);
   strcat(result, bands);
   strcat(result, "]\n");
   memset(buf, 0, sizeof(buf));
 
   strcat(result, "[bitcrushers=");
-  char *bitcrushers = arrayToString(buf, BITCRUSHER, BITCRUSHER_SIZE); 
+  char *bitcrushers = arrayToString(buf, Settings.bitcrusher, 3); 
   strcat(result, bitcrushers);
   strcat(result, "]\n");
   memset(buf, 0, sizeof(buf));
 
   strcat(result, "[noise_gain=");
-  dtostrf(NOISE_GAIN, 0, 4, buf);
+  dtostrf(Settings.noise_gain, 0, 4, buf);
   strcat(result, buf);
   strcat(result, "]\n");
   memset(buf, 0, sizeof(buf));
 
   strcat(result, "[effects_dir=");
-  strcat(result, EFFECTS_DIR);
+  strcat(result, Settings.effects_dir);
   strcat(result, "]\n");
 
   strcat(result, "[sounds_dir=");
-  strcat(result, SOUNDS_DIR);
+  strcat(result, Settings.sounds_dir);
   strcat(result, "]\n");
 
   strcat(result, "[loop_dir=");
-  strcat(result, LOOP_DIR);
+  strcat(result, Settings.loop_dir);
   strcat(result, "]\n");
 
   strcat(result, "[mute_loop=");
-  sprintf(buf, "%d", MUTE_LOOP);
+  sprintf(buf, "%d", Settings.mute_loop);
   strcat(result, buf);
   strcat(result, "]\n");
   memset(buf, 0, sizeof(buf));
 
   strcat(result, "[mute_effects=");
-  sprintf(buf, "%d", MUTE_EFFECTS);
+  sprintf(buf, "%d", Settings.mute_effects);
   strcat(result, buf);
   strcat(result, "]\n");
   memset(buf, 0, sizeof(buf));
 
   strcat(result, "[sleep_time=");
-  sprintf(buf, "%d", SLEEP_TIME);
+  sprintf(buf, "%d", Settings.sleep_time);
   strcat(result, buf);
   strcat(result, "]\n");
   memset(buf, 0, sizeof(buf));
 
   strcat(result, "[sleep_sound=");
-  strcat(result, SLEEP_SOUND);
+  strcat(result, Settings.sleep_sound);
   strcat(result, "]\n");
   memset(buf, 0, sizeof(buf));
 
   strcat(result, "[chorus_delay=");
-  sprintf(buf, "%d", CHORUS_DELAY);
+  sprintf(buf, "%d", Settings.chorus_delay);
   strcat(result, buf);
   strcat(result, "]\n");
   memset(buf, 0, sizeof(buf));
 
   strcat(result, "[chorus_voices=");
-  sprintf(buf, "%d", CHORUS_VOICES);
+  sprintf(buf, "%d", Settings.chorus_voices);
   strcat(result, buf);
   strcat(result, "]\n");
   memset(buf, 0, sizeof(buf));
 
   strcat(result, "[flange_delay=");
-  sprintf(buf, "%d", FLANGE_DELAY);
+  sprintf(buf, "%d", Settings.flange_delay);
   strcat(result, buf);
   strcat(result, "]\n");
   memset(buf, 0, sizeof(buf));
 
   strcat(result, "[flange_offset=");
-  sprintf(buf, "%d", FLANGE_OFFSET);
+  sprintf(buf, "%d", Settings.flange_offset);
   strcat(result, buf);
   strcat(result, "]\n");
   memset(buf, 0, sizeof(buf));
 
   strcat(result, "[flange_depth=");
-  sprintf(buf, "%d", FLANGE_DEPTH);
+  sprintf(buf, "%d", Settings.flange_depth);
   strcat(result, buf);
   strcat(result, "]\n");
   memset(buf, 0, sizeof(buf));
 
   strcat(result, "[flange_freq=");
-  dtostrf(FLANGE_FREQ, 0, 4, buf);
+  dtostrf(Settings.flange_freq, 0, 4, buf);
   strcat(result, buf);
   strcat(result, "]\n");
   memset(buf, 0, sizeof(buf));
 
   strcat(result, "[buttons=");
   for (byte i=0; i<6; i++) {
-    Serial.println(CONTROL_BUTTON_SETTINGS[i]);
-    strcpy(buf, CONTROL_BUTTON_SETTINGS[i]);
+    Serial.println(Settings.control_button_settings[i]);
+    strcpy(buf, Settings.control_button_settings[i]);
     strcat(result, buf);
     if (i<5) {
       strcat(result, "|");
@@ -869,9 +871,10 @@ char *settingsToString(char result[])
  */
 void setSettingValue(const char *key, const char *newValue)
 {
+  /*
    int index = -1;
    char newKey[SETTING_ENTRY_MAX];
-   for (int i = 0; i < STARTUP_SETTINGS_COUNT; i++) {
+   for (int i = 0; i < 6; i++) {
     char data[SETTING_ENTRY_MAX];
     strcpy(data, STARTUP_SETTINGS[i]);
     if (strcasecmp(data, "") != 0) {
@@ -889,7 +892,7 @@ void setSettingValue(const char *key, const char *newValue)
   } 
 
   // This shouldn't happen, but just in case ;)
-  if (index > STARTUP_SETTINGS_COUNT - 1) {
+  if (index > 6 - 1) {
     Serial.println("Invalid setting index!");
     return;
   }
@@ -901,7 +904,7 @@ void setSettingValue(const char *key, const char *newValue)
   strcat(buf, newValue);
   memset(STARTUP_SETTINGS[index], 0, SETTING_ENTRY_MAX);
   strcpy(STARTUP_SETTINGS[index], buf);  
-  
+  */
 }
 
 /**
@@ -910,8 +913,9 @@ void setSettingValue(const char *key, const char *newValue)
 char *getSettingValue(char result[], const char *key) 
 {
     debug(F("Get setting: %s\n"), key);
-    
-    for (int i = 0; i < STARTUP_SETTINGS_COUNT; i++) {
+
+    /*
+    for (int i = 0; i < 6; i++) {
       char setting[SETTING_ENTRY_MAX] = "";
       strcpy(setting, STARTUP_SETTINGS[i]);
       if (strcasecmp(setting, "") != 0) {
@@ -928,16 +932,66 @@ char *getSettingValue(char result[], const char *key)
     debug(F("Return value %s\n"), result);
 
     return result;
+    */
 }
 
 /**
  * Save startup settings
  */
-boolean saveSettings() {
-  debug(F("Saving config data:\n"));
-  File srcFile = openFile(SETTINGS_FILE, FILE_WRITE);
+boolean saveConfig() {
+
+  const char filename[13] = "SETTINGS.TXT";
+  
+  debug(F("Saving Config data\n"));
+  
+  // Delete existing file, otherwise the Configuration is appended to the file
+  SD.remove(filename);
+
+  // Open file for writing
+  File file = SD.open(filename, FILE_WRITE);
+  if (!file) {
+    Serial.println(F("Failed to create file"));
+    return false;
+  }
+
+  // Allocate the memory pool on the stack
+  // Don't forget to change the capacity to match your JSON document.
+  // Use https://arduinojson.org/assistant/ to compute the capacity.
+  const size_t bufferSize = JSON_ARRAY_SIZE(6) + JSON_OBJECT_SIZE(6) + 120;
+  DynamicJsonBuffer jsonBuffer(bufferSize);
+
+  // Parse the root object
+  JsonObject &root = jsonBuffer.createObject();
+
+  // Set the values
+  root["profile"] = Config.profile;
+  root["access_code"] = Config.access_code;
+  root["debug"] = Config.debug == true ? 1 : 0;
+  root["echo"] = Config.echo == true ? 1 : 0;
+  root["input"] = Config.input;
+
+  JsonArray& buttons = root.createNestedArray("buttons");
+  buttons.add(Config.buttons[0]);
+  buttons.add(Config.buttons[1]);
+  buttons.add(Config.buttons[2]);
+  buttons.add(Config.buttons[3]);
+  buttons.add(Config.buttons[4]);
+  buttons.add(Config.buttons[5]);
+
+  // Serialize JSON to file
+  if (root.printTo(file) == 0) {
+    Serial.println(F("Failed to write to file"));
+    file.close();
+    return false;
+  }
+
+  // Close the file (File's destructor doesn't close the file)
+  file.close();
+  return true;
+  /*
+  File srcFile = openFile("SETTINGS.TXT", FILE_WRITE);
   if (srcFile) {
-    for (int i = 0; i < STARTUP_SETTINGS_COUNT; i++) {
+    for (int i = 0; i < 6; i++) {
       debug(F("%d: %s\n"), i, STARTUP_SETTINGS[i]);
       srcFile.print("[");
       srcFile.print(STARTUP_SETTINGS[i]);
@@ -951,6 +1005,7 @@ boolean saveSettings() {
     beep(4);
     return false;
   }
+  */
 }
 
 /**
@@ -961,7 +1016,7 @@ boolean saveSettingsFile(const char *src, const boolean backup = true)
   char filename[SETTING_ENTRY_MAX];
   boolean result = false;
   if (strcasecmp(src, "") == 0) {
-    strcpy(filename, PROFILE_FILE);
+    strcpy(filename, Settings.profile_file);
   } else {
     strcpy(filename, src);
   }
@@ -1024,13 +1079,13 @@ boolean setDefaultProfile(char *filename)
 {
     addFileExt(filename);
     debug(F("Setting default profile to %s\n"), filename);
-    char profiles[MAX_FILE_COUNT][SETTING_ENTRY_MAX];
+    char profiles[MAX_FILE_COUNT][14];
     int total = listFiles(PROFILES_DIR, profiles, MAX_FILE_COUNT, FILE_EXT, false, false);
     boolean result = false;
     boolean found = false;
     for (int i = 0; i < total; i++) {
       if (strcasecmp(profiles[i], filename) == 0) {
-        setSettingValue("profile", filename);
+        strlcpy(Config.profile, filename, sizeof(Config.profile));
         found = true;
         break;
       }
@@ -1038,7 +1093,7 @@ boolean setDefaultProfile(char *filename)
 
     // save results to file if entry was not found
     if (found == true) {
-      result = saveSettings();
+      result = saveConfig();
     } else {
       debug(F("Filename was not an existing profile\n"));
     }  
@@ -1064,7 +1119,7 @@ boolean deleteProfile(char *filename)
   strcat(path, filename);
   debug(F("Deleting file %s\n"), path);
   // can't delete current profile
-  if (strcasecmp(filename, PROFILE_FILE) == 0){
+  if (strcasecmp(filename, Settings.profile_file) == 0){
     debug(F("Cannot delete current profile\n"));
     result = false;
   } else {
@@ -1073,11 +1128,9 @@ boolean deleteProfile(char *filename)
     // set the default profile to the currently loaded profile
     if (result == true) {
       char buffer[SETTING_ENTRY_MAX];
-      char *profile = getSettingValue(buffer, "profile");
-      if (strcasecmp(filename, profile) == 0) {
+      if (strcasecmp(filename, Config.profile) == 0) {
         debug(F("Profile was default -> Setting default profile to current profile\n"));
-        setSettingValue("profile", PROFILE_FILE);
-        saveSettings();
+        result = setDefaultProfile(Settings.profile_file);
       }
     }
 
@@ -1110,7 +1163,7 @@ int loadSettingsFile(const char *filename, char results[][SETTING_ENTRY_MAX], co
     ControlButtons[i].reset();
     ControlButtons[i].setPin(0);
     // set to nothing...
-    strcpy(CONTROL_BUTTON_SETTINGS[i], "0");
+    strcpy(Settings.control_button_settings[i], "0");
   }
   // Try up to 3 times to read the file
   while (!myFile && tries < 2) {
@@ -1174,11 +1227,12 @@ int loadSettingsFile(const char *filename, char results[][SETTING_ENTRY_MAX], co
   return index;
 }
 */
-void loadSettingsFile()
+void loadSettingsFile(const char* filename)
 {
   char path[100];
   strcpy(path, PROFILES_DIR);
-  strcat(path, Settings.profile_file);
+  strcat(path, filename);
+  // if it's successful assign values to Settings object
   //total = loadSettingsFile(path, profile_settings, MAX_SETTINGS_COUNT);
   //debug(F("===========> %d lines read"), total);
 }
@@ -1206,10 +1260,12 @@ void processSettings(char settings[][SETTING_ENTRY_MAX], const int max)
  */
 int loadSettings(const char *filename) 
 {
-  char settings[MAX_FILE_COUNT][SETTING_ENTRY_MAX];
+  /*
+  char settings[MAX_FILE_COUNT][14];
   int total = loadSettingsFile(filename, settings, MAX_SETTINGS_COUNT);
   processSettings(settings, total);
   return total;
+  */
 }
 
 /***
@@ -1222,68 +1278,68 @@ void applySettings()
   /*
   
   // Turn on the 5-band graphic equalizer (there is also a 7-band parametric...see the Teensy docs)
-  if (EQ == 0) {
-    audioShield.eqSelect(FLAT_FREQUENCY);
+  if (Settings.eq == 0) {
+    audioShield.eqSelect(FLAT_FRSettings.eqUENCY);
   } else {
-    audioShield.eqSelect(GRAPHIC_EQUALIZER);
+    audioShield.eqSelect(GRAPHIC_Settings.eqUALIZER);
     // Bands (from left to right) are: Low, Low-Mid, Mid, High-Mid, High.
     // Valid values are -1 (-11.75dB) to 1 (+12dB)
     // The settings below pull down the lows and highs and push up the mids for 
     // more of a "tin-can" sound.
-    audioShield.eqBands(EQ_BANDS[0], EQ_BANDS[1], EQ_BANDS[2], EQ_BANDS[3], EQ_BANDS[4]);
+    audioShield.eqBands(Settings.eq_bands[0], Settings.eq_bands[1], Settings.eq_bands[2], Settings.eq_bands[3], Settings.eq_bands[4]);
   }
   */
   /*
   // tell the audio shield which input to use
-  audioShield.inputSelect(AUDIO_INPUT);
+  audioShield.inputSelect(Config.input);
   // adjust the gain of the input
   // adjust this as needed
-  if (AUDIO_INPUT == 0) {
-    audioShield.lineInLevel(LINEIN);
+  if (Config.input == 0) {
+    audioShield.lineInLevel(Settings.linein);
   } else {
-    audioShield.micGain(MIC_GAIN);
+    audioShield.micGain(Settings.mic_gain);
   }  
   */
   /*
   // You can modify these values to process the voice 
   // input.  See the Teensy bitcrusher demo for details.
-  bitcrusher1.bits(BITCRUSHER[0]);
-  bitcrusher1.sampleRate(BITCRUSHER[1]);
-  //bitcrusher2.bits(BITCRUSHER[2]);
-  //bitcrusher2.sampleRate(BITCRUSHER[3]);
+  bitcrusher1.bits(Settings.bitcrusher[0]);
+  bitcrusher1.sampleRate(Settings.bitcrusher[1]);
+  //bitcrusher2.bits(Settings.bitcrusher[2]);
+  //bitcrusher2.sampleRate(Settings.bitcrusher[3]);
   // Bitcrusher 1 input (fed by mic/line-in)
   */
   /*
-  voiceMixer.gain(0, VOICE_GAIN);
-  voiceMixer.gain(1, VOICE_GAIN);
+  voiceMixer.gain(0, Settings.voice_gain);
+  voiceMixer.gain(1, Settings.voice_gain);
   // Dry (unprocessed) voice input
-  voiceMixer.gain(2, DRY_GAIN);
+  voiceMixer.gain(2, Settings.dry_gain);
   */
   /*
   // Pink noise channel
-  //voiceMixer.gain(1, NOISE_GAIN);
+  //voiceMixer.gain(1, Settings.noise_gain);
   // Feed from effects mixer
   voiceMixer.gain(3, 1);
   */
   /*
   // stereo channels for SD card...adjust gain as 
   // necessary to match voice level
-  effectsMixer.gain(0, EFFECTS_GAIN);
-  effectsMixer.gain(1, EFFECTS_GAIN);
+  effectsMixer.gain(0, Settings.effects_gain);
+  effectsMixer.gain(1, Settings.effects_gain);
   // BLE connect sound
-  effectsMixer.gain(2, EFFECTS_GAIN);
+  effectsMixer.gain(2, Settings.effects_gain);
   // Feed from loop mixer
   effectsMixer.gain(3, 1);
   */
   /*
   // chatter loop from SD card
-  loopMixer.gain(0, LOOP_GAIN);
-  loopMixer.gain(1, LOOP_GAIN);
+  loopMixer.gain(0, Settings.loop_gain);
+  loopMixer.gain(1, Settings.loop_gain);
   */
   //audioShield.volume(readVolume());
-  //audioShield.lineOutLevel(LINEOUT);
+  //audioShield.lineOutLevel(Settings.lineout);
   /*
-  if (HIPASS == 0) {
+  if (Settings.hipass == 0) {
     audioShield.adcHighPassFilterDisable();
   } else {
     audioShield.adcHighPassFilterEnable();
@@ -1309,7 +1365,7 @@ void applySettings()
   /*
   for (byte a = 0; a < 6; a++) {
     // need to clear button settings...
-    configureButton(a);
+    ConfigureButton(a);
   }
   */
 
