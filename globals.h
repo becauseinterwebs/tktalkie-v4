@@ -76,54 +76,93 @@ byte lastRnd  = -1;                                       // Keeps track of the 
 #define LOOP_PLAYER    2
 #define FX_DELAY 16
 
+struct Loop_t {
+  char    dir[14]   = "/loops/";
+  char    file[14]  = "";
+  boolean mute      = true;
+  float   volume    = 1;  
+};
+
+struct Voice_t {
+  float volume = 1.0000;
+  float dry    = 0.5000;
+  float start  = 0.0300;
+  float stop   = 0.0200;
+  int   wait   = 275;
+};
+
+struct Sounds_t {
+  char dir[14]    = "/sounds/";
+  char start[14]  = "STARTUP.WAV";
+  char button[14] = "CLICK3.WAV";
+};
+
+struct Flanger_t {
+  byte  delay  = FX_DELAY;
+  byte  offset = 1;
+  byte  depth  = 0;
+  float freq   = 0.0625;
+  short buffer[FX_DELAY*AUDIO_BLOCK_SAMPLES];
+};
+
+struct Chorus_t {
+  byte voices  = 1;
+  byte delay   = FX_DELAY;
+  short buffer[FX_DELAY*AUDIO_BLOCK_SAMPLES];
+};
+
+struct Bitcrusher_t {
+  byte bits = 16;
+  int  rate = 44100;
+};
+
+struct Effects_t {
+  char          dir[14]   = "/effects/";
+  float         volume    = 1.0000;
+  byte          hipass    = 1;
+  float         noise     = 0.0140;
+  boolean       mute      = true;   
+  Bitcrusher_t  bitcrusher;
+  Chorus_t      chorus;
+  Flanger_t     flanger;
+  char          files[MAX_FILE_COUNT][14];
+};
+
+struct Eq_t {
+  boolean active   = true;
+  float   bands[5] = { -1.0,0,1,0,-1.0 };
+};
+
+struct Sleep_t {
+  int  timer    = 0;
+  char file[14] = "SLEEP.WAV";  
+};
+
+struct Glove_t {
+  char dir[14] = "/glove/";
+  char settings[6][30] = { "0","0","0","0","0","0" };
+  // This could be turned into a management class, but there is not a lot of stuff to do with it...so....
+  ControlButton ControlButtons[6] = { ControlButton(), ControlButton(), ControlButton(), ControlButton(), ControlButton(), ControlButton() }; 
+};
+
+struct Volume_t {
+  float master     = 0.5;
+  byte  lineout    = 29;  // Valid values 13 to 31. Default teensy setting is 29.
+  byte  linein     = 5;   // Value values 0 to 15. Default teensy setting is 5;
+  byte  microphone = 3;
+};
+
 struct Settings_t {
-  char     profile_name[50] = "Default Profile";
-  char     profile_file[14] = "DEFAULT.TXT";
-  float    volume           = 0.5; 
-  byte     lineout          = 29; // Valid values 13 to 31. Default teensy setting is 29.
-  byte     linein           = 5;  // Value values 0 to 15. Default teensy setting is 5;
-  byte     hipass           = 0;  // off by default, 1 = on
-  byte     mic_gain         = 3;
-  char     startup_wav[14];
-  char     loop_wav[14];
-  char     button_wav[14];
-  char     sleep_sound[14];
-  byte     audio_input      = AUDIO_INPUT_MIC;
-  byte     eq               = 0;
-  float    eq_bands[5]      = { -1.0,0,1,0,-1.0 };
-  int      bitcrusher[2]    = { 16,44100 };
-  float    loop_gain        = 2;
-  float    voice_gain       = 1;
-  float    dry_gain         = 1;
-  float    noise_gain       = 0;
-  float    effects_gain     = 1;
-  uint16_t silence_time     = 350;     // The minimum time to wait before playing a sound effect after talking has stopped
-  float    voice_start      = 0.07;    // The amplitude needed to trigger the sound effects process
-  float    voice_stop       = 0.02;    // The minimum amplitude to use when determining if you've stopped talking.
-                                       // Depending upon the microphone you are using, you may get a constant signal
-                                       // that is above 0 or even 0.01.  Use the Serial monitor and add output to the 
-                                       // loop to see what signal amplitude you are receiving when the mic is "quiet."
-  boolean  mute_loop        = 1;       // mute loop while talking on/off
-  boolean  mute_effects     = 0;       // flag to mute sound effects after talking has stopped
-  uint16_t sleep_time       = 0;  
-  char effects_dir[14]      = "/effects/";      // effects sounds (mic pop, clicks, static, etc.)
-  char sounds_dir[14]       = "/sounds/";       // general sound files 
-  char loop_dir[14]         = "/loops/";        // sound loops
-  char glove_dir[14]        = "/glove/";
-  // Chorus settings
-  byte  chorus_delay     = FX_DELAY;
-  byte  chorus_voices    = 1;          // off by default
-  short chorus_buffer[FX_DELAY*AUDIO_BLOCK_SAMPLES];
-  
-  byte   flange_delay    = FX_DELAY;
-  byte   flange_offset   = 1;
-  byte   flange_depth    = 0;
-  double flange_freq     = .0625;
-  short  flange_buffer[FX_DELAY*AUDIO_BLOCK_SAMPLES];
-  
-  char control_button_settings[6][30] = { "0","0","0","0","0","0" };
-  char sound_effects[MAX_FILE_COUNT][14];
- 
+  char      name[25] = "Default Profile";
+  char      file[14] = "DEFAULT.TXT";
+  Volume_t  volume;
+  Loop_t    loop;
+  Voice_t   voice;
+  Sounds_t  sounds;
+  Effects_t effects;
+  Eq_t      eq;
+  Sleep_t   sleep;
+  Glove_t   glove;
 } Settings;
 
 struct Config_t {
@@ -140,9 +179,6 @@ struct Config_t {
 } Config;
 
 const char PROFILES_DIR[11]         = "/profiles/";
-
-// This could be turned into a management class, but there is not a lot of stuff to do with it...so....
-ControlButton ControlButtons[6] = { ControlButton(), ControlButton(), ControlButton(), ControlButton(), ControlButton(), ControlButton() }; 
 
 struct App_t {
   boolean silent              = false;          // used for PTT and to switch back to Voice Activated mode

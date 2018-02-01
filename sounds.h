@@ -40,12 +40,12 @@ void boop(int freq, byte dir) {
  */
 void loadSoundEffects() 
 {
-  if (strcasecmp(Settings.effects_dir, "") == 0) {
+  if (strcasecmp(Settings.effects.dir, "") == 0) {
     SOUND_EFFECTS_COUNT = 0;
     debug(F("No effects directory specified"));
     return;
   }
-  SOUND_EFFECTS_COUNT = listFiles(Settings.effects_dir, Settings.sound_effects, MAX_FILE_COUNT, SOUND_EXT, false, false);
+  SOUND_EFFECTS_COUNT = listFiles(Settings.effects.dir, Settings.effects.files, MAX_FILE_COUNT, SOUND_EXT, false, false);
   debug(F("%d Sound effects loaded\n"), SOUND_EFFECTS_COUNT);
 }
 
@@ -94,7 +94,7 @@ unsigned long playGloveSound(const char *filename)
     return 0;
   }
   char buf[25];
-  strcpy(buf, Settings.glove_dir);
+  strcpy(buf, Settings.glove.dir);
   strcat(buf, filename);
   return playSoundFile(EFFECTS_PLAYER, buf);
 }
@@ -108,7 +108,7 @@ unsigned long playSound(const char *filename)
     return 0;
   }
   char buf[25];
-  strcpy(buf, Settings.sounds_dir);
+  strcpy(buf, Settings.sounds.dir);
   strcat(buf, filename);
   return playSoundFile(EFFECTS_PLAYER, buf);
 }
@@ -122,7 +122,7 @@ unsigned long playEffect(const char *filename)
     return 0;
   }
   char buf[25];
-  strcpy(buf, Settings.effects_dir);
+  strcpy(buf, Settings.effects.dir);
   strcat(buf, filename);
   return playSoundFile(EFFECTS_PLAYER, buf);
 }
@@ -134,10 +134,10 @@ void playLoop()
 {
   loopLength = 0;
   Serial.println("AT PLAY LOOP");
-  if (strcasecmp(Settings.loop_wav, "") != 0) {
+  if (strcasecmp(Settings.loop.file, "") != 0) {
     char buf[25];
-    strcpy(buf, Settings.loop_dir);
-    strcat(buf, Settings.loop_wav);
+    strcpy(buf, Settings.loop.dir);
+    strcat(buf, Settings.loop.file);
     Serial.print("PLAYING LOOP: ");
     Serial.println(buf);
     loopLength = playSoundFile(LOOP_PLAYER, buf);
@@ -150,7 +150,7 @@ void playLoop()
  */
 void addSoundEffect()
 {
-  if (App.speaking == true || SOUND_EFFECTS_COUNT < 1 || Settings.mute_effects == true) return;
+  if (App.speaking == true || SOUND_EFFECTS_COUNT < 1 || Settings.effects.mute == true) return;
   // generate a random number between 0 and the number of files read - 1
   byte rnd = 0;
   byte count = 0;
@@ -161,7 +161,7 @@ void addSoundEffect()
   }
   lastRnd = rnd;
   // play the file
-  playEffect(Settings.sound_effects[rnd]);
+  playEffect(Settings.effects.files[rnd]);
 }
 
 /***
@@ -170,9 +170,9 @@ void addSoundEffect()
 float readVolume()
 {
     float vol = 0;
-    if (Settings.volume) {
-      audioShield.volume(Settings.volume);
-      vol = Settings.volume;
+    if (Settings.volume.master) {
+      audioShield.volume(Settings.volume.master);
+      vol = Settings.volume.master;
     } else {
       // comment these lines if your audio shield does not have the optional volume pot soldered on
       vol = analogRead(15);
@@ -233,12 +233,12 @@ void loopOff()
 void loopOn() 
 {
   // gradually raise level to avoid pops 
-  if (Settings.loop_gain > 1) {
-    for (byte i=0; i<=Settings.loop_gain; i++) {
+  if (Settings.loop.volume > 1) {
+    for (byte i=0; i<=Settings.loop.volume; i++) {
       effectsMixer.gain(1, i);
     }
   }
-  effectsMixer.gain(1, Settings.loop_gain);
+  effectsMixer.gain(1, Settings.loop.volume);
 }
 
 /***
@@ -254,7 +254,7 @@ void voiceOff()
   voiceMixer.gain(0, 0);
   voiceMixer.gain(1, 0);
   voiceMixer.gain(2, 0);
-  if (Settings.mute_loop == 1) {
+  if (Settings.loop.mute == true) {
     loopOn();
   }
 }
@@ -267,14 +267,14 @@ void voiceOn()
   autoSleepMillis = 0;
   App.speaking = true;
   App.silent = true;
-  if (Settings.mute_loop == 1) {
+  if (Settings.loop.mute == true) {
     loopOff();
   }
   // Reset the "user is talking" timer
   stopped = 0;
   // pops are ok here ;)
-  pink1.amplitude(Settings.noise_gain);
-  voiceMixer.gain(0, Settings.voice_gain);
-  voiceMixer.gain(1, Settings.voice_gain);
-  voiceMixer.gain(2, Settings.dry_gain);
+  pink1.amplitude(Settings.effects.noise);
+  voiceMixer.gain(0, Settings.voice.volume);
+  voiceMixer.gain(1, Settings.voice.volume);
+  voiceMixer.gain(2, Settings.voice.dry);
 }

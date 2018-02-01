@@ -103,10 +103,10 @@
  */
 boolean checkPTTButton() 
 {
-  ControlButtons[App.ptt_button].update();
-  if (ControlButtons[App.ptt_button].fell()) {
+  Settings.glove.ControlButtons[App.ptt_button].update();
+  if (Settings.glove.ControlButtons[App.ptt_button].fell()) {
     if (STATE == STATE_RUNNING) {
-      if (strcasecmp(Settings.button_wav, "*") == 0) {
+      if (strcasecmp(Settings.sounds.button, "*") == 0) {
         addSoundEffect();
       } else { 
         playEffect(Settings.button_wav);
@@ -157,9 +157,9 @@ void startup()
     
   strlcpy(Config.profile, (root["profile"] | ""), sizeof(Config.profile)); // "123456789012"
   strlcpy(Config.access_code, (root["access_code"] | "1138"), sizeof(Config.access_code)); // "1111111111111111111111111"
-  Config.debug = (root["debug"] | 0 == 1) ? true : false; // 1
+  Config.debug = ((root["debug"] | 0) == 1) ? true : false; // 1
   strlcpy(Config.input, (root["input"] | "BOTH"), sizeof(Config.input)); // "both"
-  Config.echo = (root["echo"] | 0 == 1) ? true : false; // 0
+  Config.echo = ((root["echo"] | 0) == 1) ? true : false; // 0
   
   JsonArray& buttons = root["buttons"];
   Config.buttons[0] = buttons[0]; // 1
@@ -680,11 +680,11 @@ void run() {
     for (byte i = 0; i < 6; i++) {
 
       // The PTT button is a special case, so it is processed separately
-      if (!ControlButtons[i].isPTT()) {
+      if (!Settings.glove.ControlButtons[i].isPTT()) {
 
-        byte whichButton = ControlButtons[i].check();
+        byte whichButton = Settings.glove.ControlButtons[i].check();
         
-          byte btype = ControlButtons[i].buttons[whichButton-1].getType();
+          byte btype = Settings.glove.ControlButtons[i].buttons[whichButton-1].getType();
 
           if (whichButton != 1 && whichButton != 2) {
             continue;
@@ -704,7 +704,7 @@ void run() {
                   effectsPlayer.stop();
                 } else {
                   char buffer[14];
-                  char *sound = ControlButtons[i].buttons[whichButton-1].getSound(buffer);
+                  char *sound = Settings.glove.ControlButtons[i].buttons[whichButton-1].getSound(buffer);
                   Serial.println(sound);
                   playGloveSound(sound);
                 }
@@ -928,7 +928,7 @@ void run() {
         voiceOn();
       }
     } else {
-      ControlButtons[App.ptt_button].update();
+      Settings.glove.ControlButtons[App.ptt_button].update();
     }
     
     if (App.ptt_button >= 0 && App.button_initialized) {
@@ -958,7 +958,7 @@ void run() {
   
       // Button press
 
-      if (ControlButtons[App.ptt_button].fell()) {
+      if (Settings.glove.ControlButtons[App.ptt_button].fell()) {
         if (strcasecmp(Settings.button_wav, "*") == 0) {
           addSoundEffect();
         } else {
@@ -975,7 +975,7 @@ void run() {
       // NOTE:  If you start talking before the 2 second time limit
       //        it will NOT switch back...or if you talk and pause for 
       //        2 seconds or more it will NOT switch back.
-      if (ControlButtons[App.ptt_button].rose()) {
+      if (Settings.glove.ControlButtons[App.ptt_button].rose()) {
         if (App.silent == true && stopped >= 5000 && App.ptt_button == App.wake_button) {
           gotoSleep();
           return;
@@ -1063,8 +1063,8 @@ void run() {
 bool buttonHeld(uint16_t msecs) {
     elapsedMillis duration = 0;
     while (duration < msecs) {
-        ControlButtons[App.wake_button].update();
-        if (ControlButtons[App.wake_button].read() != 0) {
+        Settings.glove.ControlButtons[App.wake_button].update();
+        if (Settings.glove.ControlButtons[App.wake_button].read() != 0) {
             return false;
         }
     }
@@ -1081,7 +1081,7 @@ void gotoSleep() {
   SLEEP:
     Serial.print("GOING TO SLEEP NOW...BUTTON IS ");
     Serial.println(App.wake_button);
-    ControlButtons[App.wake_button].update();
+    Settings.glove.ControlButtons[App.wake_button].update();
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, LOW);
     elapsedMillis timeout = 0;
@@ -1091,7 +1091,7 @@ void gotoSleep() {
     Snooze.hibernate( config_teensy3x );
     timeout = 0;
     // debouce set to 15ms, so have to wait and check button status
-    while (timeout < 16) ControlButtons[App.wake_button].update();
+    while (timeout < 16) Settings.glove.ControlButtons[App.wake_button].update();
     bool awake = buttonHeld(100);
     if (!awake) goto SLEEP;
     softreset();
