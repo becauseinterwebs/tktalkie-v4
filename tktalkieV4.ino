@@ -40,7 +40,7 @@
  *  
  *  2.  Startup sound, if specified, will always play even if effects level is 0
  *  
- *  3.  Allowed for empty effects_dir option
+ *  3.  Allowed for empty effects.dir option
  *  
  *  4.  Added APP_VER so sketch will know what version of the APP is accessing
  *      it.  This is for future use.
@@ -109,7 +109,7 @@ boolean checkPTTButton()
       if (strcasecmp(Settings.sounds.button, "*") == 0) {
         addSoundEffect();
       } else { 
-        playEffect(Settings.button_wav);
+        playEffect(Settings.sounds.button);
       }
     }
     return true;
@@ -138,46 +138,58 @@ void startup()
   Serial.println(F("----------------------------------------------\n"));
   
   // make sure we have a profile to load
-  //memset(Settings.profile_file, 0, sizeof(Settings.profile_file));
+  //memset(Settings.file, 0, sizeof(Settings.file));
 
   File file = SD.open("SETTINGS.TXT");
 
   const size_t bufferSize = JSON_ARRAY_SIZE(6) + JSON_OBJECT_SIZE(6) + 120;
   DynamicJsonBuffer jsonBuffer(bufferSize);
   
-  //const char* json = "{\"profile\":\"123456789012\",\"access_code\":\"1111111111111111111111111\",\"debug\":1,\"input\":\"both\",\"echo\":0,\"buttons\":[1,2,3,4,5,6]}";
+  //const char* json = "{\"profile\":\"PYLEPRO4.TXT\",\"access_code\":\"0525\",\"debug\":1,\"input\":\"mic\",\"echo\":0,\"buttons\":[1,2,3,4,5,6]}";
   
   JsonObject& root = jsonBuffer.parseObject(file);
 
   if (!root.success()) {
     Serial.println(F("Failed to read file, using default configuration"));
+    strlcpy(Config.profile, "DEFAULT.TXT", sizeof(Config.profile)); // "123456789012"
+    strlcpy(Config.access_code, "1138", sizeof(Config.access_code)); // "1111111111111111111111111"
+    Config.debug = 1;
+    strlcpy(Config.input,"BOTH", sizeof(Config.input)); // "both"
+    Config.echo = 1;
+    Config.buttons[0] = 2; // 1
+    Config.buttons[1] = 3; // 2
+    Config.buttons[2] = 4; // 3
+    Config.buttons[3] = 0; // 4
+    Config.buttons[4] = 0; // 5
+    Config.buttons[5] = 0; // 6
+  } else {
+    strlcpy(Config.profile, (root["profile"] | ""), sizeof(Config.profile)); // "123456789012"
+    strlcpy(Config.access_code, (root["access_code"] | "1138"), sizeof(Config.access_code)); // "1111111111111111111111111"
+    //Config.debug = ((root["debug"] | 0) == 1) ? true : false; // 1
+    Config.debug = root["debug"];
+    strlcpy(Config.input, (root["input"] | "BOTH"), sizeof(Config.input)); // "both"
+    //Config.echo = ((root["echo"] | 0) == 1) ? true : false; // 0
+    Config.echo = root["echo"];
+    JsonArray& buttons = root["buttons"];
+    Config.buttons[0] = buttons[0]; // 1
+    Config.buttons[1] = buttons[1]; // 2
+    Config.buttons[2] = buttons[2]; // 3
+    Config.buttons[3] = buttons[3]; // 4
+    Config.buttons[4] = buttons[4]; // 5
+    Config.buttons[5] = buttons[5]; // 6
   }
 
   file.close();
     
-  strlcpy(Config.profile, (root["profile"] | ""), sizeof(Config.profile)); // "123456789012"
-  strlcpy(Config.access_code, (root["access_code"] | "1138"), sizeof(Config.access_code)); // "1111111111111111111111111"
-  Config.debug = ((root["debug"] | 0) == 1) ? true : false; // 1
-  strlcpy(Config.input, (root["input"] | "BOTH"), sizeof(Config.input)); // "both"
-  Config.echo = ((root["echo"] | 0) == 1) ? true : false; // 0
-  
-  JsonArray& buttons = root["buttons"];
-  Config.buttons[0] = buttons[0]; // 1
-  Config.buttons[1] = buttons[1]; // 2
-  Config.buttons[2] = buttons[2]; // 3
-  Config.buttons[3] = buttons[3]; // 4
-  Config.buttons[4] = buttons[4]; // 5
-  Config.buttons[5] = buttons[5]; // 6
-
-  debug(F("Got startup value Config.debug: %s\n"), Config.debug);
+  debug(F("Got startup value Config.debug: %d\n"), Config.debug);
   debug(F("Got startup value PROFILE: %s\n"), Config.profile);
-  debug(F("Got startup  value ECHO: %s\n"), Config.echo);
+  debug(F("Got startup  value ECHO: %d\n"), Config.echo);
   if (strcasecmp(Config.input, "") == 0) {
     strlcpy(Config.input, "BOTH", sizeof(Config.input));
   }
   debug(F("Got startup value INPUT TYPE: %s\n"), Config.input);
 
-  //strlcpy(Settings.profile_file, Config.profile, sizeof(Settings.profile_file));
+  //strlcpy(Settings.file, Config.profile, sizeof(Settings.file));
   
   if (strcasecmp(Config.profile, "") == 0) {
     // No profile specified, try to find one and load it
@@ -201,10 +213,10 @@ void startup()
   debug(F("Read access code %s\n"), Config.access_code);
   
   // Load settings from specified file
-  loadSettingsFile(Config.profile);
+  //loadSettingsFile(Config.profile);
   
   // Get flange processor ready but keep it off
-  flange1.begin(Settings.flange_buffer,Settings.flange_delay*AUDIO_BLOCK_SAMPLES,Settings.flange_offset, Settings.flange_depth, Settings.flange_freq);
+  flange1.begin(Settings.effects.flanger.buffer,Settings.effects.flanger.delay*AUDIO_BLOCK_SAMPLES,Settings.effects.flanger.offset, Settings.effects.flanger.depth, Settings.effects.flanger.freq);
   flange1.voices(FLANGE_DELAY_PASSTHRU,0,0);
   
   // Parse all of the settings
@@ -213,7 +225,8 @@ void startup()
   //Serial.println("\n\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!! AFTER STARTUP PROCESS SETTINGS !!!!!!!!!!!!!!!!!!!!!!!!!!");
   
   // apply the settings so we can do stuff
-  //applySettings();
+  /*
+ /applySettings();
 
   // set the volume, either by config or volume pot
   
@@ -225,7 +238,7 @@ void startup()
   audioShield.unmuteHeadphone();
 
   Serial.println("--- GET EFFECTS GAIN");
-  float prevVol = Settings.effects_gain;
+  float prevVol = Settings.effects.volume;
 
   // turn on volume for startup sound 
   // if effects volume is at 0
@@ -237,13 +250,13 @@ void startup()
 
   // play startup sound
   Serial.println("--- PLAY STARTUP SOUND");
-  long l = playSound(Settings.startup_wav);
+  long l = playSound(Settings.sounds.start);
 
   // reset mixer volume if set to 0
   Serial.println("--- RESET EFFECTS GAIN");
   if (prevVol <= 0) {
-    effectsMixer.gain(0, Settings.effects_gain);
-    effectsMixer.gain(1, Settings.effects_gain);
+    effectsMixer.gain(0, Settings.effects.volume);
+    effectsMixer.gain(1, Settings.effects.volume);
   }
   
   // add a smidge of delay ;)
@@ -256,6 +269,7 @@ void startup()
 
   STATE = STATE_RUNNING;
 
+  */
   Serial.println("----- END OF STARTUP");
 
 }
@@ -443,23 +457,23 @@ void run() {
             char *ptr, *pfile, *pname;
             pfile = strtok_r(cmd_val, ";", &ptr);
             if (strcasecmp(pfile, "") != 0) {
-              memset(Settings.profile_file, 0, sizeof(Settings.profile_file));
-              strcpy(Settings.profile_file, pfile);
+              memset(Settings.file, 0, sizeof(Settings.file));
+              strcpy(Settings.file, pfile);
             }
             pname = strtok_r(NULL, ";", &ptr);
             if (strcasecmp(pname, "") != 0) {
-              memset(Settings.profile_name, 0, sizeof(Settings.profile_name));
-              strcpy(Settings.profile_name, pname);
+              memset(Settings.name, 0, sizeof(Settings.name));
+              strcpy(Settings.name, pname);
             }
          }
-         addFileExt(Settings.profile_file);
-         debug(F("Save settings file %s with description %s\n"), Settings.profile_file, Settings.profile_name);
+         addFileExt(Settings.file);
+         debug(F("Save settings file %s with description %s\n"), Settings.file, Settings.name);
          boolean wasPlaying = false;
          if (loopPlayer.isPlaying()) {
             wasPlaying = true;
             loopPlayer.stop();
          }
-         if (saveSettingsFile(Settings.profile_file) == true) {
+         if (saveSettingsFile(Settings.file) == true) {
           sendToApp("save", "1");
           connectSound();
          } else {
@@ -500,7 +514,7 @@ void run() {
           }
       } else if (strcasecmp(cmd_key, "default") == 0) {
           if (strcasecmp(cmd_val, "") == 0) {
-            strcpy(cmd_val, Settings.profile_file);
+            strcpy(cmd_val, Settings.file);
           }
           char ret[SETTING_ENTRY_MAX];
           if (setDefaultProfile(cmd_val)) {
@@ -524,16 +538,16 @@ void run() {
       } else if (strcasecmp(cmd_key, "load") == 0) {
           loopPlayer.stop();
           if (strcasecmp(cmd_val, "") != 0) {
-            memset(Settings.profile_file, 0, sizeof(Settings.profile_file));
-            strcpy(Settings.profile_file, cmd_val);
+            memset(Settings.file, 0, sizeof(Settings.file));
+            strcpy(Settings.file, cmd_val);
           } 
-          addFileExt(Settings.profile_file);
+          addFileExt(Settings.file);
           char buf[100];
           strcpy(buf, PROFILES_DIR);
-          strcat(buf, Settings.profile_file);
+          strcat(buf, Settings.file);
           loadSettings(buf);
           //applySettings();
-          long l = playSound(Settings.startup_wav);
+          long l = playSound(Settings.sounds.start);
           delay(l+100);
           playLoop();
           // send to remote if connected
@@ -547,8 +561,8 @@ void run() {
           playSound(cmd_val);
       } else if (strcasecmp(cmd_key, "play_loop") == 0) {
           if (strcasecmp(cmd_val, "") != 0) {
-            memset(Settings.loop_wav, 0, sizeof(Settings.loop_wav));
-            strcpy(Settings.loop_wav, cmd_val);
+            memset(Settings.loop.file, 0, sizeof(Settings.loop.file));
+            strcpy(Settings.loop.file, cmd_val);
           }
           playLoop();
       } else if (strcasecmp(cmd_key, "stop_loop") == 0) {
@@ -570,14 +584,14 @@ void run() {
          App.muted = false;
       } else if (strcasecmp(cmd_key, "backup") == 0) {
          if (strcasecmp(cmd_val, "") == 0) {
-           strcpy(cmd_val, Settings.profile_file);
+           strcpy(cmd_val, Settings.file);
          }
          addBackupExt(cmd_val);
          saveSettingsFile(cmd_val, false); 
       } else if (strcasecmp(cmd_key, "restore") == 0) {
          loopPlayer.stop();
          if (strcasecmp(cmd_val, "") == 0) {
-           strcpy(cmd_val, Settings.profile_file);
+           strcpy(cmd_val, Settings.file);
          }
          addBackupExt(cmd_val);
          char *ret = strstr(cmd_val, PROFILES_DIR);
@@ -591,12 +605,12 @@ void run() {
          }
          loadSettings(cmd_val);    
          //applySettings();
-         long l = playSound(Settings.startup_wav);
+         long l = playSound(Settings.sounds.start);
          delay(l+100);
          playLoop();
       } else if (strcasecmp(cmd_key, "settings") == 0) {
           Serial.println(F(""));
-          Serial.println(Settings.profile_file);
+          Serial.println(Settings.file);
           Serial.println(F("--------------------------------------------------------------------------------"));
           char buffer[1024];
           char *p = settingsToString(buffer);
@@ -610,7 +624,7 @@ void run() {
           showFile(cmd_val);
       } else if (strcasecmp(cmd_key, "sounds") == 0) {
           char temp[MAX_FILE_COUNT][14];
-          int count = listFiles(Settings.sounds_dir, temp, MAX_FILE_COUNT, SOUND_EXT, false, true);
+          int count = listFiles(Settings.sounds.dir, temp, MAX_FILE_COUNT, SOUND_EXT, false, true);
           if (strcasecmp(cmd_val, "1") == 0) {
             char buffer[1024];
             char *files = arrayToStringJson(buffer, temp, count);
@@ -618,7 +632,7 @@ void run() {
           }
       } else if (strcasecmp(cmd_key, "effects") == 0) {
           char temp[MAX_FILE_COUNT][14];
-          int count = listFiles(Settings.effects_dir, temp, MAX_FILE_COUNT, SOUND_EXT, false, true);
+          int count = listFiles(Settings.effects.dir, temp, MAX_FILE_COUNT, SOUND_EXT, false, true);
           if (strcasecmp(cmd_val, "1") == 0) {
             char buffer[1024];
             char *files = arrayToStringJson(buffer, temp, count);
@@ -626,7 +640,7 @@ void run() {
           }
       } else if (strcasecmp(cmd_key, "loops") == 0) {
           char temp[MAX_FILE_COUNT][14];
-          int count = listFiles(Settings.loop_dir, temp, MAX_FILE_COUNT, SOUND_EXT, false, true);
+          int count = listFiles(Settings.loop.dir, temp, MAX_FILE_COUNT, SOUND_EXT, false, true);
           if (strcasecmp(cmd_val, "1") == 0) {
             char buffer[1024];
             char *files = arrayToStringJson(buffer, temp, count);
@@ -639,7 +653,7 @@ void run() {
           char *def = getSettingValue(buffer, "profile");
           for (int i = 0; i < count; i++) {
             Serial.print(temp[i]);
-            if (strcasecmp(temp[i], Settings.profile_file) == 0) {
+            if (strcasecmp(temp[i], Settings.file) == 0) {
               Serial.print(" (Loaded)");
             }
             if (strcasecmp(temp[i], def) == 0) {
@@ -713,26 +727,26 @@ void run() {
             // Volume Up
             case 3:  
               {
-                Settings.volume = Settings.volume + .01;
-                if (Settings.volume > 10) {
-                  Settings.volume = 10;
+                Settings.volume.master = Settings.volume.master + .01;
+                if (Settings.volume.master > 10) {
+                  Settings.volume.master = 10;
                 }
                 Serial.print("VOLUME UP: ");
-                Serial.println(Settings.volume);
-                audioShield.volume(Settings.volume);
+                Serial.println(Settings.volume.master);
+                audioShield.volume(Settings.volume.master);
                 boop(440, 1);
               }  
               break;
             // Volume down  
             case 4:
               {
-                Settings.volume = Settings.volume - .01;
-                if (Settings.volume < 0) {
-                  Settings.volume = 0;
+                Settings.volume.master = Settings.volume.master - .01;
+                if (Settings.volume.master < 0) {
+                  Settings.volume.master = 0;
                 }
                 Serial.print("VOLUME DOWN: ");
-                Serial.println(Settings.volume);
-                audioShield.volume(Settings.volume);
+                Serial.println(Settings.volume.master);
+                audioShield.volume(Settings.volume.master);
                 boop(490, 0);
               }  
               break;
@@ -761,52 +775,52 @@ void run() {
             // lineout up  
             case 7:
               {
-                --Settings.lineout;
-                if (Settings.lineout < 13) {
-                  Settings.lineout = 13;
+                --Settings.volume.lineout;
+                if (Settings.volume.lineout < 13) {
+                  Settings.volume.lineout = 13;
                 }
                 Serial.print("Settings.lineout UP: ");
-                Serial.println(Settings.lineout);
-                audioShield.lineOutLevel(Settings.lineout);   
+                Serial.println(Settings.volume.lineout);
+                audioShield.lineOutLevel(Settings.volume.lineout);   
                 boop(440, 1);  
               }
               break;
             // lineout down  
             case 8:
               {
-                ++Settings.lineout;
-                if (Settings.lineout > 31) {
-                  Settings.lineout = 31;
+                ++Settings.volume.lineout;
+                if (Settings.volume.lineout > 31) {
+                  Settings.volume.lineout = 31;
                 }
                 Serial.print("Settings.lineout DOWN: ");
-                Serial.println(Settings.lineout);
-                audioShield.lineOutLevel(Settings.lineout); 
+                Serial.println(Settings.volume.lineout);
+                audioShield.lineOutLevel(Settings.volume.lineout); 
                 boop(490, 0);
               }
               break;
             // mic gain up
             case 9:
               {
-                ++Settings.mic_gain;
-                if (Settings.mic_gain > 63) {
-                  Settings.mic_gain = 63;  
+                ++Settings.volume.microphone;
+                if (Settings.volume.microphone > 63) {
+                  Settings.volume.microphone = 63;  
                 }
                 Serial.print("MIC GAIN UP: ");
-                Serial.println(Settings.mic_gain);
-                audioShield.micGain(Settings.mic_gain);  
+                Serial.println(Settings.volume.microphone);
+                audioShield.micGain(Settings.volume.microphone);  
                 boop(540, 1);
               }
               break;
             // mic gain down  
             case 10:
               {
-                --Settings.mic_gain;
-                if (Settings.mic_gain < 0) {
-                  Settings.mic_gain = 0;  
+                --Settings.volume.microphone;
+                if (Settings.volume.microphone < 0) {
+                  Settings.volume.microphone = 0;  
                 }
                 Serial.print("MIC GAIN DOWN: ");
-                Serial.println(Settings.mic_gain);
-                audioShield.micGain(Settings.mic_gain);  
+                Serial.println(Settings.volume.microphone);
+                audioShield.micGain(Settings.volume.microphone);  
                 boop(540, 0);
               }
               break;
@@ -823,96 +837,96 @@ void run() {
             // Loop Gain up
             case 12:
               {
-                Settings.loop_gain = Settings.loop_gain + .05;
-                if (Settings.loop_gain > 10) {
-                  Settings.loop_gain = 10;
+                Settings.loop.volume = Settings.loop.volume + .05;
+                if (Settings.loop.volume > 10) {
+                  Settings.loop.volume = 10;
                 }
                 Serial.print("LOOP GAIN UP: ");
-                Serial.println(Settings.loop_gain);
-                effectsMixer.gain(1, Settings.loop_gain);
+                Serial.println(Settings.loop.volume);
+                effectsMixer.gain(1, Settings.loop.volume);
                 boop(540, 1);
               }
               break;  
             // Loop gain down
             case 13:
               {
-                Settings.loop_gain = Settings.loop_gain - .10;
-                if (Settings.loop_gain < 0) {
-                  Settings.loop_gain = 0;
+                Settings.loop.volume = Settings.loop.volume - .10;
+                if (Settings.loop.volume < 0) {
+                  Settings.loop.volume = 0;
                 }
                 Serial.print("LOOP GAIN DOWN: ");
-                Serial.println(Settings.loop_gain);
-                effectsMixer.gain(1, Settings.loop_gain);
+                Serial.println(Settings.loop.volume);
+                effectsMixer.gain(1, Settings.loop.volume);
                 boop(540, 0);
               }
               break; 
             // Voice gain up
             case 14:
               {
-                Settings.voice_gain = Settings.voice_gain + .05;
-                if (Settings.voice_gain > 10) {
-                  Settings.voice_gain = 10;
+                Settings.voice.volume = Settings.voice.volume + .05;
+                if (Settings.voice.volume > 10) {
+                  Settings.voice.volume = 10;
                 }
-                Settings.dry_gain = Settings.dry_gain + .05;
-                if (Settings.dry_gain > 10) {
-                  Settings.dry_gain = 10;
+                Settings.voice.dry = Settings.voice.dry + .05;
+                if (Settings.voice.dry > 10) {
+                  Settings.voice.dry = 10;
                 }
                 Serial.print("VOICE GAIN UP: ");
-                Serial.println(Settings.voice_gain);
+                Serial.println(Settings.voice.volume);
                 Serial.print("DRY GAIN UP: ");
-                Serial.println(Settings.dry_gain);
-                voiceMixer.gain(0, Settings.voice_gain);
-                voiceMixer.gain(1, Settings.voice_gain);
-                voiceMixer.gain(2, Settings.dry_gain);  
+                Serial.println(Settings.voice.dry);
+                voiceMixer.gain(0, Settings.voice.volume);
+                voiceMixer.gain(1, Settings.voice.volume);
+                voiceMixer.gain(2, Settings.voice.dry);  
                 boop(540, 0);
               }
               break;
             // Voice gain down
             case 15:
               {
-                Settings.voice_gain = Settings.voice_gain - .10;
-                if (Settings.voice_gain < 0) {
-                  Settings.voice_gain = 0;
+                Settings.voice.volume = Settings.voice.volume - .10;
+                if (Settings.voice.volume < 0) {
+                  Settings.voice.volume = 0;
                 }
-                Settings.dry_gain = Settings.dry_gain - .10;
-                if (Settings.dry_gain < 0) {
-                  Settings.dry_gain = 0;
+                Settings.voice.dry = Settings.voice.dry - .10;
+                if (Settings.voice.dry < 0) {
+                  Settings.voice.dry = 0;
                 }
                 Serial.print("VOICE GAIN DOWN: ");
-                Serial.println(Settings.voice_gain);
+                Serial.println(Settings.voice.volume);
                 Serial.print("DRY GAIN DOWN: ");
-                Serial.println(Settings.dry_gain);
-                voiceMixer.gain(0, Settings.voice_gain);
-                voiceMixer.gain(1, Settings.voice_gain);  
-                voiceMixer.gain(2, Settings.dry_gain);  
+                Serial.println(Settings.voice.dry);
+                voiceMixer.gain(0, Settings.voice.volume);
+                voiceMixer.gain(1, Settings.voice.volume);  
+                voiceMixer.gain(2, Settings.voice.dry);  
                 boop(540, 0);
               }
               break; 
             // Effects gain up
             case 16:
               {
-                Settings.effects_gain = Settings.effects_gain + .05;
-                if (Settings.effects_gain > 10) {
-                  Settings.effects_gain = 10;
+                Settings.effects.volume = Settings.effects.volume + .05;
+                if (Settings.effects.volume > 10) {
+                  Settings.effects.volume = 10;
                 }
                 Serial.print("EFFECTS GAIN UP: ");
-                Serial.println(Settings.effects_gain);
-                effectsMixer.gain(0, Settings.effects_gain);
-                effectsMixer.gain(1, Settings.effects_gain);  
+                Serial.println(Settings.effects.volume);
+                effectsMixer.gain(0, Settings.effects.volume);
+                effectsMixer.gain(1, Settings.effects.volume);  
                 boop(540, 0);
               }
               break;
             // Effects gain down
             case 17:
               {
-                Settings.effects_gain = Settings.effects_gain - .10;
-                if (Settings.effects_gain < 0) {
-                  Settings.effects_gain = 0;
+                Settings.effects.volume = Settings.effects.volume - .10;
+                if (Settings.effects.volume < 0) {
+                  Settings.effects.volume = 0;
                 }
                 Serial.print("EFFECTS GAIN DOWN: ");
-                Serial.println(Settings.effects_gain);
-                effectsMixer.gain(0, Settings.effects_gain);
-                effectsMixer.gain(1, Settings.effects_gain);  
+                Serial.println(Settings.effects.volume);
+                effectsMixer.gain(0, Settings.effects.volume);
+                effectsMixer.gain(1, Settings.effects.volume);  
                 boop(540, 0);
               }
               break;       
@@ -943,7 +957,7 @@ void run() {
             // This check is here to make sure we don't get false readings
             // when the button click noise is played which would prevent 
             // the switch back to Voice Activated mode
-            if ((val-Settings.voice_stop) >= .1) {
+            if ((val-Settings.voice.stop) >= .1) {
               App.silent = false;
             }
           }
@@ -959,10 +973,10 @@ void run() {
       // Button press
 
       if (Settings.glove.ControlButtons[App.ptt_button].fell()) {
-        if (strcasecmp(Settings.button_wav, "*") == 0) {
+        if (strcasecmp(Settings.sounds.button, "*") == 0) {
           addSoundEffect();
         } else {
-          playEffect(Settings.button_wav);
+          playEffect(Settings.sounds.button);
         }
         //ms = 0;
         voiceOn();
@@ -985,7 +999,7 @@ void run() {
           return;
         } else {
           stopped = 0;
-          //while (stopped < Settings.silence_time) {}
+          //while (stopped < Settings.voice.wait) {}
           voiceOff();
           // Random comm sound
           addSoundEffect();
@@ -1005,7 +1019,7 @@ void run() {
           
           // Set a minimum and maximum level to use or you will trigger it accidentally 
           // by breathing, etc.  Adjust this level as necessary!
-          if (val >= Settings.voice_start) {
+          if (val >= Settings.voice.start) {
 
              debug(F("Voice start: %4f\n"), val);
              
@@ -1020,14 +1034,14 @@ void run() {
 
               debug(F("Voice val: %4f\n"), val);
               
-              if (val < Settings.voice_stop) {
+              if (val < Settings.voice.stop) {
     
                 // If the user has stopped talking for at least the required "silence" time and 
                 // the mic/line input has fallen below the minimum input threshold, play a random 
                 // sound from the card.  NOTE:  You can adjust the delay time to your liking...
                 // but it should probably be AT LEAST 1/4 second (250 milliseconds.)
     
-                if (stopped >= Settings.silence_time) {
+                if (stopped >= Settings.voice.wait) {
                   debug(F("Voice stop: %4f\n"), val);
                   voiceOff();
                   // play random sound effect
@@ -1053,7 +1067,7 @@ void run() {
   }
 
   // Sleep mode check
-  if (Settings.sleep_time > 0 && (autoSleepMillis >= (Settings.sleep_time * 60000))) {
+  if (Settings.sleep.timer > 0 && (autoSleepMillis >= (Settings.sleep.timer * 60000))) {
       gotoSleep();
   }
 
@@ -1076,7 +1090,7 @@ void gotoSleep() {
   if (loopPlayer.isPlaying()) {
     loopPlayer.stop();
   }
-  long l = playSound(Settings.sleep_sound);
+  long l = playSound(Settings.sleep.file);
   delay(l+250);
   SLEEP:
     Serial.print("GOING TO SLEEP NOW...BUTTON IS ");

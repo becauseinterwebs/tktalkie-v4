@@ -127,6 +127,165 @@ void ConfigureButton(byte a) {
     Serial.println("");
 }
 
+void setVolume() {
+  if (Settings.volume.master > 1) { 
+    Settings.volume.master = 1;
+  } else if (Settings.volume.master < 0) {
+    Settings.volume.master = 0;
+  }
+  //audioShield.volume(readVolume());
+  audioShield.volume(Settings.volume.master);
+}
+
+void setLineout() {
+  if (Settings.volume.lineout < 13) {
+    Settings.volume.lineout = 13;  
+  } else if (Settings.volume.lineout > 31) {
+    Settings.volume.lineout = 31;
+  }
+  audioShield.lineOutLevel(Settings.volume.lineout);
+}
+
+void setLinein() {
+  if (Settings.volume.linein < 0) {
+    Settings.volume.linein = 0;  
+  } else if (Settings.volume.linein > 15) {
+    Settings.volume.linein = 15;
+  }  
+  audioShield.lineInLevel(Settings.volume.linein);
+}
+
+void setHipass() {
+  if (Settings.effects.highpass < 0) { 
+    Settings.effects.highpass = 0;
+  } else if (Settings.effects.highpass > 1) {
+    Settings.effects.highpass = 1;
+  }
+  if (Settings.effects.highpass == 0) {
+    audioShield.adcHighPassFilterDisable();
+  } else {
+    audioShield.adcHighPassFilterEnable();
+  }
+}
+
+void setNoiseVolume() {
+  effectsMixer.gain(3, Settings.effects.noise);
+}
+
+void setVoiceVolume() {
+  voiceMixer.gain(0, Settings.voice.volume);
+  voiceMixer.gain(1, Settings.voice.volume);
+}
+
+void setDryVolume() {
+  voiceMixer.gain(2, Settings.voice.dry);
+}
+
+void setEffectsVolume() {
+  effectsMixer.gain(0, Settings.effects.volume);
+  //effectsMixer.gain(1, Settings.effects.volume);
+  // Waveform (BLE) connect sound
+  effectsMixer.gain(2, Settings.effects.volume);
+}
+
+void setLoopVolume() {
+  if (Settings.loop.volume < 0 or Settings.loop.volume > 32767) {
+    Settings.loop.volume = 4;
+  }
+  // chatter loop from SD card
+  effectsMixer.gain(1, Settings.loop.volume);
+  //loopMixer.gain(0, Settings.loop.volume);
+  //loopMixer.gain(1, Settings.loop.volume);
+}
+
+void setEq() {
+  if (Settings.eq.active < 0) {
+    Settings.eq.active = 0;
+  } else if (Settings.eq.active > 1) {
+    Settings.eq.active = 1;
+  }
+  // Turn on the 5-band graphic equalizer (there is also a 7-band parametric...see the Teensy docs)
+  if (Settings.eq.active == 0) {
+    audioShield.eqSelect(FLAT_FREQUENCY);
+  } else {
+    audioShield.eqSelect(GRAPHIC_EQUALIZER);
+  }  
+}
+
+void setEqBands() {
+  // Bands (from left to right) are: Low, Low-Mid, Mid, High-Mid, High.
+  // Valid values are -1 (-11.75dB) to 1 (+12dB)
+  // The settings below pull down the lows and highs and push up the mids for 
+  // more of a "tin-can" sound.
+  audioShield.eqBands(Settings.eq.bands[0], Settings.eq.bands[1], Settings.eq.bands[2], Settings.eq.bands[3], Settings.eq.bands[4]);
+}
+
+void setBitcrusher() {
+  // You can modify these values to process the voice 
+  // input.  See the Teensy bitcrusher demo for details.
+  bitcrusher1.bits(Settings.effects.bitcrusher.bits);
+  bitcrusher1.sampleRate(Settings.effects.bitcrusher.rate);
+}
+
+void setEffectsDir() {
+  fixPath(Settings.effects.dir);
+  loadSoundEffects();
+}
+
+void setSoundsDir() {
+  fixPath(Settings.sounds.dir);
+}
+
+void setLoopDir() {
+  fixPath(Settings.loop.dir);
+}
+
+void setLoopMute() {
+  if (Settings.loop.mute > 1) {
+    Settings.loop.mute = 1;
+  } else if (Settings.loop.mute < 0) {
+    Settings.loop.mute = 0;
+  }
+}
+
+void setEffectsMute() {
+  if (Settings.effects.mute > 1) {
+    Settings.effects.mute = 1;
+  } else if (Settings.effects.mute < 0) {
+    Settings.effects.mute = 0;
+  }
+}
+
+void setSleepTimer() {
+  if (Settings.sleep.timer < 0) {
+    Settings.sleep.timer = 0;
+  }
+}
+
+void setChorus() {
+  if (Settings.effects.chorus.delay > 32) {
+      Settings.effects.chorus.delay = 32;
+    }
+    if (Settings.effects.chorus.delay < 1) {
+      Settings.effects.chorus.delay = 1;
+    }
+    if (Settings.effects.chorus.voices < 0) {
+      Settings.effects.chorus.voices = 0;
+    }
+    if(!chorus1.begin(Settings.effects.chorus.buffer,Settings.effects.chorus.delay*AUDIO_BLOCK_SAMPLES,Settings.effects.chorus.voices)) {
+       Serial.println("chorus: startup failed");
+    }
+}
+
+void setFlanger() {
+  if (Settings.effects.flanger.delay > 32) {
+    Settings.effects.flanger.delay = 32;
+  }
+  if (Settings.effects.flanger.delay < 0) {
+    Settings.effects.flanger.delay = 0;
+  }
+  flange1.begin(Settings.effects.flanger.buffer,Settings.effects.flanger.delay*AUDIO_BLOCK_SAMPLES,Settings.effects.flanger.offset,Settings.effects.flanger.depth,Settings.effects.flanger.freq); 
+}
 /***
  * Parse and set a Configuration setting
  */
@@ -135,87 +294,48 @@ void parseSetting(const char *settingName, char *settingValue)
 
   debug(F("Parse Setting: %s = %s\n"), settingName, settingValue);
 
-  
-  
   if (strcasecmp(settingName, "name") == 0) {
     memset(Settings.name, 0, sizeof(Settings.name));
     strcpy(Settings.name, settingValue);
   } else if (strcasecmp(settingName, "volume") == 0) {
-    Settings.volume.master = atof(settingValue);  
-    if (Settings.volume.master > 1) { 
-      Settings.volume.master = 1;
-    } else if (Settings.volume.master < 0) {
-      Settings.volume.master = 0;
-    }
-    audioShield.volume(readVolume());
+    Settings.volume.master = atof(settingValue);
+    setVolume();  
   } else if (strcasecmp(settingName, "lineout") == 0) {
     Settings.volume.lineout = (byte)atoi(settingValue);
-    if (Settings.volume.lineout < 13) {
-      Settings.volume.lineout = 13;  
-    } else if (Settings.volume.lineout > 31) {
-      Settings.volume.lineout = 31;
-    }
-    audioShield.lineOutLevel(Settings.volume.lineout);
+    setLineout();
   } else if (strcasecmp(settingName, "linein") == 0) {
     Settings.volume.linein = (byte)atoi(settingValue);
-    if (Settings.volume.linein < 0) {
-      Settings.volume.linein = 0;  
-    } else if (Settings.volume.linein > 15) {
-      Settings.volume.linein = 15;
-    }  
-    audioShield.lineInLevel(Settings.volume.linein);
+    setLinein();
   } else if ((strcasecmp(settingName, "high_pass") == 0) || (strcasecmp(settingName, "highpass") == 0)) {
-    Settings.effects.hipass = (byte)atoi(settingValue);
-    if (Settings.effects.hipass < 0) { 
-      Settings.effects.hipass = 0;
-    } else if (Settings.effects.hipass > 1) {
-      Settings.effects.hipass = 1;
-    }
-    if (Settings.effects.hipass == 0) {
-      audioShield.adcHighPassFilterDisable();
-    } else {
-      audioShield.adcHighPassFilterEnable();
-    }
+    Settings.effects.highpass = (byte)atoi(settingValue);
+    setHipass();
   } else if (strcasecmp(settingName, "microphone") == 0) {
     Settings.volume.microphone = atoi(settingValue);
     audioShield.micGain(Settings.volume.microphone);  
   } else if (strcasecmp(settingName, "button_click") == 0) {
     memset(Settings.sounds.button, 0, sizeof(Settings.sounds.button));
     strcpy(Settings.sounds.button, settingValue);
-  } else if (strcasecmp(settingName, "startup") == 0) {
+  } else if ( (strcasecmp(settingName, "startup") == 0) || (strcasecmp(settingName, "startup_sound") == 0) ) {
     memset(Settings.sounds.start, 0, sizeof(Settings.sounds.start));
     strcpy(Settings.sounds.start, settingValue);
-  } else if (strcasecmp(settingName, "startup_sound") == 0) {
-    memset(Settings.sounds.start, 0, sizeof(Settings.sounds.start));
-    strcpy(Settings.sounds.start, settingValue);  
   } else if (strcasecmp(settingName, "loop") == 0) {
     memset(Settings.loop.file, 0, sizeof(Settings.loop.file));
     strcpy(Settings.loop.file, settingValue);
   } else if (strcasecmp(settingName, "noise_gain") == 0) {
     Settings.effects.noise = atof(settingValue);
-    effectsMixer.gain(3, Settings.effects.noise);
+    setNoiseVolume();
   } else if (strcasecmp(settingName, "voice_gain") == 0) {
     Settings.voice.volume = atof(settingValue);
-    voiceMixer.gain(0, Settings.voice.volume);
-    voiceMixer.gain(1, Settings.voice.volume);
+    setVoiceVolume();
   } else if (strcasecmp(settingName, "dry_gain") == 0) {
     Settings.voice.dry = atof(settingValue);  
-    voiceMixer.gain(2, Settings.voice.dry);
+    setDryVolume();
   } else if (strcasecmp(settingName, "effects_gain") == 0) {
     Settings.effects.volume = atof(settingValue);
-    effectsMixer.gain(0, Settings.effects.volume);
-    //effectsMixer.gain(1, Settings.effects.volume);
-    // Waveform (BLE) connect sound
-    effectsMixer.gain(2, Settings.effects.volume);
+    setEffectsVolume();
   } else if (strcasecmp(settingName, "loop_gain") == 0) {
     Settings.loop.volume = atof(settingValue);
-    if (Settings.loop.volume < 0 or Settings.loop.volume > 32767) {
-      Settings.loop.volume = 4;
-    }
-    // chatter loop from SD card
-    effectsMixer.gain(1, Settings.loop.volume);
-    //loopMixer.gain(0, Settings.loop.volume);
-    //loopMixer.gain(1, Settings.loop.volume);
+    setLoopVolume();
   } else if (strcasecmp(settingName, "silence_time") == 0) {
     Settings.voice.wait = atoi(settingValue);
   } else if (strcasecmp(settingName, "voice_start") == 0) {
@@ -238,17 +358,7 @@ void parseSetting(const char *settingName, char *settingValue)
       */
   } else if (strcasecmp(settingName, "eq") == 0) {
     Settings.eq.active = (byte)atoi(settingValue);
-    if (Settings.eq.active < 0) {
-      Settings.eq.active = 0;
-    } else if (Settings.eq.active > 1) {
-      Settings.eq.active = 1;
-    }
-    // Turn on the 5-band graphic equalizer (there is also a 7-band parametric...see the Teensy docs)
-    if (Settings.eq.active == 0) {
-      audioShield.eqSelect(FLAT_FREQUENCY);
-    } else {
-      audioShield.eqSelect(GRAPHIC_EQUALIZER);
-    }  
+    setEq();
   } else if (strcasecmp(settingName, "eq_bands") == 0) {
     // clear bands and prep for setting
     for (int i = 0; i < 6; i++) {
@@ -262,11 +372,7 @@ void parseSetting(const char *settingName, char *settingValue)
       i++;
       band = strtok_r(NULL, ",", &ptr);
     }
-    // Bands (from left to right) are: Low, Low-Mid, Mid, High-Mid, High.
-    // Valid values are -1 (-11.75dB) to 1 (+12dB)
-    // The settings below pull down the lows and highs and push up the mids for 
-    // more of a "tin-can" sound.
-    audioShield.eqBands(Settings.eq.bands[0], Settings.eq.bands[1], Settings.eq.bands[2], Settings.eq.bands[3], Settings.eq.bands[4]);
+    setEqBands();
   } else if (strcasecmp(settingName, "bitcrushers") == 0 || strcasecmp(settingName, "bitcrusher") == 0) {
     char *token, *ptr;
     token = strtok_r(settingValue, ",", &ptr);
@@ -283,90 +389,57 @@ void parseSetting(const char *settingName, char *settingValue)
       i++;
       token = strtok_r(NULL, ",", &ptr);
     }
-    // You can modify these values to process the voice 
-    // input.  See the Teensy bitcrusher demo for details.
-    bitcrusher1.bits(Settings.effects.bitcrusher.bits);
-    bitcrusher1.sampleRate(Settings.effects.bitcrusher.rate);
+    setBitcrusher();
   } else if (strcasecmp(settingName, "effects_dir") == 0) {
     memset(Settings.effects.dir, 0, sizeof(Settings.effects.dir));
     strcpy(Settings.effects.dir, settingValue);
-    fixPath(Settings.effects.dir);
-    loadSoundEffects();
+    setEffectsDir();
   } else if (strcasecmp(settingName, "sounds_dir") == 0) {
     memset(Settings.sounds.dir, 0, sizeof(Settings.sounds.dir));
     strcpy(Settings.sounds.dir, settingValue);
-    fixPath(Settings.sounds.dir);
+    setSoundsDir();
   } else if (strcasecmp(settingName, "loop_dir") == 0) {
     memset(Settings.loop.dir, 0, sizeof(Settings.loop.dir));
     strcpy(Settings.loop.dir, settingValue);
-    fixPath(Settings.loop.dir);
+    setLoopDir();
   } else if (strcasecmp(settingName, "mute_loop") == 0) {
-      Settings.loop.mute = (byte)atoi(settingValue);
-      if (Settings.loop.mute > 1) {
-        Settings.loop.mute = 1;
-      } else if (Settings.loop.mute < 0) {
-        Settings.loop.mute = 0;
-      }
+    Settings.loop.mute = (byte)atoi(settingValue);
+    setLoopMute();
   } else if (strcasecmp(settingName, "mute_effects") == 0) {
-      Settings.effects.mute = (byte)atoi(settingValue);
-      if (Settings.effects.mute > 1) {
-        Settings.effects.mute = 1;
-      } else if (Settings.effects.mute < 0) {
-        Settings.effects.mute = 0;
-      }
+    Settings.effects.mute = (byte)atoi(settingValue);
+    setEffectsMute();
   } else if (strcasecmp(settingName, "sleep_time") == 0) {
-      Settings.sleep.timer = (byte)atoi(settingValue);
-      if (Settings.sleep.timer < 0) {
-        Settings.sleep.timer = 0;
-      }
+    Settings.sleep.timer = (byte)atoi(settingValue);
+    setSleepTimer();
   } else if (strcasecmp(settingName, "sleep_sound") == 0) {
-      memset(Settings.sleep.file, 0, sizeof(Settings.sleep.file));
-      strcpy(Settings.sleep.file, settingValue);
+    memset(Settings.sleep.file, 0, sizeof(Settings.sleep.file));
+    strcpy(Settings.sleep.file, settingValue);
   } else if (strcasecmp(settingName, "chorus") == 0) {
-      if (strcasecmp(settingValue, "0") == 0) {
-        chorus1.voices(0);
-      } else if (strcasecmp(settingValue, "1") == 0) {
-        chorus1.voices(Settings.effects.chorus.voices);
-      } else {
-        char *token, *ptr;
-        token = strtok_r(settingValue, ",", &ptr);
-        byte i = 0;
-        while (token && i < 3) {
-          switch (i) {
-            case 0:
-              Settings.effects.chorus.delay = (byte)atoi(token);
-              break;
-            case 1:
-              Settings.effects.chorus.voices = (byte)atoi(token);
-              break;
-          }
-          i++;
-          token = strtok_r(NULL, ",", &ptr);
-        }  
-        if (Settings.effects.chorus.delay > 32) {
-          Settings.effects.chorus.delay = 32;
+    if (strcasecmp(settingValue, "0") == 0) {
+      chorus1.voices(0);
+    } else if (strcasecmp(settingValue, "1") == 0) {
+      chorus1.voices(Settings.effects.chorus.voices);
+    } else {
+      char *token, *ptr;
+      token = strtok_r(settingValue, ",", &ptr);
+      byte i = 0;
+      while (token && i < 3) {
+        switch (i) {
+          case 0:
+            Settings.effects.chorus.delay = (byte)atoi(token);
+            break;
+          case 1:
+            Settings.effects.chorus.voices = (byte)atoi(token);
+            break;
         }
-        if (Settings.effects.chorus.delay < 1) {
-          Settings.effects.chorus.delay = 1;
-        }
-        if (Settings.effects.chorus.voices < 0) {
-          Settings.effects.chorus.voices = 0;
-        }
-        if(!chorus1.begin(Settings.effects.chorus.buffer,Settings.effects.chorus.delay*AUDIO_BLOCK_SAMPLES,Settings.effects.chorus.voices)) {
-           Serial.println("chorus: startup failed");
-        }
-      }
+        i++;
+        token = strtok_r(NULL, ",", &ptr);
+      }  
+    }
+    setChorus();
   } else if (strcasecmp(settingName, "chorus_delay") == 0) {
       Settings.effects.chorus.delay = (byte)atoi(settingValue);
-      if (Settings.effects.chorus.delay > 32) {
-        Settings.effects.chorus.delay = 32;
-      }
-      if (Settings.effects.chorus.delay < 1) {
-        Settings.effects.chorus.delay = 1;
-      }
-      if(!chorus1.begin(Settings.effects.chorus.buffer,Settings.effects.chorus.delay * AUDIO_BLOCK_SAMPLES,Settings.effects.chorus.voices)) {
-         Serial.println("chorus_delay: Startup failed");
-      }
+      setChorus();
   } else if (strcasecmp(settingName, "chorus_voices") == 0) {
       Settings.effects.chorus.voices = (byte)atoi(settingValue);
       if (Settings.effects.chorus.voices < 0) {
@@ -375,13 +448,7 @@ void parseSetting(const char *settingName, char *settingValue)
       chorus1.voices(Settings.effects.chorus.voices);
   } else if (strcasecmp(settingName, "flange_delay") == 0) {
       Settings.effects.flanger.delay = (byte)atoi(settingValue);
-      if (Settings.effects.flanger.delay > 32) {
-        Settings.effects.flanger.delay = 32;
-      }
-      if (Settings.effects.flanger.delay < 0) {
-        Settings.effects.flanger.delay = 0;
-      }
-      flange1.begin(Settings.effects.flanger.buffer,Settings.effects.flanger.delay*AUDIO_BLOCK_SAMPLES,Settings.effects.flanger.offset,Settings.effects.flanger.depth,Settings.effects.flanger.freq);    
+      setFlanger();   
   } else if (strcasecmp(settingName, "flange_freq") == 0) {
       Settings.effects.flanger.freq = atof(settingValue);
       if (Settings.effects.flanger.freq < 0) {
@@ -411,7 +478,7 @@ void parseSetting(const char *settingName, char *settingValue)
       flange1.voices(Settings.effects.flanger.offset,Settings.effects.flanger.depth,Settings.effects.flanger.freq);
   } else if (strcasecmp(settingName, "flange") == 0) {
       if (strcasecmp(settingValue, "0") == 0) {
-        flange1.voices(Settings.FLANGE_DELAY_PASSTHRU,0,0);
+        flange1.voices(FLANGE_DELAY_PASSTHRU,0,0);
       } else if (strcasecmp(settingValue, "1") == 0) {
         flange1.voices(Settings.effects.flanger.offset,Settings.effects.flanger.depth,Settings.effects.flanger.freq);
       }
@@ -423,7 +490,6 @@ void parseSetting(const char *settingName, char *settingValue)
         strcpy(Settings.glove.settings[b], ptr);
         ConfigureButton(b);
       }
-    
   } else if (strcasecmp(settingName, "buttons") == 0) {
       char *token, *ptr;
       token = strtok_r(settingValue, "|", &ptr);
@@ -488,7 +554,7 @@ char *settingsToJson(char result[])
   strcat(result, tmp);
   strcat(result, ",");
   
-  sprintf(buf, "%d", Settings.effects.hipass);
+  sprintf(buf, "%d", Settings.effects.highpass);
   sprintf(tmp, num_template, "high_pass", buf);
   strcat(result, tmp);
   strcat(result, ",");
@@ -707,7 +773,7 @@ char *settingsToString(char result[])
   memset(buf, 0, sizeof(buf));  
 
   strcat(result, "[high_pass=");
-  sprintf(buf, "%d", Settings.effects.hipass);
+  sprintf(buf, "%d", Settings.effects.highpass);
   strcat(result, buf);
   strcat(result, "]\n");
   memset(buf, 0, sizeof(buf));
@@ -1276,10 +1342,8 @@ void processSettings(char settings[][SETTING_ENTRY_MAX], const int max)
  */
 int loadSettings(const char *filename) 
 {
-  
-  //const size_t bufferSize = JSON_ARRAY_SIZE(5) + JSON_ARRAY_SIZE(6) + 10*JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(3) + 2*JSON_OBJECT_SIZE(4) + JSON_OBJECT_SIZE(5) + JSON_OBJECT_SIZE(8) + JSON_OBJECT_SIZE(12) + 730;
-  //const size_t bufferSize = JSON_ARRAY_SIZE(5) + JSON_ARRAY_SIZE(6) + 10*JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(3) + 2*JSON_OBJECT_SIZE(4) + JSON_OBJECT_SIZE(5) + JSON_OBJECT_SIZE(8) + JSON_OBJECT_SIZE(12) + 740;
-  const size_t bufferSize = JSON_ARRAY_SIZE(5) + JSON_ARRAY_SIZE(6) + 10*JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(3) + 3*JSON_OBJECT_SIZE(4) + JSON_OBJECT_SIZE(5) + JSON_OBJECT_SIZE(8) + JSON_OBJECT_SIZE(9) + 740;
+
+  const size_t bufferSize = 6*JSON_ARRAY_SIZE(2) + JSON_ARRAY_SIZE(5) + JSON_ARRAY_SIZE(6) + 4*JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(3) + 3*JSON_OBJECT_SIZE(4) + JSON_OBJECT_SIZE(5) + JSON_OBJECT_SIZE(8) + JSON_OBJECT_SIZE(9) + 780;
   DynamicJsonBuffer jsonBuffer(bufferSize);
   
   //const char* json = "{\"name\":\"aaaaaaaaaaaaaaaaaaaa\",\"volume\":0.55,\"microphone\":10,\"linein\":10,\"lineout\":30,\"sounds\":{\"dir\":\"/aaaaaaaa/\",\"start\":\"aaaaaaaa.aaa\",\"button\":\"aaaaaaaa.aaa\"},\"loop\":{\"dir\":\"/aaaaaaaa/\",\"file\":\"aaaaaaaa.aaa\",\"gain\":0.02,\"mute\":1},\"voice\":{\"volume\":3,\"dry\":0,\"start\":0.043,\"stop\":0.02,\"wait\":1000},\"effects\":{\"dir\":\"/aaaaaaaa/\",\"volume\":1,\"high_pass\":1,\"bitcrusher\":{\"bits\":16,\"rate\":44100},\"chorus\":{\"voices\":10,\"delay\":1000},\"flanger\":{\"delay\":32,\"offset\":10,\"depth\":10,\"freq\":0.0625},\"noise\":0.014,\"mute\":1},\"eq\":{\"active\":1,\"bands\":[-0.2,-0.4,-0.35,-0.35,-0.9]},\"sleep\":{\"timer\":60000,\"sound\":\"aaaaaaaa.aaa\"},\"buttons\":[{\"type\":10,\"data\":\"aaaaaaaa.aaa\"},{\"type\":10,\"data\":\"aaaaaaaa.aaa\"},{\"type\":10,\"data\":\"aaaaaaaa.aaa\"},{\"type\":10,\"data\":\"aaaaaaaa.aaa\"},{\"type\":10,\"data\":\"aaaaaaaa.aaa\"},{\"type\":10,\"data\":\"aaaaaaaa.aaa\"}]}";
@@ -1309,27 +1373,27 @@ int loadSettings(const char *filename)
   
   JsonObject& loop = root["loop"];
   strlcpy(Settings.loop.dir, loop["dir"], sizeof(Settings.loop.dir)); // "/aaaaaaaa/"
-  const char* loop_file = loop["file"]; // "aaaaaaaa.aaa"
-  float loop_gain = loop["gain"]; // 0.02
-  int loop_mute = loop["mute"]; // 1
+  strlcpy(Settings.loop.file, loop["file"], sizeof(Settings.loop.file)); // "aaaaaaaa.aaa"
+  Settings.loop.volume = loop["gain"]; // 0.02
+  Settings.loop.mute = loop["mute"]; // 1
   
   JsonObject& voice = root["voice"];
-  int voice_volume = voice["volume"]; // 3
-  int voice_dry = voice["dry"]; // 0
-  float voice_start = voice["start"]; // 0.043
-  float voice_stop = voice["stop"]; // 0.02
-  int voice_wait = voice["wait"]; // 1000
+  Settings.voice.volume = voice["volume"]; // 3
+  Settings.voice.dry = voice["dry"]; // 0
+  Settings.voice.start = voice["start"]; // 0.043
+  Settings.voice.stop = voice["stop"]; // 0.02
+  Settings.voice.wait = voice["wait"]; // 1000
   
   JsonObject& effects = root["effects"];
-  const char* effects_dir = effects["dir"]; // "/aaaaaaaa/"
-  int effects_volume = effects["volume"]; // 1
-  int effects_high_pass = effects["high_pass"]; // 1
+  strlcpy(Settings.effects.dir, effects["dir"], sizeof(Settings.effects.dir)); // "/aaaaaaaa/"
+  Settings.effects.volume = effects["volume"]; // 1
+  Settings.effects.highpass = effects["highpass"]; // 1
   
-  int effects_bitcrusher_bits = effects["bitcrusher"]["bits"]; // 16
-  long effects_bitcrusher_rate = effects["bitcrusher"]["rate"]; // 44100
+  Settings.effects.bitcrusher.bits = effects["bitcrusher"]["bits"]; // 16
+  Settings.effects.bitcrusher.rate = effects["bitcrusher"]["rate"]; // 44100
   
-  int effects_chorus_voices = effects["chorus"]["voices"]; // 10
-  int effects_chorus_delay = effects["chorus"]["delay"]; // 1000
+  Settings.effects.chorus.voices = effects["chorus"]["voices"]; // 10
+  Settings.effects.chorus.delay = effects["chorus"]["delay"]; // 1000
   
   JsonObject& effects_flanger = effects["flanger"];
   Settings.effects.flanger.delay = effects_flanger["delay"]; // 32
@@ -1337,34 +1401,78 @@ int loadSettings(const char *filename)
   Settings.effects.flanger.depth = effects_flanger["depth"]; // 10
   Settings.effects.flanger.freq = effects_flanger["freq"]; // 0.0625
   
-  float effects_noise = effects["noise"]; // 0.014
-  int effects_mute = effects["mute"]; // 1
+  Settings.effects.noise = effects["noise"]; // 0.014
+  Settings.effects.mute = effects["mute"]; // 1
   
-  int eq_active = root["eq"]["active"]; // 1
+  Settings.eq.active = root["eq"]["active"]; // 1
   
   JsonArray& eq_bands = root["eq"]["bands"];
-  float eq_bands0 = eq_bands[0]; // -0.2
-  float eq_bands1 = eq_bands[1]; // -0.4
-  float eq_bands2 = eq_bands[2]; // -0.35
-  float eq_bands3 = eq_bands[3]; // -0.35
+  Settings.eq.bands[0] = eq_bands[0]; // -0.2
+  Settings.eq.bands[1] = eq_bands[1]; // -0.4
+  Settings.eq.bands[2] = eq_bands[2]; // -0.35
+  Settings.eq.bands[3] = eq_bands[3]; // -0.35
+  Settings.eq.bands[4] = eq_bands[4]; // -0.35
   
-  long sleep_timer = root["sleep"]["timer"]; // 60000
-  const char* sleep_sound = root["sleep"]["sound"]; // "aaaaaaaa.aaa"
+  Settings.sleep.timer = root["sleep"]["timer"]; // 60000
+  strlcpy(Settings.sleep.file, root["sleep"]["sound"], sizeof(Settings.sleep.file)); // "aaaaaaaa.aaa"
   
   JsonArray& buttons = root["buttons"];
+
+  char buf[30];
+  for (byte i = 0; i < 6; i++) {
+    strcpy(buf, buttons[i][0]);
+    strcat(buf, ";");
+    strcat(buf, buttons[i][1]);
+    strlcpy(Settings.glove.settings[i], buf, sizeof(Settings.glove.settings[i]));
+    memset(buf, 0, sizeof(buf));
+  }
+  /*
+  const char* buttons00 = buttons[0][0]; // "10,aaaaaaaa.aaa"
+  const char* buttons01 = buttons[0][1]; // "10,aaaaaaaa.aaa"
   
-  int buttons0_type = buttons[0]["type"]; // 10
-  const char* buttons0_data = buttons[0]["data"]; // "aaaaaaaa.aaa"
+  const char* buttons10 = buttons[1][0]; // "10,aaaaaaaa.aaa"
+  const char* buttons11 = buttons[1][1]; // "10,aaaaaaaa.aaa"
   
-  int buttons1_type = buttons[1]["type"]; // 10
-  const char* buttons1_data = buttons[1]["data"]; // "aaaaaaaa.aaa"
+  const char* buttons20 = buttons[2][0]; // "10,aaaaaaaa.aaa"
+  const char* buttons21 = buttons[2][1]; // "10,aaaaaaaa.aaa"
   
-  int buttons2_type = buttons[2]["type"]; // 10
-  const char* buttons2_data = buttons[2]["data"]; // "aaaaaaaa.aaa"
+  const char* buttons30 = buttons[3][0]; // "10,aaaaaaaa.aaa"
+  const char* buttons31 = buttons[3][1]; // "10,aaaaaaaa.aaa"
+
+  const char* buttons30 = buttons[4][0]; // "10,aaaaaaaa.aaa"
+  const char* buttons31 = buttons[4][1]; // "10,aaaaaaaa.aaa"
+
+  const char* buttons30 = buttons[5][0]; // "10,aaaaaaaa.aaa"
+  const char* buttons31 = buttons[5][1]; // "10,aaaaaaaa.aaa"
+  */
+  // Apply settings
+  setVolume();
+  setLineout();
+  setLinein();
+  setHipass();
+  setEffectsVolume();
+  setNoiseVolume();
+  setVoiceVolume();
+  setDryVolume();
+  setEffectsVolume();
+  setLoopVolume();
+  setEq();
+  setEqBands();
+  setBitcrusher();
+  setEffectsDir();
+  setSoundsDir();
+  setLoopDir();
+  setLoopMute();
+  setEffectsMute();
+  setSleepTimer();
+  setChorus();
+  setFlanger(); 
+
+  // Configure Buttons
+  for (byte i = 0; i < 6; i++) {
+    ConfigureButton(i);
+  }
   
-  int buttons3_type = buttons[3]["type"]; // 10
-  const char* buttons3_data = buttons[3]["data"]; // "aaaaaaaa.aaa"
-   
   
   /*
   const char* name = root["name"]; // "aaaaaaaaaaaaaaaaaaaa"
@@ -1440,7 +1548,7 @@ const char* buttons3_data = buttons[3]["data"]; // "aaaaaaaa.aaa"
 }
 
 void saveSettings() {
-    const size_t bufferSize = JSON_ARRAY_SIZE(5) + JSON_ARRAY_SIZE(6) + 10*JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(3) + 3*JSON_OBJECT_SIZE(4) + JSON_OBJECT_SIZE(5) + JSON_OBJECT_SIZE(8) + JSON_OBJECT_SIZE(9);
+    const size_t bufferSize = JSON_ARRAY_SIZE(5) + JSON_ARRAY_SIZE(6) + 22*JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(3) + 3*JSON_OBJECT_SIZE(4) + JSON_OBJECT_SIZE(5) + JSON_OBJECT_SIZE(8) + JSON_OBJECT_SIZE(9);
 DynamicJsonBuffer jsonBuffer(bufferSize);
 
 JsonObject& root = jsonBuffer.createObject();
@@ -1507,30 +1615,29 @@ sleep["sound"] = "aaaaaaaa.aaa";
 
 JsonArray& buttons = root.createNestedArray("buttons");
 
-JsonObject& buttons_0 = buttons.createNestedObject();
-buttons_0["type"] = 10;
-buttons_0["data"] = "aaaaaaaa.aaa";
+JsonArray& buttons_0 = buttons.createNestedArray();
+buttons_0.add("10,aaaaaaaa.aaa");
+buttons_0.add("10,aaaaaaaa.aaa");
 
-JsonObject& buttons_1 = buttons.createNestedObject();
-buttons_1["type"] = 10;
-buttons_1["data"] = "aaaaaaaa.aaa";
+JsonArray& buttons_1 = buttons.createNestedArray();
+buttons_1.add("10,aaaaaaaa.aaa");
+buttons_1.add("10,aaaaaaaa.aaa");
 
-JsonObject& buttons_2 = buttons.createNestedObject();
-buttons_2["type"] = 10;
-buttons_2["data"] = "aaaaaaaa.aaa";
+JsonArray& buttons_2 = buttons.createNestedArray();
+buttons_2.add("10,aaaaaaaa.aaa");
+buttons_2.add("10,aaaaaaaa.aaa");
 
-JsonObject& buttons_3 = buttons.createNestedObject();
-buttons_3["type"] = 10;
-buttons_3["data"] = "aaaaaaaa.aaa";
+JsonArray& buttons_3 = buttons.createNestedArray();
+buttons_3.add("10,aaaaaaaa.aaa");
+buttons_3.add("10,aaaaaaaa.aaa");
 
-JsonObject& buttons_4 = buttons.createNestedObject();
-buttons_4["type"] = 10;
-buttons_4["data"] = "aaaaaaaa.aaa";
+JsonArray& buttons_4 = buttons.createNestedArray();
+buttons_4.add("10,aaaaaaaa.aaa");
+buttons_4.add("10,aaaaaaaa.aaa");
 
-JsonObject& buttons_5 = buttons.createNestedObject();
-buttons_5["type"] = 10;
-buttons_5["data"] = "aaaaaaaa.aaa";
-
+JsonArray& buttons_5 = buttons.createNestedArray();
+buttons_5.add("10,aaaaaaaa.aaa");
+buttons_5.add("10,aaaaaaaa.aaa");
 root.printTo(Serial);
   }
   
@@ -1605,7 +1712,7 @@ void applySettings()
   //audioShield.volume(readVolume());
   //audioShield.lineOutLevel(Settings.volume.lineout);
   /*
-  if (Settings.effects.hipass == 0) {
+  if (Settings.effects.highpass == 0) {
     audioShield.adcHighPassFilterDisable();
   } else {
     audioShield.adcHighPassFilterEnable();

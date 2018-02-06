@@ -119,7 +119,7 @@ struct Bitcrusher_t {
 struct Effects_t {
   char          dir[14]   = "/effects/";
   float         volume    = 1.0000;
-  byte          hipass    = 1;
+  byte          highpass  = 1;
   float         noise     = 0.0140;
   boolean       mute      = true;   
   Bitcrusher_t  bitcrusher;
