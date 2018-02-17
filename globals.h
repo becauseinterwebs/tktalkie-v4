@@ -1,7 +1,7 @@
 /****
  * Global variables/constants
  */
-
+ /** OLD SETTINGS
 // GUItool: begin automatically generated code
 AudioInputI2S            i2s1;           //xy=91.1111068725586,153.88888931274414
 AudioAnalyzeRMS          rms1;           //xy=210.1111068725586,217.88888931274414
@@ -31,6 +31,40 @@ AudioConnection          patchCord13(voiceMixer, 0, i2s2, 0);
 AudioConnection          patchCord14(voiceMixer, 0, i2s2, 1);
 AudioControlSGTL5000     audioShield;    //xy=77.1111068725586,263.88888931274414
 // GUItool: end automatically generated code
+
+*/
+
+// GUItool: begin automatically generated code
+AudioInputI2S            i2s1;           //xy=91.1111068725586,153.88888931274414
+AudioAnalyzeRMS          rms1;           //xy=212.11109924316406,189.88888549804688
+AudioEffectBitcrusher    bitcrusher1;    //xy=275.111083984375,88.88888549804688
+AudioSynthNoisePink      pink1;          //xy=340.6666717529297,314.5555725097656
+AudioPlaySdWav           loopPlayer;     //xy=347.111083984375,245.88888549804688
+AudioSynthWaveform       waveform1;      //xy=350.1111145019531,279.8888854980469
+AudioPlaySdWav           effectsPlayer;  //xy=356.1111068725586,210.88888931274414
+AudioEffectFlange        flange1;        //xy=416.1111145019531,89.88888549804688
+AudioEffectChorus        chorus1;        //xy=547.1111068725586,88.88888931274414
+AudioMixer4              effectsMixer;   //xy=558.111083984375,252.88888549804688
+AudioMixer4              voiceMixer;     //xy=712.1111068725586,117.88888931274414
+AudioOutputI2S           i2s2;           //xy=877.1111068725586,117.88888931274414
+AudioConnection          patchCord1(i2s1, 0, bitcrusher1, 0);
+AudioConnection          patchCord2(i2s1, 0, voiceMixer, 2);
+AudioConnection          patchCord3(i2s1, 1, rms1, 0);
+AudioConnection          patchCord4(bitcrusher1, flange1);
+AudioConnection          patchCord5(pink1, 0, effectsMixer, 3);
+AudioConnection          patchCord6(loopPlayer, 0, effectsMixer, 1);
+AudioConnection          patchCord7(waveform1, 0, effectsMixer, 2);
+AudioConnection          patchCord8(effectsPlayer, 0, effectsMixer, 0);
+AudioConnection          patchCord9(flange1, chorus1);
+AudioConnection          patchCord10(chorus1, 0, voiceMixer, 0);
+AudioConnection          patchCord11(effectsMixer, 0, voiceMixer, 3);
+AudioConnection          patchCord12(voiceMixer, 0, i2s2, 0);
+AudioConnection          patchCord13(voiceMixer, 0, i2s2, 1);
+AudioControlSGTL5000     audioShield;    //xy=77.1111068725586,263.88888931274414
+// GUItool: end automatically generated code
+
+
+
 
 // version flag
 const char VERSION[5] = "4.0";
@@ -75,6 +109,7 @@ byte lastRnd  = -1;                                       // Keeps track of the 
 #define EFFECTS_PLAYER 1
 #define LOOP_PLAYER    2
 #define FX_DELAY 16
+#define FILENAME_SIZE 14
 
 struct Loop_t {
   char    dir[14]   = "/loops/";
@@ -178,7 +213,7 @@ struct Config_t {
   char access_code[25] = "1138";      // the password for remote apps to access this device (specified in global settings file)
 } Config;
 
-const char PROFILES_DIR[11]         = "/profiles/";
+const char PROFILES_DIR[11]         = "/profile4/";
 
 struct App_t {
   boolean silent              = false;          // used for PTT and to switch back to Voice Activated mode

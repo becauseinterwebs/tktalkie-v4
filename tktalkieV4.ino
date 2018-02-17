@@ -46,7 +46,7 @@
  *      it.  This is for future use.
  *  
  * V3.1 (5/30/2017)
- *  1.  Added new setting to the SETTINGS.TXT control file to alert the 
+ *  1.  Added new setting to the CONFIG.TXT control file to alert the 
  *      mobile app which input/volume controls should be presented.
  *      Valid values are:
  *        MIC  = Show the microphone jack controls only
@@ -56,7 +56,7 @@
  *      version 3.1 of the TKTalkie hardware, inputs are wired to mic only
  *      as it will support both wired and wireless microphones.
  *      
- *  2.  Added new settings to the SETTINGS.TXT control file to alert the     
+ *  2.  Added new settings to the CONFIG.TXT control file to alert the     
  *      mobile app which output/volume controls should be presented.
  *      Valid values are:
  *         SPKR = Show only headphones/speaker controls 
@@ -119,28 +119,15 @@ boolean checkPTTButton()
 }
 
 /**
- * Read the SETTINGS.TXT file
+ * Read the CONFIG.TXT file
  */
 void startup() 
 {
 
-  Serial.println(F("\n----------------------------------------------"));
-  Serial.print(F("TKTalkie v"));
-  Serial.println(VERSION);
-  Serial.println(F("(c) 2017 TK81113/Because...Interwebs!\nwww.TKTalkie.com"));
-  Serial.print(F("Debugging is "));
-  Serial.println(Config.debug == true ? "ON" : "OFF");
-  if (Config.debug == false) {
-    Serial.println(F("Type debug=1 [ENTER] to enable debug messages"));
-  } else {
-    Serial.println(F("Type debug=0 [ENTER] to disable debug messages"));
-  }
-  Serial.println(F("----------------------------------------------\n"));
-  
   // make sure we have a profile to load
   //memset(Settings.file, 0, sizeof(Settings.file));
 
-  File file = SD.open("SETTINGS.TXT");
+  File file = SD.open("CONFIG.TXT");
 
   const size_t bufferSize = JSON_ARRAY_SIZE(6) + JSON_OBJECT_SIZE(6) + 120;
   DynamicJsonBuffer jsonBuffer(bufferSize);
@@ -182,18 +169,18 @@ void startup()
   file.close();
     
   debug(F("Got startup value Config.debug: %d\n"), Config.debug);
-  debug(F("Got startup value PROFILE: %s\n"), Config.profile);
-  debug(F("Got startup  value ECHO: %d\n"), Config.echo);
+  debug(F("Got startup value Config.profile: %s\n"), Config.profile);
+  debug(F("Got startup  value Config.echo: %d\n"), Config.echo);
   if (strcasecmp(Config.input, "") == 0) {
     strlcpy(Config.input, "BOTH", sizeof(Config.input));
   }
-  debug(F("Got startup value INPUT TYPE: %s\n"), Config.input);
+  debug(F("Got startup value Config.input: %s\n"), Config.input);
 
   //strlcpy(Settings.file, Config.profile, sizeof(Settings.file));
   
   if (strcasecmp(Config.profile, "") == 0) {
     // No profile specified, try to find one and load it
-    char files[MAX_FILE_COUNT][14];
+    char files[MAX_FILE_COUNT][FILENAME_SIZE];
     byte total = listFiles(PROFILES_DIR, files, MAX_FILE_COUNT, FILE_EXT, false, false);
     if (total > 0) {
       memset(Config.profile, 0, sizeof(Config.profile));
@@ -210,10 +197,29 @@ void startup()
     debug(F("PROFILE: %s\n"), Config.profile);
   }
 
+  if (strcasecmp(Config.input, "linein") == 0) {
+    audioShield.inputSelect(AUDIO_INPUT_LINEIN);
+  } else {
+    audioShield.inputSelect(AUDIO_INPUT_MIC);
+  }
+
   debug(F("Read access code %s\n"), Config.access_code);
+
+  Serial.println(F("\n----------------------------------------------"));
+  Serial.print(F("TKTalkie v"));
+  Serial.println(VERSION);
+  Serial.println(F("(c) 2017 TK81113/Because...Interwebs!\nwww.TKTalkie.com"));
+  Serial.print(F("Debugging is "));
+  Serial.println(Config.debug == 0 ? "OFF" : "ON");
+  if (Config.debug == false) {
+    Serial.println(F("Type debug=1 [ENTER] to enable debug messages"));
+  } else {
+    Serial.println(F("Type debug=0 [ENTER] to disable debug messages"));
+  }
+  Serial.println(F("----------------------------------------------\n"));
   
   // Load settings from specified file
-  //loadSettingsFile(Config.profile);
+  loadSettings(Config.profile, &Settings, true);
   
   // Get flange processor ready but keep it off
   flange1.begin(Settings.effects.flanger.buffer,Settings.effects.flanger.delay*AUDIO_BLOCK_SAMPLES,Settings.effects.flanger.offset, Settings.effects.flanger.depth, Settings.effects.flanger.freq);
@@ -225,8 +231,7 @@ void startup()
   //Serial.println("\n\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!! AFTER STARTUP PROCESS SETTINGS !!!!!!!!!!!!!!!!!!!!!!!!!!");
   
   // apply the settings so we can do stuff
-  /*
- /applySettings();
+ //applySettings();
 
   // set the volume, either by config or volume pot
   
@@ -269,7 +274,6 @@ void startup()
 
   STATE = STATE_RUNNING;
 
-  */
   Serial.println("----- END OF STARTUP");
 
 }
@@ -329,8 +333,15 @@ void setup()
   // wait half a sec to give everything time to power up
   delay(500);
 
+  // set volume of effects feed into master mixer
+  voiceMixer.gain(3, 1);
+  
   // load startup settings
   startup();
+
+  const size_t bufferSize = JSON_ARRAY_SIZE(5) + JSON_ARRAY_SIZE(6) + 22*JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(3) + 3*JSON_OBJECT_SIZE(4) + JSON_OBJECT_SIZE(5) + JSON_OBJECT_SIZE(8) + JSON_OBJECT_SIZE(9);
+  Serial.print("Buffer size: ");
+  Serial.println(bufferSize);
   
 }
 
@@ -359,7 +370,9 @@ void loop()
  * Called from main loop
  */
 elapsedMillis checkMillis = 0;
- 
+byte lastButton = 0;
+byte lastControlButton = 0;
+
 void run() {
 
   // check loop
@@ -445,16 +458,26 @@ void run() {
       // Check if there is a parameter and process 
       // commands with values first
       if (strcasecmp(cmd_key, "config") == 0) {
-        /*
-        for (int i = 0; i < 6; i++) {
-          Serial.println(STARTUP_SETTINGS[i]);
-        }
-        */
+        Serial.print("Profile: ");
         Serial.println(Config.profile);
-        Serial.println(Config.debug);
+        Serial.print("Debug: ");
+        Serial.println(Config.debug);;
+        Serial.print("Echo: ");
+        Serial.println(Config.echo);
+        Serial.print("Buttons: ");
+        for (byte i = 0; i < 6; i++) {
+          Serial.print(Config.buttons[i]);
+          Serial.print(" ");
+        }
+        Serial.println("");
+        Serial.print("Input: ");
+        Serial.println(Config.input);
+        Serial.print("Access Code: ");
+        Serial.println(Config.access_code);
       } else if (strcasecmp(cmd_key, "save") == 0) {
+        char *pfile;
         if (strcasecmp(cmd_val, "") != 0) {
-            char *ptr, *pfile, *pname;
+            char *ptr, *pname;
             pfile = strtok_r(cmd_val, ";", &ptr);
             if (strcasecmp(pfile, "") != 0) {
               memset(Settings.file, 0, sizeof(Settings.file));
@@ -473,10 +496,12 @@ void run() {
             wasPlaying = true;
             loopPlayer.stop();
          }
-         if (saveSettingsFile(Settings.file) == true) {
+         if (saveSettings(Settings.file, true) == true) {
+          Serial.println("SAVED OK");
           sendToApp("save", "1");
           connectSound();
          } else {
+          Serial.println("NOT SAVED OK");
           sendToApp("save", "0");
          }
          if (wasPlaying == true) {
@@ -489,34 +514,24 @@ void run() {
               saveConfig();
           }
       } else if (strcasecmp(cmd_key, "debug") == 0) {
-           if (strcasecmp(cmd_val, "") == 0) {
-              Serial.print("Config.debug=");
-              Serial.println(Config.debug == true ? "1" : "0");
-           } else {
-              int i = atoi(cmd_val);
-              char val[2] = "0";
-              if (i == 0) {
-                Config.debug = false;
-              } else {
-                strcpy(val, "1");
-                Config.debug = true;
-              }
-              saveConfig();
-          }
+            int i = atoi(cmd_val);
+            char val[2] = "0";
+            if (i == 0) {
+              Config.debug = false;
+            } else {
+              strcpy(val, "1");
+              Config.debug = true;
+            }
+            saveConfig();
       } else if (strcasecmp(cmd_key, "echo") == 0) {
-           if (strcasecmp(cmd_val, "") == 0) {
-              Serial.print("ECHO=");
-              Serial.println(Config.echo == true ? "1" : "0");
-           } else {
-              int i = atoi(cmd_val);
-              Config.echo = i == 1 ? true : false;
-              saveConfig();
-          }
+            int i = atoi(cmd_val);
+            Config.echo = i;
+            saveConfig();
       } else if (strcasecmp(cmd_key, "default") == 0) {
           if (strcasecmp(cmd_val, "") == 0) {
             strcpy(cmd_val, Settings.file);
           }
-          char ret[SETTING_ENTRY_MAX];
+          char ret[16];
           if (setDefaultProfile(cmd_val)) {
             strcpy(ret, "1;");
           } else {
@@ -526,7 +541,7 @@ void run() {
           sendToApp("default", ret);
       } else if (strcasecmp(cmd_key, "delete") == 0) {
           if (strcasecmp(cmd_val, "") != 0) {
-            char ret[SETTING_ENTRY_MAX];
+            char ret[FILENAME_SIZE];
             if (deleteProfile(cmd_val)) {
               strcpy(ret, "1;");
               strcat(ret, cmd_val);
@@ -545,15 +560,15 @@ void run() {
           char buf[100];
           strcpy(buf, PROFILES_DIR);
           strcat(buf, Settings.file);
-          loadSettings(buf);
-          //applySettings();
+          loadSettings(buf, &Settings, true);
           long l = playSound(Settings.sounds.start);
           delay(l+100);
           playLoop();
           // send to remote if connected
-          sendConfig();
+          if (App.ble_connected) {
+            sendConfig();
+          }
       } else if (strcasecmp(cmd_key, "play") == 0) {
-          //playSoundFile(EFFECTS_PLAYER, cmd_val);
           effectsPlayer.play(cmd_val);
       } else if (strcasecmp(cmd_key, "play_effect") == 0) {
           playEffect(cmd_val);
@@ -587,7 +602,7 @@ void run() {
            strcpy(cmd_val, Settings.file);
          }
          addBackupExt(cmd_val);
-         saveSettingsFile(cmd_val, false); 
+         //saveSettingsFile(cmd_val, false); 
       } else if (strcasecmp(cmd_key, "restore") == 0) {
          loopPlayer.stop();
          if (strcasecmp(cmd_val, "") == 0) {
@@ -603,7 +618,7 @@ void run() {
            strcpy(cmd_val, buf);
            memset(buf, 0, sizeof(buf));
          }
-         loadSettings(cmd_val);    
+         loadSettings(cmd_val, &Settings, true);    
          //applySettings();
          long l = playSound(Settings.sounds.start);
          delay(l+100);
@@ -613,17 +628,17 @@ void run() {
           Serial.println(Settings.file);
           Serial.println(F("--------------------------------------------------------------------------------"));
           char buffer[1024];
-          char *p = settingsToString(buffer);
+          char *p = settingsToString(buffer, true);
           Serial.println(p);
           Serial.println(F("--------------------------------------------------------------------------------"));
           Serial.println(F(""));
       } else if (strcasecmp(cmd_key, "files") == 0) {
-          char temp[MAX_FILE_COUNT][14];
+          char temp[MAX_FILE_COUNT][FILENAME_SIZE];
           listFiles("/", temp, MAX_FILE_COUNT, "", true, true);
       } else if (strcasecmp(cmd_key, "show") == 0) {
           showFile(cmd_val);
       } else if (strcasecmp(cmd_key, "sounds") == 0) {
-          char temp[MAX_FILE_COUNT][14];
+          char temp[MAX_FILE_COUNT][FILENAME_SIZE];
           int count = listFiles(Settings.sounds.dir, temp, MAX_FILE_COUNT, SOUND_EXT, false, true);
           if (strcasecmp(cmd_val, "1") == 0) {
             char buffer[1024];
@@ -631,7 +646,7 @@ void run() {
             sendToApp("sounds", files);
           }
       } else if (strcasecmp(cmd_key, "effects") == 0) {
-          char temp[MAX_FILE_COUNT][14];
+          char temp[MAX_FILE_COUNT][FILENAME_SIZE];
           int count = listFiles(Settings.effects.dir, temp, MAX_FILE_COUNT, SOUND_EXT, false, true);
           if (strcasecmp(cmd_val, "1") == 0) {
             char buffer[1024];
@@ -639,7 +654,7 @@ void run() {
             sendToApp("effects", files);
           }
       } else if (strcasecmp(cmd_key, "loops") == 0) {
-          char temp[MAX_FILE_COUNT][14];
+          char temp[MAX_FILE_COUNT][FILENAME_SIZE];
           int count = listFiles(Settings.loop.dir, temp, MAX_FILE_COUNT, SOUND_EXT, false, true);
           if (strcasecmp(cmd_val, "1") == 0) {
             char buffer[1024];
@@ -647,26 +662,29 @@ void run() {
             sendToApp("loops", files);
           }
       } else if (strcasecmp(cmd_key, "profiles") == 0) {
-          char temp[MAX_FILE_COUNT][14];
+          char temp[MAX_FILE_COUNT][FILENAME_SIZE];
           int count = listFiles(PROFILES_DIR, temp, MAX_FILE_COUNT, FILE_EXT, false, false);
-          char buffer[1024];
-          char *def = getSettingValue(buffer, "profile");
           for (int i = 0; i < count; i++) {
             Serial.print(temp[i]);
             if (strcasecmp(temp[i], Settings.file) == 0) {
               Serial.print(" (Loaded)");
             }
-            if (strcasecmp(temp[i], def) == 0) {
+            if (strcasecmp(temp[i], Settings.file) == 0) {
               Serial.print(" (Default)");
             }
             Serial.println("");
           }
       } else if (strcasecmp(cmd_key, "ls") == 0) {
-          char paths[MAX_FILE_COUNT][14];
+          Serial.println("set paths");
+          char paths[MAX_FILE_COUNT][FILENAME_SIZE];
+          Serial.println("Set buffer");
           char buffer[1024];
           // return a list of directories on the card
+          Serial.println("call list directories");
           int count = listDirectories("/", paths);
+          Serial.println("conver to json string");
           char *dirs = arrayToStringJson(buffer, paths, count);
+          Serial.println("send to app");
           sendToApp(cmd_key, dirs);
       } else if (strcasecmp(cmd_key, "help") == 0) {
           showFile("HELP.TXT");
@@ -678,7 +696,9 @@ void run() {
         softreset();
       } else if (strcasecmp(cmd_key, "sleep") == 0) {
         gotoSleep();  
-      } else { 
+      } else if (strcasecmp(cmd_key, "sendconfig") == 0) { 
+        sendConfig();
+      } else {
         parseSetting(cmd_key, cmd_val);
         //applySettings();
         if (strcasecmp(cmd_key, "loop") == 0) {
@@ -714,13 +734,15 @@ void run() {
             case 2:
               {
                 Serial.println(2);
-                if (effectsPlayer.isPlaying()) {
+                if (effectsPlayer.isPlaying() && lastButton == whichButton && lastControlButton == i) {
                   effectsPlayer.stop();
                 } else {
-                  char buffer[14];
+                  char buffer[FILENAME_SIZE];
                   char *sound = Settings.glove.ControlButtons[i].buttons[whichButton-1].getSound(buffer);
                   Serial.println(sound);
                   playGloveSound(sound);
+                  lastButton = whichButton;
+                  lastControlButton = i;
                 }
               }  
               break;
@@ -1007,7 +1029,7 @@ void run() {
       }
       
     } else {
-  
+
         // Check if we have audio
         if (rms1.available()) {
           
@@ -1021,7 +1043,7 @@ void run() {
           // by breathing, etc.  Adjust this level as necessary!
           if (val >= Settings.voice.start) {
 
-             debug(F("Voice start: %4f\n"), val);
+             //debug(F("Voice start: %4f\n"), val);
              
             // If user is not currently App.speaking, then they just started talking :)
             if (App.speaking == false) {
@@ -1032,7 +1054,7 @@ void run() {
   
           } else if (App.speaking == true) {
 
-              debug(F("Voice val: %4f\n"), val);
+              //debug(F("Voice val: %4f\n"), val);
               
               if (val < Settings.voice.stop) {
     
@@ -1042,7 +1064,7 @@ void run() {
                 // but it should probably be AT LEAST 1/4 second (250 milliseconds.)
     
                 if (stopped >= Settings.voice.wait) {
-                  debug(F("Voice stop: %4f\n"), val);
+                  //debug(F("Voice stop: %4f\n"), val);
                   voiceOff();
                   // play random sound effect
                   addSoundEffect();

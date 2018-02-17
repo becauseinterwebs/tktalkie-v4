@@ -8,7 +8,7 @@
  * This code is adapted from http://playground.arduino.cc/Main/Printf
  */
 void debug(const __FlashStringHelper *fmt, ... ) {
-  if (Config.debug == 0 || Config.debug == false) {
+  if (Config.debug == 0) {
     return;
   }
   char buf[256]; // resulting string limited to 1000 chars
@@ -20,7 +20,7 @@ void debug(const __FlashStringHelper *fmt, ... ) {
   vsnprintf(buf, sizeof(buf), (const char *)fmt, args); // for the rest of the world
 #endif
   va_end(args);
-  Serial.print("> ");
+  Serial.print("[DEBUG] ");
   Serial.print(buf);
 }
 

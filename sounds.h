@@ -2,7 +2,7 @@
  * Sound utils
  */
 
-/**
+/**play
  * Emit a warning tone
  */
 void beep(const byte times = 1)
@@ -93,7 +93,7 @@ unsigned long playGloveSound(const char *filename)
   if (strcasecmp(filename, "") == 0) {
     return 0;
   }
-  char buf[25];
+  char buf[FILENAME_SIZE*2];
   strcpy(buf, Settings.glove.dir);
   strcat(buf, filename);
   return playSoundFile(EFFECTS_PLAYER, buf);
@@ -107,7 +107,7 @@ unsigned long playSound(const char *filename)
   if (strcasecmp(filename, "") == 0) {
     return 0;
   }
-  char buf[25];
+  char buf[FILENAME_SIZE*2];
   strcpy(buf, Settings.sounds.dir);
   strcat(buf, filename);
   return playSoundFile(EFFECTS_PLAYER, buf);
@@ -121,7 +121,7 @@ unsigned long playEffect(const char *filename)
   if (strcasecmp(filename, "") == 0) {
     return 0;
   }
-  char buf[25];
+  char buf[FILENAME_SIZE*2];
   strcpy(buf, Settings.effects.dir);
   strcat(buf, filename);
   return playSoundFile(EFFECTS_PLAYER, buf);
@@ -135,12 +135,14 @@ void playLoop()
   loopLength = 0;
   Serial.println("AT PLAY LOOP");
   if (strcasecmp(Settings.loop.file, "") != 0) {
-    char buf[25];
+    char buf[FILENAME_SIZE*2];
     strcpy(buf, Settings.loop.dir);
     strcat(buf, Settings.loop.file);
     Serial.print("PLAYING LOOP: ");
     Serial.println(buf);
     loopLength = playSoundFile(LOOP_PLAYER, buf);
+  } else {
+    Serial.println("NO LOOP FILE");
   }
   loopMillis = 0;
 }

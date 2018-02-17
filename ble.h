@@ -64,6 +64,9 @@ void btprint(const __FlashStringHelper *fmt, ... ) {
  */
 void sendToApp(const char *cmd, const char *value) 
 {
+  if (App.ble_connected == false) {
+    return;
+  }
   if (value[0] == '[') {
     btprint(F("{\"cmd\":\"%s\",\"data\":%s}\n"), cmd, value);
   } else {
@@ -77,18 +80,22 @@ void sendToApp(const char *cmd, const char *value)
 void sendConfig() 
 {
 
-/*
   debug(F("Sending config\n"));
 
   btprint(F("{\"cmd\":\"config\", \"data\": { \"ver\":\"%s\","), VERSION);
 
-  // get sound files
-  char files[MAX_FILE_COUNT][SETTING_ENTRY_MAX];
+  char buffer[1024];
+  char files[MAX_FILE_COUNT][FILENAME_SIZE];
+
+  // add buttons
+  char buttons[20];
+  sprintf(buttons, "[%d,%d,%d,%d,%d,%d]", Config.buttons[0], Config.buttons[1], Config.buttons[2], Config.buttons[3], Config.buttons[4], Config.buttons[5]);
+  btprint(F("\"buttons\":%s,"), buttons);
   
-  byte count = listFiles(Settings.sounds_dir, files, MAX_FILE_COUNT, SOUND_EXT, false, false);
+  byte count = listFiles(Settings.sounds.dir, files, MAX_FILE_COUNT, SOUND_EXT, false, false);
 
   // Add sound files
-  char buffer[1024];
+  
   char *sounds = arrayToStringJson(buffer, files, count);
   btprint(F("\"sounds\":%s,"), sounds);
   memset(buffer, 0, sizeof(buffer));
@@ -97,12 +104,13 @@ void sendConfig()
   memset(files, 0, sizeof(files));
 
   // Add effects 
-  char *effects = arrayToStringJson(buffer, Settings.sound_effects, SOUND_EFFECTS_COUNT);
+  // Does this need to be read again?  They should already be in memory
+  char *effects = arrayToStringJson(buffer, Settings.effects.files, SOUND_EFFECTS_COUNT);
   btprint(F("\"effects\":%s,"), effects);
   memset(buffer, 0, sizeof(buffer));
 
   // get loop files 
-  count = listFiles(Settings.loop_dir, files, MAX_FILE_COUNT, SOUND_EXT, false, false);
+  count = listFiles(Settings.loop.dir, files, MAX_FILE_COUNT, SOUND_EXT, false, false);
   
   // Add loops 
   char *loops = arrayToStringJson(buffer, files, count);
@@ -112,15 +120,15 @@ void sendConfig()
   // Clear array
   memset(files, 0, sizeof(files));
 
-  char *profile = getSettingValue(buffer, "profile");
-  btprint(F("\"default\":\"%s\","), profile);
-  memset(buffer, 0, sizeof(buffer));
+  //char *profile = getSettingValue(buffer, "profile");
+  btprint(F("\"default\":\"%s\","), Config.profile);
+  //memset(buffer, 0, sizeof(buffer));
   
-  btprint(F("\"current\": {\"name\":\"%s\",\"desc\":\"%s\"},"), PROFILE_FILE, PROFILE_NAME);
+  btprint(F("\"current\":\"%s\","), Settings.file, Settings.name);
 
   // This is already formatted correctly
-  char *json = settingsToJson(buffer);
-  btprint(F("%s,"), json);
+  char *json = settingsToString(buffer);
+  btprint(F("\"profile\":%s,"), json);
   memset(buffer, 0, sizeof(buffer));
 
   btprint(F("\"profiles\":["));
@@ -129,39 +137,30 @@ void sendConfig()
   count = listFiles(PROFILES_DIR, files, MAX_FILE_COUNT, FILE_EXT, false, false);
   
   for (byte i = 0; i < count; i++) {
-     char entries[MAX_FILE_COUNT][SETTING_ENTRY_MAX];
-     char filename[SETTING_ENTRY_MAX];
+     char filename[30];
      strcpy(filename, PROFILES_DIR);
      strcat(filename, files[i]);
-     byte total = loadSettingsFile(filename, entries, MAX_SETTINGS_COUNT);
-     for (byte x = 0; x < total; x++) {
-        char *key, *value, *ptr;
-        char entry[SETTING_ENTRY_MAX];
-        strcpy(entry, entries[x]);
-        key = strtok_r(entry, "=", &ptr);
-        value = strtok_r(NULL, "=", &ptr);
-        if (strcasecmp(key, "name") == 0) {
-           btprint(F("{\"name\":\"%s\",\"desc\":\"%s\"}"), files[i], value);
-           if (i < count-1) {
-             btprint(F(","));
-           }
-           break;
-        }
+     Settings_t settings;
+     loadSettings(filename, &settings, false);
+     btprint(F("{\"name\":\"%s\",\"desc\":\"%s\"}"), files[i], settings.name);
+     if (i < count-1) {
+       btprint(F(","));
      }
   }
   
-  btprint(F("],\"mute\":%s,"), MUTED == true ? "1" : "0");
+  btprint(F("],\"mute\":%s,"), App.muted == true ? "1" : "0");
 
   btprint(F("\"bg\":%s,"), loopPlayer.isPlaying() ? "1" : "0");
 
   // list directories on the card
   memset(buffer, 0, sizeof(buffer));
+  // Clear array
+  memset(files, 0, sizeof(files));
   count = listDirectories("/", files);
   char *dirs = arrayToStringJson(buffer, files, count);
   btprint(F("\"ls\":%s"), dirs);
             
   // end
   btprint("}}\n");
-  */
 }
 
