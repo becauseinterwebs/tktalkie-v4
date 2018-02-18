@@ -120,6 +120,18 @@ void sendConfig()
   // Clear array
   memset(files, 0, sizeof(files));
 
+
+  // get glove sound files 
+  count = listFiles(Settings.glove.dir, files, MAX_FILE_COUNT, SOUND_EXT, false, false);
+  
+  // Add glove sounds 
+  char *glove_sounds = arrayToStringJson(buffer, files, count);
+  btprint(F("\"glove_sounds\":%s,"), loops);
+  memset(buffer, 0, sizeof(buffer));
+
+  // Clear array
+  memset(files, 0, sizeof(files)); 
+
   //char *profile = getSettingValue(buffer, "profile");
   btprint(F("\"default\":\"%s\","), Config.profile);
   //memset(buffer, 0, sizeof(buffer));

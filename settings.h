@@ -659,8 +659,11 @@ char *settingsToString(char result[], const boolean pretty = false)
   JsonObject& sleep = root.createNestedObject("sleep");
   sleep["timer"] = Settings.sleep.timer;
   sleep["file"] = Settings.sleep.file;
-  
-  JsonArray& buttons = root.createNestedArray("buttons");
+
+  JsonObject& glove = root.createNestedObject("glove");
+  glove["dir"] = Settings.glove.dir;
+
+  JsonArray& buttons = glove.createNestedArray("buttons");
 
   char *button;
   
@@ -990,13 +993,15 @@ void loadSettings(const char *filename, Settings_t *Settings, boolean apply)
 
   Settings->sleep.timer = root["sleep"]["timer"]; // 60000
   strlcpy(Settings->sleep.file, root["sleep"]["file"], sizeof(Settings->sleep.file)); // "aaaaaaaa.aaa"
+
+  strlcpy(Settings->glove.dir, root["glove"]["dir"], sizeof(Settings->glove.dir));
   
-  JsonArray& buttons = root["buttons"];
+  JsonArray& glove_buttons = root["glove"]["buttons"];
 
   for (byte i = 0; i < 6; i++) {
-    strcpy(buf, buttons[i][0]);
+    strcpy(buf, glove_buttons[i][0]);
     strcat(buf, ";");
-    strcat(buf, buttons[i][1]);
+    strcat(buf, glove_buttons[i][1]);
     strlcpy(Settings->glove.settings[i], buf, sizeof(Settings->glove.settings[i]));
     memset(buf, 0, sizeof(buf));
   }
