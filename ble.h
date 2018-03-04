@@ -115,17 +115,22 @@ void sendConfig()
   // Add loops 
   char *loops = arrayToStringJson(buffer, files, count);
   btprint(F("\"loops\":%s,"), loops);
+  Serial.println("BEFORE LOOP BUFFER CLEAR");
   memset(buffer, 0, sizeof(buffer));
+  Serial.println("AFTER LOOP BUFFER CLEAR");
 
   // Clear array
   memset(files, 0, sizeof(files));
-
+  Serial.println("AFTER FILES CLEAR");
 
   // get glove sound files 
+  Serial.print("Gathering sound glove files -> ");
+  Serial.println(Settings.glove.dir);
+  
   count = listFiles(Settings.glove.dir, files, MAX_FILE_COUNT, SOUND_EXT, false, false);
   
   // Add glove sounds 
-  char *glove_sounds = arrayToStringJson(buffer, files, count);
+  loops = arrayToStringJson(buffer, files, count);
   btprint(F("\"glove_sounds\":%s,"), loops);
   memset(buffer, 0, sizeof(buffer));
 
@@ -134,7 +139,7 @@ void sendConfig()
 
   //char *profile = getSettingValue(buffer, "profile");
   btprint(F("\"default\":\"%s\","), Config.profile);
-  //memset(buffer, 0, sizeof(buffer));
+  memset(buffer, 0, sizeof(buffer));
   
   btprint(F("\"current\":\"%s\","), Settings.file, Settings.name);
 

@@ -70,6 +70,8 @@ char *arrayToStringJson(char result[], const char arr[][14], int len)
     }
   }
   strcat(result, "]");
+  //Serial.print("ARRAYTOSTRINGJSON: ");
+  //Serial.println(result);
   return result;
 }
 

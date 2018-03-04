@@ -262,6 +262,10 @@ void setLoopDir() {
   fixPath(Settings.loop.dir);
 }
 
+void setGloveDir() {
+  fixPath(Settings.glove.dir);
+}
+
 void setLoopMute() {
   if (Settings.loop.mute > 1) {
     Settings.loop.mute = 1;
@@ -413,6 +417,10 @@ void parseSetting(const char *settingName, char *settingValue)
     memset(Settings.loop.dir, 0, sizeof(Settings.loop.dir));
     strcpy(Settings.loop.dir, settingValue);
     setLoopDir();
+  } else if (strcasecmp(settingName, "glove_dir") == 0) {
+    memset(Settings.glove.dir, 0, sizeof(Settings.glove.dir));
+    strcpy(Settings.glove.dir, settingValue);
+    setGloveDir();  
   } else if (strcasecmp(settingName, "mute_loop") == 0) {
     Settings.loop.mute = (byte)atoi(settingValue);
     setLoopMute();
@@ -1024,6 +1032,7 @@ void loadSettings(const char *filename, Settings_t *Settings, boolean apply)
     setEffectsDir();
     setSoundsDir();
     setLoopDir();
+    setGloveDir();
     setLoopMute();
     setEffectsMute();
     setSleepTimer();

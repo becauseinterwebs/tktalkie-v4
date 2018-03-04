@@ -1112,6 +1112,8 @@ void gotoSleep() {
   if (loopPlayer.isPlaying()) {
     loopPlayer.stop();
   }
+  Serial.print("Playing Sleep Sound ");
+  Serial.println(Settings.sleep.file);
   long l = playSound(Settings.sleep.file);
   delay(l+250);
   SLEEP:
