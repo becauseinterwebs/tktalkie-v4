@@ -134,7 +134,7 @@ void setVolume() {
     Settings.volume.master = 0;
   }
   //audioShield.volume(readVolume());
-  char buf[30];
+  char buf[10];
   dtostrf(Settings.volume.master, 0, 3, buf);
   debug(F("VOLUME: %s\n"), buf);
   audioShield.volume(Settings.volume.master);

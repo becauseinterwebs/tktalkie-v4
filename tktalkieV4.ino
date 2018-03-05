@@ -757,6 +757,7 @@ void run() {
                 Serial.println(Settings.volume.master);
                 audioShield.volume(Settings.volume.master);
                 boop(440, 1);
+                sendToApp("volume", Settings.volume.master, 3);
               }  
               break;
             // Volume down  
@@ -770,6 +771,7 @@ void run() {
                 Serial.println(Settings.volume.master);
                 audioShield.volume(Settings.volume.master);
                 boop(490, 0);
+                sendToApp("volume", Settings.volume.master, 3);
               }  
               break;
             // mute  
@@ -785,6 +787,7 @@ void run() {
                   App.muted = true;  
                 }
               }
+              sendToApp("mute", App.muted ? 1 : 0);
               break;
             // sleep/wake  
             case 6:
@@ -805,6 +808,7 @@ void run() {
                 Serial.println(Settings.volume.lineout);
                 audioShield.lineOutLevel(Settings.volume.lineout);   
                 boop(440, 1);  
+                sendToApp("lineout", Settings.volume.lineout);
               }
               break;
             // lineout down  
@@ -818,6 +822,7 @@ void run() {
                 Serial.println(Settings.volume.lineout);
                 audioShield.lineOutLevel(Settings.volume.lineout); 
                 boop(490, 0);
+                sendToApp("lineout", Settings.volume.lineout);
               }
               break;
             // mic gain up
@@ -831,6 +836,7 @@ void run() {
                 Serial.println(Settings.volume.microphone);
                 audioShield.micGain(Settings.volume.microphone);  
                 boop(540, 1);
+                sendToApp("mic", Settings.volume.microphone);
               }
               break;
             // mic gain down  
@@ -844,6 +850,7 @@ void run() {
                 Serial.println(Settings.volume.microphone);
                 audioShield.micGain(Settings.volume.microphone);  
                 boop(540, 0);
+                sendToApp("mic", Settings.volume.microphone);
               }
               break;
             // Start/Stop Loop
@@ -867,6 +874,7 @@ void run() {
                 Serial.println(Settings.loop.volume);
                 effectsMixer.gain(1, Settings.loop.volume);
                 boop(540, 1);
+                sendToApp("loop_gain", Settings.loop.volume, 3);
               }
               break;  
             // Loop gain down
@@ -880,6 +888,7 @@ void run() {
                 Serial.println(Settings.loop.volume);
                 effectsMixer.gain(1, Settings.loop.volume);
                 boop(540, 0);
+                sendToApp("loop_gain", Settings.loop.volume, 3);
               }
               break; 
             // Voice gain up
@@ -901,6 +910,8 @@ void run() {
                 voiceMixer.gain(1, Settings.voice.volume);
                 voiceMixer.gain(2, Settings.voice.dry);  
                 boop(540, 0);
+                sendToApp("voice_gain", Settings.voice.volume, 3);
+                sendToApp("dry_gain", Settings.voice.dry, 3);
               }
               break;
             // Voice gain down
@@ -922,6 +933,8 @@ void run() {
                 voiceMixer.gain(1, Settings.voice.volume);  
                 voiceMixer.gain(2, Settings.voice.dry);  
                 boop(540, 0);
+                sendToApp("voice_gain", Settings.voice.volume, 3);
+                sendToApp("dry_gain", Settings.voice.dry, 3);
               }
               break; 
             // Effects gain up
@@ -936,6 +949,7 @@ void run() {
                 effectsMixer.gain(0, Settings.effects.volume);
                 effectsMixer.gain(1, Settings.effects.volume);  
                 boop(540, 0);
+                sendToApp("effects_gain", Settings.effects.volume, 3);
               }
               break;
             // Effects gain down
@@ -950,9 +964,9 @@ void run() {
                 effectsMixer.gain(0, Settings.effects.volume);
                 effectsMixer.gain(1, Settings.effects.volume);  
                 boop(540, 0);
+                sendToApp("effects_gain", Settings.effects.volume, 3);  
               }
-              break;       
-               
+              break; 
           }
         }  
     }  

@@ -5,19 +5,6 @@
 /**
  * Send output to BLE
  */
-void btprint(const char *str) {
-  if (Config.echo == true) {
-    Serial.print("TX: ");
-    Serial.println(str);
-  }
-  if (App.ble_connected == true) {
-    Serial1.print(str);
-  }
-}
-
-/**
- * Send output to BLE
- */
 void btprintln(const char *str) {
   if (Config.echo == true) {
     Serial.print("TX: ");
@@ -75,6 +62,30 @@ void sendToApp(const char *cmd, const char *value)
 }
 
 /**
+ * Shortcut to send output to in JSON format
+ */
+void sendToApp(const char *cmd, const float value, const byte places) 
+{
+  if (App.ble_connected == false) {
+    return;
+  }
+  char buf[10];
+  dtostrf(value, 0, places, buf);
+  btprint(F("{\"cmd\":\"%s\",\"data\":%s}\n"), cmd, buf);
+}
+
+/**
+ * Shortcut to send output to in JSON format
+ */
+void sendToApp(const char *cmd, const byte value) 
+{
+  if (App.ble_connected == false) {
+    return;
+  }
+  btprint(F("{\"cmd\":\"%s\",\"data\":%d}\n"), cmd, value);
+}
+
+/**
  * Sends config via Bluetooth Serial.  Used for TKTalkie App
  */
 void sendConfig() 
@@ -105,16 +116,16 @@ void sendConfig()
 
   // Add effects 
   // Does this need to be read again?  They should already be in memory
-  char *effects = arrayToStringJson(buffer, Settings.effects.files, SOUND_EFFECTS_COUNT);
-  btprint(F("\"effects\":%s,"), effects);
+  sounds = arrayToStringJson(buffer, Settings.effects.files, SOUND_EFFECTS_COUNT);
+  btprint(F("\"effects\":%s,"), sounds);
   memset(buffer, 0, sizeof(buffer));
 
   // get loop files 
   count = listFiles(Settings.loop.dir, files, MAX_FILE_COUNT, SOUND_EXT, false, false);
   
   // Add loops 
-  char *loops = arrayToStringJson(buffer, files, count);
-  btprint(F("\"loops\":%s,"), loops);
+  sounds = arrayToStringJson(buffer, files, count);
+  btprint(F("\"loops\":%s,"), sounds);
   Serial.println("BEFORE LOOP BUFFER CLEAR");
   memset(buffer, 0, sizeof(buffer));
   Serial.println("AFTER LOOP BUFFER CLEAR");
@@ -130,8 +141,8 @@ void sendConfig()
   count = listFiles(Settings.glove.dir, files, MAX_FILE_COUNT, SOUND_EXT, false, false);
   
   // Add glove sounds 
-  loops = arrayToStringJson(buffer, files, count);
-  btprint(F("\"glove_sounds\":%s,"), loops);
+  sounds = arrayToStringJson(buffer, files, count);
+  btprint(F("\"glove_sounds\":%s,"), sounds);
   memset(buffer, 0, sizeof(buffer));
 
   // Clear array
@@ -178,6 +189,7 @@ void sendConfig()
   btprint(F("\"ls\":%s"), dirs);
             
   // end
-  btprint("}}\n");
+  btprint(F("}}\n"));
+  
 }
 
