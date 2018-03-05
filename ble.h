@@ -139,7 +139,7 @@ void sendConfig()
   
   // Add glove sounds 
   sounds = arrayToStringJson(buffer, files, count);
-  btprint(F("\"glove_sounds\":%s,"), sounds);
+  btprint(F("\"glove\":%s,"), sounds);
   memset(buffer, 0, sizeof(buffer));
 
   // Clear array

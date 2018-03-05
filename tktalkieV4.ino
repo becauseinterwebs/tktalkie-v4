@@ -661,6 +661,14 @@ void run() {
             char *files = arrayToStringJson(buffer, temp, count);
             sendToApp("loops", files);
           }
+      } else if (strcasecmp(cmd_key, "glove") == 0) {
+          char temp[MAX_FILE_COUNT][FILENAME_SIZE];
+          int count = listFiles(Settings.glove.dir, temp, MAX_FILE_COUNT, SOUND_EXT, false, true);
+          if (strcasecmp(cmd_val, "1") == 0) {
+            char buffer[1024];
+            char *files = arrayToStringJson(buffer, temp, count);
+            sendToApp("glove", files);
+          }    
       } else if (strcasecmp(cmd_key, "profiles") == 0) {
           char temp[MAX_FILE_COUNT][FILENAME_SIZE];
           int count = listFiles(PROFILES_DIR, temp, MAX_FILE_COUNT, FILE_EXT, false, false);
