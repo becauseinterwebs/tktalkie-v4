@@ -2,7 +2,7 @@
  * Sound utils
  */
 
-/**
+/**play
  * Emit a warning tone
  */
 void beep(const byte times = 1)
@@ -40,12 +40,12 @@ void boop(int freq, byte dir) {
  */
 void loadSoundEffects() 
 {
-  if (strcasecmp(EFFECTS_DIR, "") == 0) {
+  if (strcasecmp(Settings.effects.dir, "") == 0) {
     SOUND_EFFECTS_COUNT = 0;
     debug(F("No effects directory specified"));
     return;
   }
-  SOUND_EFFECTS_COUNT = listFiles(EFFECTS_DIR, SOUND_EFFECTS, MAX_FILE_COUNT, SOUND_EXT, false, false);
+  SOUND_EFFECTS_COUNT = listFiles(Settings.effects.dir, Settings.effects.files, MAX_FILE_COUNT, SOUND_EXT, false, false);
   debug(F("%d Sound effects loaded\n"), SOUND_EFFECTS_COUNT);
 }
 
@@ -93,8 +93,8 @@ unsigned long playGloveSound(const char *filename)
   if (strcasecmp(filename, "") == 0) {
     return 0;
   }
-  char buf[25];
-  strcpy(buf, GLOVE_DIR);
+  char buf[FILENAME_SIZE*2];
+  strcpy(buf, Settings.glove.dir);
   strcat(buf, filename);
   return playSoundFile(EFFECTS_PLAYER, buf);
 }
@@ -107,8 +107,8 @@ unsigned long playSound(const char *filename)
   if (strcasecmp(filename, "") == 0) {
     return 0;
   }
-  char buf[25];
-  strcpy(buf, SOUNDS_DIR);
+  char buf[FILENAME_SIZE*2];
+  strcpy(buf, Settings.sounds.dir);
   strcat(buf, filename);
   return playSoundFile(EFFECTS_PLAYER, buf);
 }
@@ -121,8 +121,8 @@ unsigned long playEffect(const char *filename)
   if (strcasecmp(filename, "") == 0) {
     return 0;
   }
-  char buf[25];
-  strcpy(buf, EFFECTS_DIR);
+  char buf[FILENAME_SIZE*2];
+  strcpy(buf, Settings.effects.dir);
   strcat(buf, filename);
   return playSoundFile(EFFECTS_PLAYER, buf);
 }
@@ -134,13 +134,15 @@ void playLoop()
 {
   loopLength = 0;
   Serial.println("AT PLAY LOOP");
-  if (strcasecmp(LOOP_WAV, "") != 0) {
-    char buf[25];
-    strcpy(buf, LOOP_DIR);
-    strcat(buf, LOOP_WAV);
+  if (strcasecmp(Settings.loop.file, "") != 0) {
+    char buf[FILENAME_SIZE*2];
+    strcpy(buf, Settings.loop.dir);
+    strcat(buf, Settings.loop.file);
     Serial.print("PLAYING LOOP: ");
     Serial.println(buf);
     loopLength = playSoundFile(LOOP_PLAYER, buf);
+  } else {
+    Serial.println("NO LOOP FILE");
   }
   loopMillis = 0;
 }
@@ -150,7 +152,7 @@ void playLoop()
  */
 void addSoundEffect()
 {
-  if (speaking == true || SOUND_EFFECTS_COUNT < 1 || MUTE_EFFECTS == true) return;
+  if (App.speaking == true || SOUND_EFFECTS_COUNT < 1 || Settings.effects.mute == true) return;
   // generate a random number between 0 and the number of files read - 1
   byte rnd = 0;
   byte count = 0;
@@ -161,7 +163,7 @@ void addSoundEffect()
   }
   lastRnd = rnd;
   // play the file
-  playEffect(SOUND_EFFECTS[rnd]);
+  playEffect(Settings.effects.files[rnd]);
 }
 
 /***
@@ -170,9 +172,9 @@ void addSoundEffect()
 float readVolume()
 {
     float vol = 0;
-    if (MASTER_VOLUME) {
-      audioShield.volume(MASTER_VOLUME);
-      vol = MASTER_VOLUME;
+    if (Settings.volume.master) {
+      audioShield.volume(Settings.volume.master);
+      vol = Settings.volume.master;
     } else {
       // comment these lines if your audio shield does not have the optional volume pot soldered on
       vol = analogRead(15);
@@ -233,12 +235,12 @@ void loopOff()
 void loopOn() 
 {
   // gradually raise level to avoid pops 
-  if (LOOP_GAIN > 1) {
-    for (byte i=0; i<=LOOP_GAIN; i++) {
+  if (Settings.loop.volume > 1) {
+    for (byte i=0; i<=Settings.loop.volume; i++) {
       effectsMixer.gain(1, i);
     }
   }
-  effectsMixer.gain(1, LOOP_GAIN);
+  effectsMixer.gain(1, Settings.loop.volume);
 }
 
 /***
@@ -247,14 +249,14 @@ void loopOn()
 void voiceOff() 
 {
   autoSleepMillis = 0;
-  speaking = false;
-  silent = false;
+  App.speaking = false;
+  App.silent = false;
   stopped = 0;
   pink1.amplitude(0);
   voiceMixer.gain(0, 0);
   voiceMixer.gain(1, 0);
   voiceMixer.gain(2, 0);
-  if (MUTE_LOOP == 1) {
+  if (Settings.loop.mute == true) {
     loopOn();
   }
 }
@@ -265,16 +267,16 @@ void voiceOff()
 void voiceOn() 
 {
   autoSleepMillis = 0;
-  speaking = true;
-  silent = true;
-  if (MUTE_LOOP == 1) {
+  App.speaking = true;
+  App.silent = true;
+  if (Settings.loop.mute == true) {
     loopOff();
   }
   // Reset the "user is talking" timer
   stopped = 0;
   // pops are ok here ;)
-  pink1.amplitude(NOISE_GAIN);
-  voiceMixer.gain(0, VOICE_GAIN);
-  voiceMixer.gain(1, VOICE_GAIN);
-  voiceMixer.gain(2, DRY_GAIN);
+  pink1.amplitude(Settings.effects.noise);
+  voiceMixer.gain(0, Settings.voice.volume);
+  voiceMixer.gain(1, Settings.voice.volume);
+  voiceMixer.gain(2, Settings.voice.dry);
 }

@@ -7,7 +7,11 @@
  */
 void addFileExt(char *path)
 {
-  char buf[SETTING_ENTRY_MAX];
+  debug(F("Add ext %s to file %s\n"), FILE_EXT, path);
+  if (path == NULL) {
+    return;
+  }
+  char buf[FILENAME_SIZE];
   strcpy(buf, path);
   upcase(buf);
   char *ret = strstr(buf, FILE_EXT);  
@@ -101,20 +105,27 @@ void showFile(const char *filename) {
  */
 String dirSep = "";
 
-int listDirectories(const char *path, char directories[][SETTING_ENTRY_MAX])
+int listDirectories(const char *path, char directories[][FILENAME_SIZE])
 {
    int index = 0;
    File dir = SD.open(path);
+   if (!dir) {
+    debug(F("Could not open %s!\n"), path);
+    return 0;
+   }
    dir.rewindDirectory();
+   debug(F("List directories in %s, %d max\n"), path, MAX_FILE_COUNT);
    while(true && index < MAX_FILE_COUNT+1) {
      File entry = dir.openNextFile();
      if (! entry) {
        // no more files
+       debug(F("No more directories\n"));
        break;
      }
      if (entry.isDirectory()) {
        char *ret = strstr(entry.name(), "~");
        if (ret == NULL) {
+         debug(F("%s\n"), entry.name());
          strcpy(directories[index], entry.name());
          //index += listDirectories(entry.name(), directories);
          index++;
@@ -122,6 +133,7 @@ int listDirectories(const char *path, char directories[][SETTING_ENTRY_MAX])
      }  
      entry.close();
    }
+   debug(F("%d directories found\n"), index);
    return index;
 }
 
@@ -130,9 +142,9 @@ int listDirectories(const char *path, char directories[][SETTING_ENTRY_MAX])
  * If filter is specified, only file names containing
  * the filter text are returned.
  */
- int listFiles(const char *path, char files[][SETTING_ENTRY_MAX], int max, const char *match, boolean recurse, boolean echo) 
+ int listFiles(const char *path, char files[][FILENAME_SIZE], int max, const char *match, boolean recurse, boolean echo) 
 {
-  char filter[SETTING_ENTRY_MAX];
+  char filter[FILENAME_SIZE];
   strcpy(filter, match);
   upcase(filter);
   boolean checkFilter = (strcasecmp(filter, "") == 0) ? false : true;
@@ -142,6 +154,7 @@ int listDirectories(const char *path, char directories[][SETTING_ENTRY_MAX])
   int index = 0;
   File dir = SD.open(path);
   if (!dir) {
+    debug(F("Could not open %s!\n"), path);
     return 0;
   }
   dir.rewindDirectory();
@@ -149,6 +162,7 @@ int listDirectories(const char *path, char directories[][SETTING_ENTRY_MAX])
      File entry = dir.openNextFile();
      if (! entry) {
        // no more files
+       debug(F("No more files\n"));
        if (dirSep != "") {
           dirSep = dirSep.substring(0, dirSep.length()-2);
        }
@@ -158,7 +172,7 @@ int listDirectories(const char *path, char directories[][SETTING_ENTRY_MAX])
        // Filter out folders with ~ (backups)
        char *ret = strstr(entry.name(), "~");
        if (ret == NULL) {
-         if (echo || DEBUG) {
+         if (echo || Config.debug == 1) {
           Serial.print(dirSep);
           Serial.print(entry.name());
           Serial.println("/");
@@ -182,7 +196,7 @@ int listDirectories(const char *path, char directories[][SETTING_ENTRY_MAX])
           fname[0] ='\0';
         }
        if (strcasecmp(fname, "") != 0) {
-            if (echo || DEBUG) {
+            if (echo || Config.debug == 1) {
               Serial.println(dirSep + entry.name());
             }
             if (index < max) {

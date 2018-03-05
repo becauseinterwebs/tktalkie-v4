@@ -18,6 +18,7 @@ class VirtualButton
     void setup(byte buttonType);
     void setSound(const char *sound);
     char *getSound(char sound[]);
+    char *getSettings();
   private:
     byte _type;
     char _sound[12];

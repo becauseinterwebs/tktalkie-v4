@@ -1,76 +1,7 @@
 /****
  * Global variables/constants
  */
- 
-// GUItool: begin automatically generated code
-/*
-AudioInputI2S            i2s1;           //xy=196,125
-AudioPlaySdWav           loopPlayer;     //xy=199,402
-AudioSynthWaveform       waveform1;      //xy=202,316
-AudioPlaySdWav           effectsPlayer;  //xy=208,266
-AudioAnalyzeRMS          rms1;           //xy=325,174
-AudioSynthNoisePink      pink1;          //xy=473,176
-AudioEffectBitcrusher    bitcrusher1;    //xy=487,90
-AudioEffectBitcrusher    bitcrusher2;    //xy=487,133
-AudioMixer4              loopMixer;      //xy=656,412
-AudioMixer4              voiceMixer;     //xy=659,142
-AudioMixer4              effectsMixer;   //xy=660,280
-AudioOutputI2S           i2s2;           //xy=836,139
-AudioConnection          patchCord1(i2s1, 0, rms1, 0);
-AudioConnection          patchCord2(i2s1, 0, bitcrusher1, 0);
-AudioConnection          patchCord3(i2s1, 0, bitcrusher2, 0);
-AudioConnection          patchCord4(loopPlayer, 0, loopMixer, 0);
-AudioConnection          patchCord5(loopPlayer, 1, loopMixer, 1);
-AudioConnection          patchCord6(waveform1, 0, effectsMixer, 2);
-AudioConnection          patchCord7(effectsPlayer, 0, effectsMixer, 0);
-AudioConnection          patchCord8(effectsPlayer, 1, effectsMixer, 1);
-AudioConnection          patchCord9(pink1, 0, voiceMixer, 2);
-AudioConnection          patchCord10(bitcrusher1, 0, voiceMixer, 0);
-AudioConnection          patchCord11(bitcrusher2, 0, voiceMixer, 1);
-AudioConnection          patchCord12(loopMixer, 0, effectsMixer, 3);
-AudioConnection          patchCord13(voiceMixer, 0, i2s2, 0);
-AudioConnection          patchCord14(voiceMixer, 0, i2s2, 1);
-AudioConnection          patchCord15(effectsMixer, 0, voiceMixer, 3);
-AudioControlSGTL5000     audioShield;    //xy=846,428
-// GUItool: end automatically generated code
-*/
-
-// GUItool: begin automatically generated code
-/*
-AudioInputI2S            i2s1;           //xy=91.1111068725586,153.88888931274414
-AudioAnalyzeRMS          rms1;           //xy=210.1111068725586,217.88888931274414
-AudioSynthNoisePink      pink1;          //xy=266.6666717529297,385.55557441711426
-AudioPlaySdWav           loopPlayer;     //xy=275.1111068725586,321.88888931274414
-AudioEffectBitcrusher    bitcrusher1;    //xy=283.1111068725586,89.88888931274414
-AudioSynthWaveform       waveform1;      //xy=349.1111068725586,253.88888931274414
-AudioPlaySdWav           effectsPlayer;  //xy=356.1111068725586,210.88888931274414
-AudioEffectFlange        flange1;        //xy=418.1111068725586,88.88888931274414
-AudioMixer4              loopMixer;      //xy=451.1111068725586,333.88888931274414
-AudioEffectChorus        chorus1;        //xy=547.1111068725586,88.88888931274414
-AudioMixer4              effectsMixer;   //xy=591.1111068725586,224.88888931274414
-AudioMixer4              voiceMixer;     //xy=712.1111068725586,117.88888931274414
-AudioOutputI2S           i2s2;           //xy=877.1111068725586,117.88888931274414
-AudioConnection          patchCord1(i2s1, 0, bitcrusher1, 0);
-AudioConnection          patchCord2(i2s1, 0, voiceMixer, 2);
-AudioConnection          patchCord3(i2s1, 1, rms1, 0);
-AudioConnection          patchCord4(pink1, 0, loopMixer, 3);
-AudioConnection          patchCord5(loopPlayer, 0, loopMixer, 0);
-AudioConnection          patchCord6(loopPlayer, 1, loopMixer, 1);
-AudioConnection          patchCord7(bitcrusher1, flange1);
-AudioConnection          patchCord8(waveform1, 0, effectsMixer, 2);
-AudioConnection          patchCord9(effectsPlayer, 0, effectsMixer, 0);
-AudioConnection          patchCord10(effectsPlayer, 1, effectsMixer, 1);
-AudioConnection          patchCord11(flange1, chorus1);
-AudioConnection          patchCord12(loopMixer, 0, effectsMixer, 3);
-AudioConnection          patchCord13(chorus1, 0, voiceMixer, 0);
-AudioConnection          patchCord14(chorus1, 0, voiceMixer, 1);
-AudioConnection          patchCord15(effectsMixer, 0, voiceMixer, 3);
-AudioConnection          patchCord16(voiceMixer, 0, i2s2, 0);
-AudioConnection          patchCord17(voiceMixer, 0, i2s2, 1);
-AudioControlSGTL5000     audioShield;    //xy=77.1111068725586,263.88888931274414
-*/
-// GUItool: end automatically generated code
-
+ /** OLD SETTINGS
 // GUItool: begin automatically generated code
 AudioInputI2S            i2s1;           //xy=91.1111068725586,153.88888931274414
 AudioAnalyzeRMS          rms1;           //xy=210.1111068725586,217.88888931274414
@@ -101,20 +32,52 @@ AudioConnection          patchCord14(voiceMixer, 0, i2s2, 1);
 AudioControlSGTL5000     audioShield;    //xy=77.1111068725586,263.88888931274414
 // GUItool: end automatically generated code
 
+*/
+
+// GUItool: begin automatically generated code
+AudioInputI2S            i2s1;           //xy=91.1111068725586,153.88888931274414
+AudioAnalyzeRMS          rms1;           //xy=212.11109924316406,189.88888549804688
+AudioEffectBitcrusher    bitcrusher1;    //xy=275.111083984375,88.88888549804688
+AudioSynthNoisePink      pink1;          //xy=340.6666717529297,314.5555725097656
+AudioPlaySdWav           loopPlayer;     //xy=347.111083984375,245.88888549804688
+AudioSynthWaveform       waveform1;      //xy=350.1111145019531,279.8888854980469
+AudioPlaySdWav           effectsPlayer;  //xy=356.1111068725586,210.88888931274414
+AudioEffectFlange        flange1;        //xy=416.1111145019531,89.88888549804688
+AudioEffectChorus        chorus1;        //xy=547.1111068725586,88.88888931274414
+AudioMixer4              effectsMixer;   //xy=558.111083984375,252.88888549804688
+AudioMixer4              voiceMixer;     //xy=712.1111068725586,117.88888931274414
+AudioOutputI2S           i2s2;           //xy=877.1111068725586,117.88888931274414
+AudioConnection          patchCord1(i2s1, 0, bitcrusher1, 0);
+AudioConnection          patchCord2(i2s1, 0, voiceMixer, 2);
+AudioConnection          patchCord3(i2s1, 1, rms1, 0);
+AudioConnection          patchCord4(bitcrusher1, flange1);
+AudioConnection          patchCord5(pink1, 0, effectsMixer, 3);
+AudioConnection          patchCord6(loopPlayer, 0, effectsMixer, 1);
+AudioConnection          patchCord7(waveform1, 0, effectsMixer, 2);
+AudioConnection          patchCord8(effectsPlayer, 0, effectsMixer, 0);
+AudioConnection          patchCord9(flange1, chorus1);
+AudioConnection          patchCord10(chorus1, 0, voiceMixer, 0);
+AudioConnection          patchCord11(effectsMixer, 0, voiceMixer, 3);
+AudioConnection          patchCord12(voiceMixer, 0, i2s2, 0);
+AudioConnection          patchCord13(voiceMixer, 0, i2s2, 1);
+AudioControlSGTL5000     audioShield;    //xy=77.1111068725586,263.88888931274414
+// GUItool: end automatically generated code
+
+
+
+
 // version flag
 const char VERSION[5] = "4.0";
 float APP_VER = 1.13;
       
 //elapsedMillis ms;                         // running timer...inputs are checked every 24 milliseconds
 elapsedMillis stopped;                      // used to tell how long user has stopped talking
-boolean speaking = false;                   // flag to let us know if the user is speaking or not
 
-const byte MAX_FILE_COUNT     = 99;
-const byte MAX_SETTINGS_COUNT = 40;
-const byte SETTING_ENTRY_MAX  = 150;
+#define MAX_FILE_COUNT 99
+#define MAX_SETTINGS_COUNT 40
+#define SETTING_ENTRY_MAX  150
 
 byte SOUND_EFFECTS_COUNT = 0;                             // This keeps count of how many valid WAV files were found.
-char SOUND_EFFECTS[MAX_FILE_COUNT][SETTING_ENTRY_MAX];    // This will hold an array of the WAV files on the SD card.
                                                           // 99 is an arbitrary number.  You can change it as you need to.
 byte lastRnd  = -1;                                       // Keeps track of the last file played so that it is different each time
 
@@ -143,36 +106,126 @@ byte lastRnd  = -1;                                       // Keeps track of the 
  *          only digital pins (like 2) work!
  */
 
-// These define the pins the (up to) 6 control buttons can be connected to
+#define EFFECTS_PLAYER 1
+#define LOOP_PLAYER    2
+#define FX_DELAY 16
+#define FILENAME_SIZE 14
+
+struct Loop_t {
+  char    dir[14]   = "/loops/";
+  char    file[14]  = "";
+  boolean mute      = true;
+  float   volume    = 1;  
+};
+
+struct Voice_t {
+  float volume = 1.0000;
+  float dry    = 0.5000;
+  float start  = 0.0300;
+  float stop   = 0.0200;
+  int   wait   = 275;
+};
+
+struct Sounds_t {
+  char dir[14]    = "/sounds/";
+  char start[14]  = "STARTUP.WAV";
+  char button[14] = "CLICK3.WAV";
+};
+
+struct Flanger_t {
+  byte  delay  = FX_DELAY;
+  byte  offset = 1;
+  byte  depth  = 0;
+  float freq   = 0.0625;
+  short buffer[FX_DELAY*AUDIO_BLOCK_SAMPLES];
+};
+
+struct Chorus_t {
+  byte voices  = 1;
+  byte delay   = FX_DELAY;
+  short buffer[FX_DELAY*AUDIO_BLOCK_SAMPLES];
+};
+
+struct Bitcrusher_t {
+  byte bits = 16;
+  int  rate = 44100;
+};
+
+struct Effects_t {
+  char          dir[14]   = "/effects/";
+  float         volume    = 1.0000;
+  byte          highpass  = 1;
+  float         noise     = 0.0140;
+  boolean       mute      = true;   
+  Bitcrusher_t  bitcrusher;
+  Chorus_t      chorus;
+  Flanger_t     flanger;
+  char          files[MAX_FILE_COUNT][14];
+};
+
+struct Eq_t {
+  boolean active   = true;
+  float   bands[5] = { -1.0,0,1,0,-1.0 };
+};
+
+struct Sleep_t {
+  int  timer    = 0;
+  char file[14] = "SLEEP.WAV";  
+};
+
+struct Glove_t {
+  char dir[14] = "/glove/";
+  char settings[6][30] = { "0","0","0","0","0","0" };
+  // This could be turned into a management class, but there is not a lot of stuff to do with it...so....
+  ControlButton ControlButtons[6] = { ControlButton(), ControlButton(), ControlButton(), ControlButton(), ControlButton(), ControlButton() }; 
+};
+
+struct Volume_t {
+  float master     = 0.5;
+  byte  lineout    = 29;  // Valid values 13 to 31. Default teensy setting is 29.
+  byte  linein     = 5;   // Value values 0 to 15. Default teensy setting is 5;
+  byte  microphone = 3;
+};
+
+struct Settings_t {
+  char      name[25] = "Default Profile";
+  char      file[14] = "DEFAULT.TXT";
+  Volume_t  volume;
+  Loop_t    loop;
+  Voice_t   voice;
+  Sounds_t  sounds;
+  Effects_t effects;
+  Eq_t      eq;
+  Sleep_t   sleep;
+  Glove_t   glove;
+} Settings;
+
+struct Config_t {
+  char profile[14] = "DEFAULT.TXT";
+  // These define the pins the (up to) 6 control buttons can be connected to
 // NOTE:  Only digital pins can be used for waking:
 //        2,4,6,7,9,10,11,13,16,21,22,26,30,33
-byte CONTROL_BUTTON_PINS[6] = {0,0,0,0,0,0};
+  byte buttons[6] = {0,0,0,0,0,0};
+  boolean debug     = false;          // Set to true to have debug messages printed out...useful for testing
+  boolean echo      = false;          // Set to true to have BLE TX/RX messages displayed in serial monitor
+  char input[5]         = "BOTH";  // Set to "MIC", "LINE" or "BOTH" (default)
+  char output[5]        = "BOTH";  // Set to "SPKR", "LINE" or "BOTH" (default)
+  char access_code[25] = "1138";      // the password for remote apps to access this device (specified in global settings file)
+} Config;
 
-// Start with all of the button types set to nothing 
-char CONTROL_BUTTON_SETTINGS[6][30] = { "0","0","0","0","0","0" };
+const char PROFILES_DIR[11]         = "/profile4/";
 
-// This could be turned into a management class, but there is not a lot of stuff to do with it...so....
-ControlButton ControlButtons[6] = { ControlButton(), ControlButton(), ControlButton(), ControlButton(), ControlButton(), ControlButton() }; 
-
-boolean silent = false;                      // used for PTT and to switch back to Voice Activated mode
-boolean button_initialized = false;          // flag that lets us know if the PTT has been pushed or not to go into PTT mode
-
-const byte EFFECTS_PLAYER = 1;
-const byte LOOP_PLAYER = 2;
-
-const char SETTINGS_FILE[SETTING_ENTRY_MAX]    = "SETTINGS.TXT";   // Global settings file
-
-// These are the paths where files are stored for the profile.  This can be changed via the app or
-// edited manually so that each profile can have its own files (or you can share them...)
-char EFFECTS_DIR[SETTING_ENTRY_MAX] = "/effects/";      // effects sounds (mic pop, clicks, static, etc.)
-char SOUNDS_DIR[SETTING_ENTRY_MAX]  = "/sounds/";       // general sound files 
-char LOOP_DIR[SETTING_ENTRY_MAX]    = "/loops/";        // sound loops
-const char PROFILES_DIR[11]         = "/profiles/";     // Location of config profiles
-char GLOVE_DIR[SETTING_ENTRY_MAX]   = "/glove/";
-
-const byte STARTUP_SETTINGS_COUNT    = 6;                                 // counter for number of entries in global settings file
-char STARTUP_SETTINGS[STARTUP_SETTINGS_COUNT][SETTING_ENTRY_MAX];        // Holds settings values
-
+struct App_t {
+  boolean silent              = false;          // used for PTT and to switch back to Voice Activated mode
+  boolean speaking = false;                   // flag to let us know if the user is speaking or not
+  boolean button_initialized  = false;          // flag that lets us know if the PTT has been pushed or not to go into PTT mode
+  byte  ptt_button;  
+  byte  wake_button;
+  // Bluetooth App 
+  char device_id[50];                 // the uuid of the device connecting 
+  boolean ble_connected = false;       // flag to indicate whether a remote app is connected or not
+  boolean muted        = false;       // flag to indicate whether all sounds should be muted
+} App;
 
 /**
  * OPERATIONAL STATES - Used for tracking at what stage the app is currently running
@@ -187,70 +240,6 @@ const byte STATE_SLEEPING = 3;
 const char SOUND_EXT[5]  = ".WAV";
 const char FILE_EXT[5]   = ".TXT";
 const char BACKUP_EXT[5] = ".BAK";
-
-// Default settings - can be modified through settings file
-char     PROFILE_NAME[50] = "Default";
-char     PROFILE_FILE[SETTING_ENTRY_MAX] = "TKCONFIG.TXT";
-float    MASTER_VOLUME    = 0.5; 
-byte     LINEOUT          = 29; // Valid values 13 to 31. Default teensy setting is 29.
-byte     LINEIN           = 5;  // Value values 0 to 15. Default teensy setting is 5;
-byte     HIPASS           = 0;  // off by default, 1 = on
-byte     MIC_GAIN         = 3;
-char     STARTUP_WAV[SETTING_ENTRY_MAX];
-char     LOOP_WAV[SETTING_ENTRY_MAX];
-char     BUTTON_WAV[SETTING_ENTRY_MAX];
-byte     AUDIO_INPUT      = AUDIO_INPUT_MIC;
-byte     EQ               = 0;
-byte     EQ_BANDS_SIZE    = 5;
-float    EQ_BANDS[5]      = { -1.0,0,1,0,-1.0 };
-byte     BITCRUSHER_SIZE  = 2;
-int      BITCRUSHER[2]    = { 16,44100 };
-float    LOOP_GAIN        = 2;
-float    VOICE_GAIN       = 1;
-float    DRY_GAIN         = 1;
-float    NOISE_GAIN       = 0;
-float    EFFECTS_GAIN     = 1;
-uint16_t SILENCE_TIME     = 350;     // The minimum time to wait before playing a sound effect after talking has stopped
-float    VOICE_START      = 0.07;    // The amplitude needed to trigger the sound effects process
-float    VOICE_STOP       = 0.02;    // The minimum amplitude to use when determining if you've stopped talking.
-                                     // Depending upon the microphone you are using, you may get a constant signal
-                                     // that is above 0 or even 0.01.  Use the Serial monitor and add output to the 
-                                     // loop to see what signal amplitude you are receiving when the mic is "quiet."
-boolean  MUTE_LOOP = 1;              // mute loop while talking on/off
-boolean  MUTE_EFFECTS = 0;           // flag to mute sound effects after talking has stopped
-uint16_t SLEEP_TIME = 0;             // Number of minutes to wait before putting unit to sleep if no sound is heard
-                                     // from the microphone (default is 0 = do not sleep.)
-byte  PTT_BUTTON;  
-byte  WAKE_BUTTON;
-                                   
-// Sound played when going into sleep mode
-char  SLEEP_SOUND[SETTING_ENTRY_MAX];
-
-#define FX_DELAY 16
-
-// Chorus settings
-byte  CHORUS_DELAY     = FX_DELAY;
-byte  CHORUS_VOICES    = 1;          // off by default
-short CHORUS_BUFFER[FX_DELAY*AUDIO_BLOCK_SAMPLES];
-
-byte   FLANGE_DELAY    = FX_DELAY;
-byte   FLANGE_OFFSET   = 1;
-byte   FLANGE_DEPTH    = 0;
-double FLANGE_FREQ     = .0625;
-short  FLANGE_BUFFER[FX_DELAY*AUDIO_BLOCK_SAMPLES];
-
-
-boolean DEBUG     = false;          // Set to true to have debug messages printed out...useful for testing
-boolean ECHO      = false;          // Set to true to have BLE TX/RX messages displayed in serial monitor
-
-// Bluetooth App 
-char DEVICE_ID[50];                 // the uuid of the device connecting 
-char ACCESS_CODE[25] = "1138";      // the password for remote apps to access this device (specified in global settings file)
-boolean BT_CONNECTED = false;       // flag to indicate whether a remote app is connected or not
-boolean MUTED        = false;       // flag to indicate whether all sounds should be muted
-
-char INPUT_TYPE[5]         = "BOTH";  // Set to "MIC", "LINE" or "BOTH" (default)
-char OUTPUT_TYPE[5]        = "BOTH";  // Set to "SPKR", "LINE" or "BOTH" (default)
 
 // Loops
 elapsedMillis loopMillis = 0;

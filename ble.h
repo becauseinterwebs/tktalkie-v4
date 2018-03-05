@@ -2,23 +2,6 @@
  * Routines for BLE 
  */
 
-/**
- * Send output to BLE
- */
- /*
-void btprint(const char *str) {
-  if (Config.echo == true) {
-    Serial.print("TX: ");
-    Serial.println(str);
-  }
-  if (App.ble_connected == true) {
-    Serial1.print(str);
-  }
-}
-*/
-/**
- * Send output to BLE
- */
 void btprintln(const char *str) {
   if (Config.echo == true) {
     Serial.print("TX: ");
@@ -73,6 +56,30 @@ void sendToApp(const char *cmd, const char *value)
   } else {
     btprint(F("{\"cmd\":\"%s\",\"data\":\"%s\"}\n"), cmd, value);
   }
+}
+
+/**
+ * Shortcut to send output to in JSON format
+ */
+void sendToApp(const char *cmd, const float value, const byte places) 
+{
+  if (App.ble_connected == false) {
+    return;
+  }
+  char buf[10];
+  dtostrf(value, 0, places, buf);
+  btprint(F("{\"cmd\":\"%s\",\"data\":%s}\n"), cmd, buf);
+}
+
+/**
+ * Shortcut to send output to in JSON format
+ */
+void sendToApp(const char *cmd, const byte value) 
+{
+  if (App.ble_connected == false) {
+    return;
+  }
+  btprint(F("{\"cmd\":\"%s\",\"data\":%d}\n"), cmd, value);
 }
 
 /**
@@ -179,9 +186,7 @@ void sendConfig()
   btprint(F("\"ls\":%s"), dirs);
   
   // end
-  btprint("}}\n");
-
-  free(sounds);
+  btprint(F("}}\n"));
   
 }
 
