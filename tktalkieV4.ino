@@ -572,6 +572,8 @@ void run() {
           playEffect(cmd_val);
       } else if (strcasecmp(cmd_key, "play_sound") == 0) {
           playSound(cmd_val);
+      } else if (strcasecmp(cmd_key, "play_glove") == 0) {
+          playGloveSound(cmd_val);
       } else if (strcasecmp(cmd_key, "play_loop") == 0) {
           if (strcasecmp(cmd_val, "") != 0) {
             memset(Settings.loop.file, 0, sizeof(Settings.loop.file));
