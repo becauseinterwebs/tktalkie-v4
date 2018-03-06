@@ -559,7 +559,7 @@ boolean saveConfig() {
     return false;
   }
 
-  const size_t bufferSize = JSON_ARRAY_SIZE(6) + JSON_OBJECT_SIZE(6) + 120;
+  const size_t bufferSize = JSON_ARRAY_SIZE(6) + JSON_OBJECT_SIZE(7) + 120;
   DynamicJsonBuffer jsonBuffer(bufferSize);
 
   // Parse the root object
@@ -571,6 +571,7 @@ boolean saveConfig() {
   root["debug"] = Config.debug;
   root["echo"] = Config.echo;
   root["input"] = Config.input;
+  root["baud"] = Config.baud | 9600;
 
   JsonArray& buttons = root.createNestedArray("buttons");
   buttons.add(Config.buttons[0]);

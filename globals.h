@@ -205,12 +205,13 @@ struct Config_t {
   // These define the pins the (up to) 6 control buttons can be connected to
 // NOTE:  Only digital pins can be used for waking:
 //        2,4,6,7,9,10,11,13,16,21,22,26,30,33
-  byte buttons[6] = {0,0,0,0,0,0};
-  boolean debug     = false;          // Set to true to have debug messages printed out...useful for testing
-  boolean echo      = false;          // Set to true to have BLE TX/RX messages displayed in serial monitor
+  byte buttons[6]       = {0,0,0,0,0,0};
+  boolean debug         = false;          // Set to true to have debug messages printed out...useful for testing
+  boolean echo          = false;          // Set to true to have BLE TX/RX messages displayed in serial monitor
   char input[5]         = "BOTH";  // Set to "MIC", "LINE" or "BOTH" (default)
   char output[5]        = "BOTH";  // Set to "SPKR", "LINE" or "BOTH" (default)
-  char access_code[25] = "1138";      // the password for remote apps to access this device (specified in global settings file)
+  char access_code[25]  = "1138";      // the password for remote apps to access this device (specified in global settings file)
+  long baud              = 9600;
 } Config;
 
 const char PROFILES_DIR[11]         = "/profile4/";

@@ -129,7 +129,7 @@ void startup()
 
   File file = SD.open("CONFIG.TXT");
 
-  const size_t bufferSize = JSON_ARRAY_SIZE(6) + JSON_OBJECT_SIZE(6) + 120;
+  const size_t bufferSize = JSON_ARRAY_SIZE(6) + JSON_OBJECT_SIZE(7) + 120;
   DynamicJsonBuffer jsonBuffer(bufferSize);
   
   //const char* json = "{\"profile\":\"PYLEPRO4.TXT\",\"access_code\":\"0525\",\"debug\":1,\"input\":\"mic\",\"echo\":0,\"buttons\":[1,2,3,4,5,6]}";
@@ -141,6 +141,7 @@ void startup()
     strlcpy(Config.profile, "DEFAULT.TXT", sizeof(Config.profile)); // "123456789012"
     strlcpy(Config.access_code, "1138", sizeof(Config.access_code)); // "1111111111111111111111111"
     Config.debug = 1;
+    Config.baud  = 9600;
     strlcpy(Config.input,"BOTH", sizeof(Config.input)); // "both"
     Config.echo = 1;
     Config.buttons[0] = 2; // 1
@@ -157,6 +158,7 @@ void startup()
     strlcpy(Config.input, (root["input"] | "BOTH"), sizeof(Config.input)); // "both"
     //Config.echo = ((root["echo"] | 0) == 1) ? true : false; // 0
     Config.echo = root["echo"];
+    Config.baud = root["baud"] | 9600;
     JsonArray& buttons = root["buttons"];
     Config.buttons[0] = buttons[0]; // 1
     Config.buttons[1] = buttons[1]; // 2
@@ -274,6 +276,9 @@ void startup()
 
   STATE = STATE_RUNNING;
 
+  Serial1.begin(Config.baud);
+  delay(250);
+  
   Serial.println("----- END OF STARTUP");
 
 }
@@ -297,9 +302,7 @@ void setup()
   // to write messages to the console.
   Serial.begin(57600);
   
-  Serial1.begin(9600);
-  
-  delay(500);
+  delay(250);
 
   // Always allocate memory for the audio shield!
   AudioMemory(16);
@@ -514,18 +517,13 @@ void run() {
               saveConfig();
           }
       } else if (strcasecmp(cmd_key, "debug") == 0) {
-            int i = atoi(cmd_val);
-            char val[2] = "0";
-            if (i == 0) {
-              Config.debug = false;
-            } else {
-              strcpy(val, "1");
-              Config.debug = true;
-            }
+            Config.debug = (atoi(cmd_val) == 0) ? false : true;
             saveConfig();
       } else if (strcasecmp(cmd_key, "echo") == 0) {
-            int i = atoi(cmd_val);
-            Config.echo = i;
+            Config.echo = atoi(cmd_val) | 0;
+            saveConfig();
+      } else if (strcasecmp(cmd_key, "baud") == 0) {
+            Config.baud = atol(cmd_val) | 9600;
             saveConfig();
       } else if (strcasecmp(cmd_key, "default") == 0) {
           if (strcasecmp(cmd_val, "") == 0) {
