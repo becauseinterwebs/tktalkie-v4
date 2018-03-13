@@ -152,7 +152,7 @@ void playLoop()
  */
 void addSoundEffect()
 {
-  if (App.speaking == true || SOUND_EFFECTS_COUNT < 1 || Settings.effects.mute == true) return;
+  if (App.speaking == true || SOUND_EFFECTS_COUNT < 1 || Settings.effects.mute == true || Settings.effects.mute == 1) return;
   // generate a random number between 0 and the number of files read - 1
   byte rnd = 0;
   byte count = 0;

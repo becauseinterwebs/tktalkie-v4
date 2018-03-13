@@ -426,6 +426,11 @@ void parseSetting(const char *settingName, char *settingValue)
     setLoopMute();
   } else if (strcasecmp(settingName, "mute_effects") == 0) {
     Settings.effects.mute = (byte)atoi(settingValue);
+    if (Settings.effects.mute > 1) {
+      Settings.effects.mute = 1;
+    } else if (Settings.effects.mute < 0) {
+      Settings.effects.mute = 0;
+    }
     setEffectsMute();
   } else if (strcasecmp(settingName, "sleep_time") == 0) {
     Settings.sleep.timer = (byte)atoi(settingValue);
