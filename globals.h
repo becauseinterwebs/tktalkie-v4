@@ -98,9 +98,10 @@ byte lastRnd  = -1;                                       // Keeps track of the 
  *   13 = Loop gain down
  *   14 = Voice gain up
  *   15 = Voice gain down
- *   16 = Effects gain up
- *   17 = Effects gain down
- *   18 = Mute Loop
+ *   16 = Dry gain up
+ *   17 = Dry gain down
+ *   18 = Effects gain up
+ *   19 = Effects gain down   
  *   
  *   NOTE:  Pin 3 CANNOT wake up...
  *          only digital pins (like 2) work!
@@ -221,7 +222,7 @@ struct App_t {
   boolean speaking = false;                   // flag to let us know if the user is speaking or not
   boolean button_initialized  = false;          // flag that lets us know if the PTT has been pushed or not to go into PTT mode
   byte  ptt_button;  
-  byte  wake_button;
+  byte  wake_button = 255;
   // Bluetooth App 
   char device_id[50];                 // the uuid of the device connecting 
   boolean ble_connected = false;       // flag to indicate whether a remote app is connected or not

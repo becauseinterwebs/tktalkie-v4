@@ -47,7 +47,7 @@ void ConfigureButton(byte a) {
               Serial.println(" -> PTT Button");
               App.ptt_button = a;
               Settings.glove.ControlButtons[a].setPTT(true);
-              if (App.wake_button == NULL) {
+              if (App.wake_button == NULL || App.wake_button == 255) {
                 App.wake_button = a;
                 snoozeDigital.pinMode(pin, INPUT_PULLUP, FALLING);
               }
@@ -426,11 +426,6 @@ void parseSetting(const char *settingName, char *settingValue)
     setLoopMute();
   } else if (strcasecmp(settingName, "mute_effects") == 0) {
     Settings.effects.mute = (byte)atoi(settingValue);
-    if (Settings.effects.mute > 1) {
-      Settings.effects.mute = 1;
-    } else if (Settings.effects.mute < 0) {
-      Settings.effects.mute = 0;
-    }
     setEffectsMute();
   } else if (strcasecmp(settingName, "sleep_time") == 0) {
     Settings.sleep.timer = (byte)atoi(settingValue);
@@ -872,19 +867,26 @@ boolean deleteProfile(char *filename)
 /**
  * Load specified settings file
  */
-void loadSettings(const char *filename, Settings_t *Settings, boolean apply) 
+void loadSettings(char *filename, Settings_t *settings, const boolean nameOnly) 
 {
 
   Serial.println("--- AT READ SETTINGS FILE");
+  char *ret = strstr(filename, ".");  
+  if (ret == NULL) {
+    addFileExt(filename);
+  }
   Serial.println(filename);
+  strlcpy(settings->file, filename, sizeof(settings->file));
   
   const size_t bufferSize = 6*JSON_ARRAY_SIZE(2) + JSON_ARRAY_SIZE(5) + JSON_ARRAY_SIZE(6) + 4*JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(3) + 3*JSON_OBJECT_SIZE(4) + JSON_OBJECT_SIZE(5) + JSON_OBJECT_SIZE(8) + JSON_OBJECT_SIZE(9) + 780;
   DynamicJsonBuffer jsonBuffer(bufferSize);
   
-  char srcFileName[25];
+  char srcFileName[27];
   strcpy(srcFileName, PROFILES_DIR);
   strcat(srcFileName, filename);
-
+  Serial.print("NEW settings file: ");
+  Serial.println(srcFileName);
+  
   Serial.println("Opening file from SD card");
   
   File file = SD.open(srcFileName);
@@ -901,114 +903,118 @@ void loadSettings(const char *filename, Settings_t *Settings, boolean apply)
   
   file.close();
 
-  strlcpy(Settings->name, root["name"], sizeof(Settings->name)); // "aaaaaaaaaaaaaaaaaaaa"
+  strlcpy(settings->name, root["name"], sizeof(settings->name)); // "aaaaaaaaaaaaaaaaaaaa"
 
+  if (nameOnly) {
+    return;
+  }
+  
   JsonObject& volume = root["volume"];
 
   char buf[30];
     
-  Settings->volume.master = volume["master"]; // 0.55
+  settings->volume.master = volume["master"]; // 0.55
   
-  Settings->volume.microphone = volume["microphone"]; // 10
-  Settings->volume.linein = volume["linein"]; // 10
-  Settings->volume.lineout = volume["lineout"]; // 30
+  settings->volume.microphone = volume["microphone"]; // 10
+  settings->volume.linein = volume["linein"]; // 10
+  settings->volume.lineout = volume["lineout"]; // 30
 
-  dtostrf(Settings->volume.master, 0, 3, buf);
+  dtostrf(settings->volume.master, 0, 3, buf);
   debug(F("Volume.master: %s\n"), buf);
-  debug(F("Volume.microphone: %d\n"), Settings->volume.microphone);
-  debug(F("Volume.linein: %d\n"), Settings->volume.linein);
-  debug(F("Volume.lineout: %d\n"), Settings->volume.lineout);
+  debug(F("Volume.microphone: %d\n"), settings->volume.microphone);
+  debug(F("Volume.linein: %d\n"), settings->volume.linein);
+  debug(F("Volume.lineout: %d\n"), settings->volume.lineout);
   
   JsonObject& sounds = root["sounds"];
-  strlcpy(Settings->sounds.dir, sounds["dir"], sizeof(Settings->sounds.dir));
-  strlcpy(Settings->sounds.start, sounds["start"], sizeof(Settings->sounds.start));
-  strlcpy(Settings->sounds.button, sounds["button"], sizeof(Settings->sounds.button)); // "aaaaaaaa.aaa"
+  strlcpy(settings->sounds.dir, sounds["dir"], sizeof(settings->sounds.dir));
+  strlcpy(settings->sounds.start, sounds["start"], sizeof(settings->sounds.start));
+  strlcpy(settings->sounds.button, sounds["button"], sizeof(settings->sounds.button)); // "aaaaaaaa.aaa"
 
-  debug(F("Sounds.dir: %s\n"), Settings->sounds.dir);
-  debug(F("Sounds.start: %s\n"), Settings->sounds.start);
-  debug(F("Sounds.button: %s\n"), Settings->sounds.button);
+  debug(F("Sounds.dir: %s\n"), settings->sounds.dir);
+  debug(F("Sounds.start: %s\n"), settings->sounds.start);
+  debug(F("Sounds.button: %s\n"), settings->sounds.button);
   
   JsonObject& loop = root["loop"];
-  strlcpy(Settings->loop.dir, loop["dir"], sizeof(Settings->loop.dir)); // "/aaaaaaaa/"
-  strlcpy(Settings->loop.file, loop["file"], sizeof(Settings->loop.file)); // "aaaaaaaa.aaa"
-  Settings->loop.volume = loop["volume"]; // 0.02
-  Settings->loop.mute = loop["mute"]; // 1
+  strlcpy(settings->loop.dir, loop["dir"], sizeof(settings->loop.dir)); // "/aaaaaaaa/"
+  strlcpy(settings->loop.file, loop["file"], sizeof(settings->loop.file)); // "aaaaaaaa.aaa"
+  settings->loop.volume = loop["volume"]; // 0.02
+  settings->loop.mute = loop["mute"]; // 1
 
-  debug(F("Loop.dir: %s\n"), Settings->loop.dir);
-  debug(F("Loop.file: %s\n"), Settings->loop.file);
-  dtostrf(Settings->loop.volume, 0, 3, buf);
+  debug(F("Loop.dir: %s\n"), settings->loop.dir);
+  debug(F("Loop.file: %s\n"), settings->loop.file);
+  dtostrf(settings->loop.volume, 0, 3, buf);
   debug(F("Loop.volume %s\n"), buf);
-  debug(F("Loop.mute: %d\n"), Settings->loop.mute);
+  debug(F("Loop.mute: %d\n"), settings->loop.mute);
   
   JsonObject& voice = root["voice"];
-  Settings->voice.volume = voice["volume"]; // 3
-  Settings->voice.dry = voice["dry"]; // 0
-  Settings->voice.start = voice["start"]; // 0.043
-  Settings->voice.stop = voice["stop"]; // 0.02
-  Settings->voice.wait = voice["wait"]; // 1000
+  settings->voice.volume = voice["volume"]; // 3
+  settings->voice.dry = voice["dry"]; // 0
+  settings->voice.start = voice["start"]; // 0.043
+  settings->voice.stop = voice["stop"]; // 0.02
+  settings->voice.wait = voice["wait"]; // 1000
 
-  dtostrf(Settings->voice.volume, 0, 3, buf);
+  dtostrf(settings->voice.volume, 0, 3, buf);
   debug(F("Voice.volume: %s\n"), buf);
-  dtostrf(Settings->voice.dry, 0, 2, buf);
+  dtostrf(settings->voice.dry, 0, 2, buf);
   debug(F("Voice.dry: %s\n"), buf);
-  dtostrf(Settings->voice.start, 0, 4, buf);
+  dtostrf(settings->voice.start, 0, 4, buf);
   debug(F("Voice.start %s\n"), buf);
-  dtostrf(Settings->voice.stop, 0, 4, buf);
+  dtostrf(settings->voice.stop, 0, 4, buf);
   debug(F("Voice.stop: %s\n"), buf);
-  debug(F("Voice.wait: %d\n"), Settings->voice.wait);
+  debug(F("Voice.wait: %d\n"), settings->voice.wait);
   
   JsonObject& effects = root["effects"];
-  strlcpy(Settings->effects.dir, effects["dir"], sizeof(Settings->effects.dir)); // "/aaaaaaaa/"
-  Settings->effects.volume = effects["volume"]; // 1
-  Settings->effects.highpass = effects["highpass"]; // 1
+  strlcpy(settings->effects.dir, effects["dir"], sizeof(settings->effects.dir)); // "/aaaaaaaa/"
+  settings->effects.volume = effects["volume"]; // 1
+  settings->effects.highpass = effects["highpass"]; // 1
 
-  dtostrf(Settings->effects.volume, 0, 3, buf);
+  dtostrf(settings->effects.volume, 0, 3, buf);
   debug(F("Effects.volume: %s\n"), buf);
-  debug(F("Effects.highpass: %d\n"), Settings->effects.highpass);
+  debug(F("Effects.highpass: %d\n"), settings->effects.highpass);
   
-  Settings->effects.bitcrusher.bits = effects["bitcrusher"]["bits"]; // 16
-  Settings->effects.bitcrusher.rate = effects["bitcrusher"]["rate"]; // 44100
+  settings->effects.bitcrusher.bits = effects["bitcrusher"]["bits"]; // 16
+  settings->effects.bitcrusher.rate = effects["bitcrusher"]["rate"]; // 44100
 
-  debug(F("Bitcrusher.bits: %d\n"), Settings->effects.bitcrusher.bits);
-  debug(F("Bitcrusher.rate: %d\n"), Settings->effects.bitcrusher.rate);
+  debug(F("Bitcrusher.bits: %d\n"), settings->effects.bitcrusher.bits);
+  debug(F("Bitcrusher.rate: %d\n"), settings->effects.bitcrusher.rate);
   
-  Settings->effects.chorus.voices = effects["chorus"]["voices"]; // 10
-  Settings->effects.chorus.delay = effects["chorus"]["delay"]; // 1000
+  settings->effects.chorus.voices = effects["chorus"]["voices"]; // 10
+  settings->effects.chorus.delay = effects["chorus"]["delay"]; // 1000
 
-  debug(F("Chorus.voices: %d\n"), Settings->effects.chorus.voices);
-  debug(F("Chorus.delay: %d\n"), Settings->effects.chorus.delay);
+  debug(F("Chorus.voices: %d\n"), settings->effects.chorus.voices);
+  debug(F("Chorus.delay: %d\n"), settings->effects.chorus.delay);
   
   JsonObject& effects_flanger = effects["flanger"];
-  Settings->effects.flanger.delay = effects_flanger["delay"]; // 32
-  Settings->effects.flanger.offset = effects_flanger["offset"]; // 10
-  Settings->effects.flanger.depth = effects_flanger["depth"]; // 10
-  Settings->effects.flanger.freq = effects_flanger["freq"]; // 0.0625
+  settings->effects.flanger.delay = effects_flanger["delay"]; // 32
+  settings->effects.flanger.offset = effects_flanger["offset"]; // 10
+  settings->effects.flanger.depth = effects_flanger["depth"]; // 10
+  settings->effects.flanger.freq = effects_flanger["freq"]; // 0.0625
 
-  debug(F("Flanger.delay: %d\n"), Settings->effects.flanger.delay);
-  debug(F("Flanger.offset: %d\n"), Settings->effects.flanger.offset);
-  debug(F("Flanger.depth: %d\n"), Settings->effects.flanger.depth);
-  dtostrf(Settings->effects.flanger.freq, 0, 4, buf);
+  debug(F("Flanger.delay: %d\n"), settings->effects.flanger.delay);
+  debug(F("Flanger.offset: %d\n"), settings->effects.flanger.offset);
+  debug(F("Flanger.depth: %d\n"), settings->effects.flanger.depth);
+  dtostrf(settings->effects.flanger.freq, 0, 4, buf);
   debug(F("Flanger.freq: %s\n"), buf);
   
-  Settings->effects.noise = effects["noise"]; // 0.014
-  Settings->effects.mute = effects["mute"]; // 1
+  settings->effects.noise = effects["noise"]; // 0.014
+  settings->effects.mute = effects["mute"]; // 1
 
-  dtostrf(Settings->effects.noise, 0, 3, buf);
+  dtostrf(settings->effects.noise, 0, 3, buf);
   debug(F("Noise.volume: %s\n"), buf);
   
-  Settings->eq.active = root["eq"]["active"]; // 1
+  settings->eq.active = root["eq"]["active"]; // 1
   
   JsonArray& eq_bands = root["eq"]["bands"];
-  Settings->eq.bands[0] = eq_bands[0]; // -0.2
-  Settings->eq.bands[1] = eq_bands[1]; // -0.4
-  Settings->eq.bands[2] = eq_bands[2]; // -0.35
-  Settings->eq.bands[3] = eq_bands[3]; // -0.35
-  Settings->eq.bands[4] = eq_bands[4]; // -0.35
+  settings->eq.bands[0] = eq_bands[0]; // -0.2
+  settings->eq.bands[1] = eq_bands[1]; // -0.4
+  settings->eq.bands[2] = eq_bands[2]; // -0.35
+  settings->eq.bands[3] = eq_bands[3]; // -0.35
+  settings->eq.bands[4] = eq_bands[4]; // -0.35
 
-  Settings->sleep.timer = root["sleep"]["timer"]; // 60000
-  strlcpy(Settings->sleep.file, root["sleep"]["file"], sizeof(Settings->sleep.file)); // "aaaaaaaa.aaa"
+  settings->sleep.timer = root["sleep"]["timer"]; // 60000
+  strlcpy(settings->sleep.file, root["sleep"]["file"], sizeof(settings->sleep.file)); // "aaaaaaaa.aaa"
 
-  strlcpy(Settings->glove.dir, root["glove"]["dir"], sizeof(Settings->glove.dir));
+  strlcpy(settings->glove.dir, root["glove"]["dir"], sizeof(settings->glove.dir));
   
   JsonArray& glove_buttons = root["glove"]["buttons"];
 
@@ -1016,40 +1022,40 @@ void loadSettings(const char *filename, Settings_t *Settings, boolean apply)
     strcpy(buf, glove_buttons[i][0]);
     strcat(buf, ";");
     strcat(buf, glove_buttons[i][1]);
-    strlcpy(Settings->glove.settings[i], buf, sizeof(Settings->glove.settings[i]));
+    strlcpy(settings->glove.settings[i], buf, sizeof(settings->glove.settings[i]));
     memset(buf, 0, sizeof(buf));
   }
   
+}
+
+void applySettings() {
   // Apply settings
-  if (apply == true) {
-    setVolume();
-    setMicGain();
-    setLineout();
-    setLinein();
-    setHipass();
-    setEffectsVolume();
-    setNoiseVolume();
-    setVoiceVolume();
-    setDryVolume();
-    setLoopVolume();
-    setEq();
-    setEqBands();
-    setBitcrusher();
-    setEffectsDir();
-    setSoundsDir();
-    setLoopDir();
-    setGloveDir();
-    setLoopMute();
-    setEffectsMute();
-    setSleepTimer();
-    setChorus();
-    setFlanger(); 
-    // Configure Buttons
-    for (byte i = 0; i < 6; i++) {
-      ConfigureButton(i);
-    }
-  }  
-  
+  setVolume();
+  setMicGain();
+  setLineout();
+  setLinein();
+  setHipass();
+  setEffectsVolume();
+  setNoiseVolume();
+  setVoiceVolume();
+  setDryVolume();
+  setLoopVolume();
+  setEq();
+  setEqBands();
+  setBitcrusher();
+  setEffectsDir();
+  setSoundsDir();
+  setLoopDir();
+  setGloveDir();
+  setLoopMute();
+  setEffectsMute();
+  setSleepTimer();
+  setChorus();
+  setFlanger(); 
+  // Configure Buttons
+  for (byte i = 0; i < 6; i++) {
+    ConfigureButton(i);
+  }
 }
 
 

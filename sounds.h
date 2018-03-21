@@ -11,18 +11,17 @@ void beep(const byte times = 1)
   audioShield.unmuteLineout();
   for (byte i=0; i<times; i++) {
     waveform1.frequency(720);
-    waveform1.amplitude(0.7);
-    delay(100);
-    delay(50);
+    waveform1.amplitude(0.2);
+    delay(150);
     waveform1.amplitude(0);
     delay(350);
   }
 }
 
-void boop(int freq, byte dir) {
+void boop(int freq, const byte dir=1, const byte distance=75) {
    waveform1.frequency(freq);
-   waveform1.amplitude(.7);
-   for (byte i = 0; i < 50; i++) {
+   waveform1.amplitude(.2);
+   for (byte i = 0; i < distance; i++) {
       if (dir == 1) {
         freq++;
       } else {
@@ -32,6 +31,47 @@ void boop(int freq, byte dir) {
       delay(1);
    }
    waveform1.amplitude(0);
+}
+
+void boopUp() {
+  boop(440);
+}
+
+void boopDown() {
+  boop(480, 0, 100);
+}
+void berp() {
+  for (byte i = 0; i < 2; i++) {
+    waveform1.frequency(2440);
+    waveform1.amplitude(.2);
+    delay(50);
+    waveform1.frequency(380);
+    delay(75);
+    waveform1.amplitude(0);
+    delay(30);
+  }  
+}
+
+/***
+ * Turns the volume down on the chatter loop
+ */
+void loopOff() 
+{
+  effectsMixer.gain(1, 0);
+}
+
+/***
+ * Turns the volume up on the chatter loop
+ */
+void loopOn() 
+{
+  // gradually raise level to avoid pops 
+  if (Settings.loop.volume > 1) {
+    for (byte i=0; i<=Settings.loop.volume; i++) {
+      effectsMixer.gain(1, i);
+    }
+  }
+  effectsMixer.gain(1, Settings.loop.volume);
 }
 
 /***
@@ -98,7 +138,6 @@ unsigned long playGloveSound(const char *filename)
   strcat(buf, filename);
   return playSoundFile(EFFECTS_PLAYER, buf);
 }
-
 /**
  * Shortcut to play a sound from the SOUNDS directory
  */
@@ -221,27 +260,6 @@ void disconnectSound()
   waveform1.amplitude(0);
 }
 
-/***
- * Turns the volume down on the chatter loop
- */
-void loopOff() 
-{
-  effectsMixer.gain(1, 0);
-}
-
-/***
- * Turns the volume up on the chatter loop
- */
-void loopOn() 
-{
-  // gradually raise level to avoid pops 
-  if (Settings.loop.volume > 1) {
-    for (byte i=0; i<=Settings.loop.volume; i++) {
-      effectsMixer.gain(1, i);
-    }
-  }
-  effectsMixer.gain(1, Settings.loop.volume);
-}
 
 /***
  * Turns off the voice channels on the mixer

@@ -103,6 +103,9 @@
  */
 boolean checkPTTButton() 
 {
+  if (!App.ptt_button) {
+    return false;
+  }
   Settings.glove.ControlButtons[App.ptt_button].update();
   if (Settings.glove.ControlButtons[App.ptt_button].fell()) {
     if (STATE == STATE_RUNNING) {
@@ -221,7 +224,7 @@ void startup()
   Serial.println(F("----------------------------------------------\n"));
   
   // Load settings from specified file
-  loadSettings(Config.profile, &Settings, true);
+  loadSettings(Config.profile, &Settings, false);
   
   // Get flange processor ready but keep it off
   flange1.begin(Settings.effects.flanger.buffer,Settings.effects.flanger.delay*AUDIO_BLOCK_SAMPLES,Settings.effects.flanger.offset, Settings.effects.flanger.depth, Settings.effects.flanger.freq);
@@ -233,7 +236,7 @@ void startup()
   //Serial.println("\n\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!! AFTER STARTUP PROCESS SETTINGS !!!!!!!!!!!!!!!!!!!!!!!!!!");
   
   // apply the settings so we can do stuff
- //applySettings();
+  applySettings();
 
   // set the volume, either by config or volume pot
   
@@ -550,6 +553,7 @@ void run() {
           }
       } else if (strcasecmp(cmd_key, "load") == 0) {
           loopPlayer.stop();
+          /*
           if (strcasecmp(cmd_val, "") != 0) {
             memset(Settings.file, 0, sizeof(Settings.file));
             strcpy(Settings.file, cmd_val);
@@ -558,7 +562,9 @@ void run() {
           char buf[100];
           strcpy(buf, PROFILES_DIR);
           strcat(buf, Settings.file);
-          loadSettings(buf, &Settings, true);
+          */
+          loadSettings(cmd_val, &Settings, false);
+          applySettings();
           long l = playSound(Settings.sounds.start);
           delay(l+100);
           playLoop();
@@ -589,6 +595,8 @@ void run() {
             i = 1;
           }
           beep(i);
+      } else if (strcasecmp(cmd_key, "berp") == 0) {
+          berp();    
       } else if (strcasecmp(cmd_key, "mute") == 0) {
          audioShield.muteHeadphone();
          audioShield.muteLineout();
@@ -605,10 +613,13 @@ void run() {
          //saveSettingsFile(cmd_val, false); 
       } else if (strcasecmp(cmd_key, "restore") == 0) {
          loopPlayer.stop();
+         /*
          if (strcasecmp(cmd_val, "") == 0) {
            strcpy(cmd_val, Settings.file);
          }
+         */
          addBackupExt(cmd_val);
+         /*
          char *ret = strstr(cmd_val, PROFILES_DIR);
          if (ret == NULL) {
            char buf[SETTING_ENTRY_MAX];
@@ -618,8 +629,9 @@ void run() {
            strcpy(cmd_val, buf);
            memset(buf, 0, sizeof(buf));
          }
-         loadSettings(cmd_val, &Settings, true);    
-         //applySettings();
+         */
+         loadSettings(cmd_val, &Settings, false);    
+         applySettings();
          long l = playSound(Settings.sounds.start);
          delay(l+100);
          playLoop();
@@ -732,7 +744,9 @@ void run() {
             continue;
           }
             
-          Serial.print("BUTTON PRESSED: ");
+          Serial.print("BUTTON PRESSED (Physical/Virtual): ");
+          Serial.print(i);
+          Serial.print("/");
           Serial.print(whichButton);
           Serial.print(" TYPE: ");
           Serial.println(btype);
@@ -748,9 +762,16 @@ void run() {
                   char buffer[FILENAME_SIZE];
                   char *sound = Settings.glove.ControlButtons[i].buttons[whichButton-1].getSound(buffer);
                   Serial.println(sound);
-                  playGloveSound(sound);
+                  if (Settings.loop.mute == true) {
+                    loopOff();
+                  }
+                  long l = playGloveSound(sound);
                   lastButton = whichButton;
                   lastControlButton = i;
+                  if (Settings.loop.mute == true) {
+                    delay(l+100);
+                    loopOn();
+                  }
                 }
               }  
               break;
@@ -760,12 +781,14 @@ void run() {
                 Settings.volume.master = Settings.volume.master + .01;
                 if (Settings.volume.master > 10) {
                   Settings.volume.master = 10;
+                  berp();
+                } else {
+                  Serial.print("VOLUME UP: ");
+                  Serial.println(Settings.volume.master);
+                  audioShield.volume(Settings.volume.master);
+                  sendToApp("volume", Settings.volume.master, 3);
+                  boopUp();
                 }
-                Serial.print("VOLUME UP: ");
-                Serial.println(Settings.volume.master);
-                audioShield.volume(Settings.volume.master);
-                boop(440, 1);
-                sendToApp("volume", Settings.volume.master, 3);
               }  
               break;
             // Volume down  
@@ -774,12 +797,14 @@ void run() {
                 Settings.volume.master = Settings.volume.master - .01;
                 if (Settings.volume.master < 0) {
                   Settings.volume.master = 0;
+                  berp();
+                } else {
+                  Serial.print("VOLUME DOWN: ");
+                  Serial.println(Settings.volume.master);
+                  audioShield.volume(Settings.volume.master);
+                  sendToApp("volume", Settings.volume.master, 3);
+                  boopDown();
                 }
-                Serial.print("VOLUME DOWN: ");
-                Serial.println(Settings.volume.master);
-                audioShield.volume(Settings.volume.master);
-                boop(490, 0);
-                sendToApp("volume", Settings.volume.master, 3);
               }  
               break;
             // mute  
@@ -811,12 +836,14 @@ void run() {
                 --Settings.volume.lineout;
                 if (Settings.volume.lineout < 13) {
                   Settings.volume.lineout = 13;
+                  berp();
+                } else {
+                  Serial.print("Settings.lineout UP: ");
+                  Serial.println(Settings.volume.lineout);
+                  audioShield.lineOutLevel(Settings.volume.lineout);   
+                  sendToApp("lineout", Settings.volume.lineout);
+                  boopUp();
                 }
-                Serial.print("Settings.lineout UP: ");
-                Serial.println(Settings.volume.lineout);
-                audioShield.lineOutLevel(Settings.volume.lineout);   
-                boop(440, 1);  
-                sendToApp("lineout", Settings.volume.lineout);
               }
               break;
             // lineout down  
@@ -825,12 +852,14 @@ void run() {
                 ++Settings.volume.lineout;
                 if (Settings.volume.lineout > 31) {
                   Settings.volume.lineout = 31;
+                  berp();
+                } else {
+                  Serial.print("Settings.lineout DOWN: ");
+                  Serial.println(Settings.volume.lineout);
+                  audioShield.lineOutLevel(Settings.volume.lineout); 
+                  sendToApp("lineout", Settings.volume.lineout);
+                  boopDown();
                 }
-                Serial.print("Settings.lineout DOWN: ");
-                Serial.println(Settings.volume.lineout);
-                audioShield.lineOutLevel(Settings.volume.lineout); 
-                boop(490, 0);
-                sendToApp("lineout", Settings.volume.lineout);
               }
               break;
             // mic gain up
@@ -839,12 +868,14 @@ void run() {
                 ++Settings.volume.microphone;
                 if (Settings.volume.microphone > 63) {
                   Settings.volume.microphone = 63;  
+                  berp();
+                } else {
+                  Serial.print("MIC GAIN UP: ");
+                  Serial.println(Settings.volume.microphone);
+                  audioShield.micGain(Settings.volume.microphone);  
+                  sendToApp("mic", Settings.volume.microphone);
+                  boopUp();
                 }
-                Serial.print("MIC GAIN UP: ");
-                Serial.println(Settings.volume.microphone);
-                audioShield.micGain(Settings.volume.microphone);  
-                boop(540, 1);
-                sendToApp("mic", Settings.volume.microphone);
               }
               break;
             // mic gain down  
@@ -853,12 +884,14 @@ void run() {
                 --Settings.volume.microphone;
                 if (Settings.volume.microphone < 0) {
                   Settings.volume.microphone = 0;  
+                  berp();
+                } else {
+                  Serial.print("MIC GAIN DOWN: ");
+                  Serial.println(Settings.volume.microphone);
+                  audioShield.micGain(Settings.volume.microphone);  
+                  sendToApp("mic", Settings.volume.microphone);
+                  boopDown();
                 }
-                Serial.print("MIC GAIN DOWN: ");
-                Serial.println(Settings.volume.microphone);
-                audioShield.micGain(Settings.volume.microphone);  
-                boop(540, 0);
-                sendToApp("mic", Settings.volume.microphone);
               }
               break;
             // Start/Stop Loop
@@ -877,12 +910,14 @@ void run() {
                 Settings.loop.volume = Settings.loop.volume + .05;
                 if (Settings.loop.volume > 10) {
                   Settings.loop.volume = 10;
+                  berp();
+                } else {
+                  Serial.print("LOOP GAIN UP: ");
+                  Serial.println(Settings.loop.volume);
+                  effectsMixer.gain(1, Settings.loop.volume);
+                  sendToApp("loop_gain", Settings.loop.volume, 3);
+                  boopUp();
                 }
-                Serial.print("LOOP GAIN UP: ");
-                Serial.println(Settings.loop.volume);
-                effectsMixer.gain(1, Settings.loop.volume);
-                boop(540, 1);
-                sendToApp("loop_gain", Settings.loop.volume, 3);
               }
               break;  
             // Loop gain down
@@ -891,12 +926,14 @@ void run() {
                 Settings.loop.volume = Settings.loop.volume - .10;
                 if (Settings.loop.volume < 0) {
                   Settings.loop.volume = 0;
+                  berp();
+                } else {
+                    Serial.print("LOOP GAIN DOWN: ");
+                  Serial.println(Settings.loop.volume);
+                  effectsMixer.gain(1, Settings.loop.volume);
+                  sendToApp("loop_gain", Settings.loop.volume, 3);
+                  boopDown();
                 }
-                Serial.print("LOOP GAIN DOWN: ");
-                Serial.println(Settings.loop.volume);
-                effectsMixer.gain(1, Settings.loop.volume);
-                boop(540, 0);
-                sendToApp("loop_gain", Settings.loop.volume, 3);
               }
               break; 
             // Voice gain up
@@ -905,21 +942,15 @@ void run() {
                 Settings.voice.volume = Settings.voice.volume + .05;
                 if (Settings.voice.volume > 10) {
                   Settings.voice.volume = 10;
+                  berp();
+                } else {
+                  Serial.print("VOICE GAIN UP: ");
+                  Serial.println(Settings.voice.volume);
+                  voiceMixer.gain(0, Settings.voice.volume);
+                  voiceMixer.gain(1, Settings.voice.volume);
+                  sendToApp("voice_gain", Settings.voice.volume, 3);
+                  boopDown();
                 }
-                Settings.voice.dry = Settings.voice.dry + .05;
-                if (Settings.voice.dry > 10) {
-                  Settings.voice.dry = 10;
-                }
-                Serial.print("VOICE GAIN UP: ");
-                Serial.println(Settings.voice.volume);
-                Serial.print("DRY GAIN UP: ");
-                Serial.println(Settings.voice.dry);
-                voiceMixer.gain(0, Settings.voice.volume);
-                voiceMixer.gain(1, Settings.voice.volume);
-                voiceMixer.gain(2, Settings.voice.dry);  
-                boop(540, 0);
-                sendToApp("voice_gain", Settings.voice.volume, 3);
-                sendToApp("dry_gain", Settings.voice.dry, 3);
               }
               break;
             // Voice gain down
@@ -928,58 +959,88 @@ void run() {
                 Settings.voice.volume = Settings.voice.volume - .10;
                 if (Settings.voice.volume < 0) {
                   Settings.voice.volume = 0;
+                  berp();
+                } else {
+                  Serial.print("VOICE GAIN DOWN: ");
+                  Serial.println(Settings.voice.volume);
+                  voiceMixer.gain(0, Settings.voice.volume);
+                  voiceMixer.gain(1, Settings.voice.volume);  
+                  boopDown();
+                  sendToApp("voice_gain", Settings.voice.volume, 3);
                 }
+              }
+              break; 
+            // Dry Voice gain up
+            case 16:
+              {
+                Settings.voice.dry = Settings.voice.dry + .05;
+                if (Settings.voice.dry > 10) {
+                  Settings.voice.dry = 10;
+                  berp();
+                } else {
+                  Serial.print("DRY GAIN UP: ");
+                  Serial.println(Settings.voice.dry);
+                  voiceMixer.gain(2, Settings.voice.dry);  
+                  sendToApp("dry_gain", Settings.voice.dry, 3);
+                  boopDown();
+                }
+              }
+              break;
+            // Dry Voice gain down
+            case 17:
+              {
                 Settings.voice.dry = Settings.voice.dry - .10;
                 if (Settings.voice.dry < 0) {
                   Settings.voice.dry = 0;
+                  berp();
+                } else {
+                  Serial.print("DRY GAIN DOWN: ");
+                  Serial.println(Settings.voice.dry);
+                  voiceMixer.gain(2, Settings.voice.dry);  
+                  boopDown();
+                  sendToApp("dry_gain", Settings.voice.dry, 3);
                 }
-                Serial.print("VOICE GAIN DOWN: ");
-                Serial.println(Settings.voice.volume);
-                Serial.print("DRY GAIN DOWN: ");
-                Serial.println(Settings.voice.dry);
-                voiceMixer.gain(0, Settings.voice.volume);
-                voiceMixer.gain(1, Settings.voice.volume);  
-                voiceMixer.gain(2, Settings.voice.dry);  
-                boop(540, 0);
-                sendToApp("voice_gain", Settings.voice.volume, 3);
-                sendToApp("dry_gain", Settings.voice.dry, 3);
               }
-              break; 
+              break;   
             // Effects gain up
-            case 16:
+            case 18:
               {
                 Settings.effects.volume = Settings.effects.volume + .05;
                 if (Settings.effects.volume > 10) {
                   Settings.effects.volume = 10;
+                  berp();
+                } else {
+                  Serial.print("EFFECTS GAIN UP: ");
+                  Serial.println(Settings.effects.volume);
+                  effectsMixer.gain(0, Settings.effects.volume);
+                  effectsMixer.gain(1, Settings.effects.volume);  
+                  boopDown();
+                  sendToApp("effects_gain", Settings.effects.volume, 3);
                 }
-                Serial.print("EFFECTS GAIN UP: ");
-                Serial.println(Settings.effects.volume);
-                effectsMixer.gain(0, Settings.effects.volume);
-                effectsMixer.gain(1, Settings.effects.volume);  
-                boop(540, 0);
-                sendToApp("effects_gain", Settings.effects.volume, 3);
               }
               break;
             // Effects gain down
-            case 17:
+            case 19:
               {
                 Settings.effects.volume = Settings.effects.volume - .10;
                 if (Settings.effects.volume < 0) {
                   Settings.effects.volume = 0;
-                }
-                Serial.print("EFFECTS GAIN DOWN: ");
-                Serial.println(Settings.effects.volume);
-                effectsMixer.gain(0, Settings.effects.volume);
-                effectsMixer.gain(1, Settings.effects.volume);  
-                boop(540, 0);
-                sendToApp("effects_gain", Settings.effects.volume, 3);  
+                  berp();
+                } else {
+                  Serial.print("EFFECTS GAIN DOWN: ");
+                  Serial.println(Settings.effects.volume);
+                  effectsMixer.gain(0, Settings.effects.volume);
+                  effectsMixer.gain(1, Settings.effects.volume);  
+                  boopDown();
+                  sendToApp("effects_gain", Settings.effects.volume, 3);  
+                }  
               }
               break; 
           }
         }  
     }  
 
-    if (App.ptt_button >= 0 && App.button_initialized == false) {
+    if (App.ptt_button && App.button_initialized == false) {
       App.button_initialized = checkPTTButton();
       if (App.button_initialized) {
         // turn voice on with background noise
@@ -989,7 +1050,7 @@ void run() {
       Settings.glove.ControlButtons[App.ptt_button].update();
     }
     
-    if (App.ptt_button >= 0 && App.button_initialized) {
+    if (App.ptt_button && App.button_initialized) {
 
       float val = 0;
       
@@ -1120,6 +1181,9 @@ void run() {
 
 bool buttonHeld(uint16_t msecs) {
     elapsedMillis duration = 0;
+    if (!App.wake_button || App.wake_button == 255) {
+      return false;
+    }
     while (duration < msecs) {
         Settings.glove.ControlButtons[App.wake_button].update();
         if (Settings.glove.ControlButtons[App.wake_button].read() != 0) {
