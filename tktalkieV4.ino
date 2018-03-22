@@ -180,7 +180,8 @@ void startup()
     strlcpy(Config.input, "BOTH", sizeof(Config.input));
   }
   debug(F("Got startup value Config.input: %s\n"), Config.input);
-
+  debug(F("Got startup value Config.access_code: %s\n"), Config.access_code);
+  
   //strlcpy(Settings.file, Config.profile, sizeof(Settings.file));
   
   if (strcasecmp(Config.profile, "") == 0) {
@@ -230,11 +231,6 @@ void startup()
   flange1.begin(Settings.effects.flanger.buffer,Settings.effects.flanger.delay*AUDIO_BLOCK_SAMPLES,Settings.effects.flanger.offset, Settings.effects.flanger.depth, Settings.effects.flanger.freq);
   flange1.voices(FLANGE_DELAY_PASSTHRU,0,0);
   
-  // Parse all of the settings
-  //Serial.println("\n\n!!!!!!!!!!!!!!!!!!!!!!!!!! STARTUP CALL PROCESS SETTINGS !!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-  //processSettings(profile_settings, total);
-  //Serial.println("\n\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!! AFTER STARTUP PROCESS SETTINGS !!!!!!!!!!!!!!!!!!!!!!!!!!");
-  
   // apply the settings so we can do stuff
   applySettings();
 
@@ -243,38 +239,31 @@ void startup()
   readVolume();
 
   // turn on outputs
-  Serial.println("--- UNMUTE");
   audioShield.unmuteLineout();
   audioShield.unmuteHeadphone();
 
-  Serial.println("--- GET EFFECTS GAIN");
   float prevVol = Settings.effects.volume;
 
   // turn on volume for startup sound 
   // if effects volume is at 0
-  Serial.println("--- SET EFFECTS GAIN");
   if (prevVol <= 0) {
     effectsMixer.gain(0, 1);
     effectsMixer.gain(1, 1);
   }
 
   // play startup sound
-  Serial.println("--- PLAY STARTUP SOUND");
   long l = playSound(Settings.sounds.start);
 
   // reset mixer volume if set to 0
-  Serial.println("--- RESET EFFECTS GAIN");
   if (prevVol <= 0) {
     effectsMixer.gain(0, Settings.effects.volume);
     effectsMixer.gain(1, Settings.effects.volume);
   }
   
   // add a smidge of delay ;)
-  Serial.println("--- DELAY");
   delay(l+100); 
 
   // play background loop
-  Serial.println("--- PLAY LOOP");
   playLoop();
 
   STATE = STATE_RUNNING;
@@ -282,8 +271,6 @@ void startup()
   Serial1.begin(Config.baud);
   delay(250);
   
-  Serial.println("----- END OF STARTUP");
-
 }
 
 /***
@@ -344,10 +331,6 @@ void setup()
   
   // load startup settings
   startup();
-
-  const size_t bufferSize = JSON_ARRAY_SIZE(5) + JSON_ARRAY_SIZE(6) + 22*JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(3) + 3*JSON_OBJECT_SIZE(4) + JSON_OBJECT_SIZE(5) + JSON_OBJECT_SIZE(8) + JSON_OBJECT_SIZE(9);
-  Serial.print("Buffer size: ");
-  Serial.println(bufferSize);
   
 }
 
@@ -454,32 +437,32 @@ void run() {
     }
     
     if (strcasecmp(cmd_key, "") != 0) {
-      Serial.print(">");
-      Serial.print(cmd_key);
+      Serial.print(F(">"));
+      Serial.print(F(cmd_key));
       if (strcasecmp(cmd_val, "") != 0) {
-        Serial.print("=");
-        Serial.print(cmd_val);
+        Serial.print(F("="));
+        Serial.print(F(cmd_val));
       }
-      Serial.println("<");
+      Serial.println(F("<"));
       // Check if there is a parameter and process 
       // commands with values first
       if (strcasecmp(cmd_key, "config") == 0) {
-        Serial.print("Profile: ");
-        Serial.println(Config.profile);
-        Serial.print("Debug: ");
-        Serial.println(Config.debug);;
-        Serial.print("Echo: ");
-        Serial.println(Config.echo);
-        Serial.print("Buttons: ");
+        Serial.print(F("Profile: "));
+        Serial.println(F(Config.profile));
+        Serial.print(F("Debug: "));
+        Serial.println(F(Config.debug));
+        Serial.print(F("Echo: "));
+        Serial.println(F(Config.echo));
+        Serial.print(F("Buttons: "));
         for (byte i = 0; i < 6; i++) {
           Serial.print(Config.buttons[i]);
-          Serial.print(" ");
+          Serial.print(F(" "));
         }
-        Serial.println("");
-        Serial.print("Input: ");
-        Serial.println(Config.input);
-        Serial.print("Access Code: ");
-        Serial.println(Config.access_code);
+        Serial.println(F(""));
+        Serial.print(F("Input: "));
+        Serial.println(F(Config.input));
+        Serial.print(F("Access Code: "));
+        Serial.println(F(Config.access_code));
       } else if (strcasecmp(cmd_key, "save") == 0) {
         char *pfile;
         if (strcasecmp(cmd_val, "") != 0) {
@@ -503,11 +486,9 @@ void run() {
             loopPlayer.stop();
          }
          if (saveSettings(Settings.file, true) == true) {
-          Serial.println("SAVED OK");
           sendToApp("save", "1");
           connectSound();
          } else {
-          Serial.println("NOT SAVED OK");
           sendToApp("save", "0");
          }
          if (wasPlaying == true) {
@@ -553,16 +534,6 @@ void run() {
           }
       } else if (strcasecmp(cmd_key, "load") == 0) {
           loopPlayer.stop();
-          /*
-          if (strcasecmp(cmd_val, "") != 0) {
-            memset(Settings.file, 0, sizeof(Settings.file));
-            strcpy(Settings.file, cmd_val);
-          } 
-          addFileExt(Settings.file);
-          char buf[100];
-          strcpy(buf, PROFILES_DIR);
-          strcat(buf, Settings.file);
-          */
           loadSettings(cmd_val, &Settings, false);
           applySettings();
           long l = playSound(Settings.sounds.start);
@@ -613,23 +584,7 @@ void run() {
          //saveSettingsFile(cmd_val, false); 
       } else if (strcasecmp(cmd_key, "restore") == 0) {
          loopPlayer.stop();
-         /*
-         if (strcasecmp(cmd_val, "") == 0) {
-           strcpy(cmd_val, Settings.file);
-         }
-         */
          addBackupExt(cmd_val);
-         /*
-         char *ret = strstr(cmd_val, PROFILES_DIR);
-         if (ret == NULL) {
-           char buf[SETTING_ENTRY_MAX];
-           strcpy(buf, PROFILES_DIR);
-           strcat(buf, cmd_val);
-           memset(cmd_val, 0, sizeof(cmd_val));
-           strcpy(cmd_val, buf);
-           memset(buf, 0, sizeof(buf));
-         }
-         */
          loadSettings(cmd_val, &Settings, false);    
          applySettings();
          long l = playSound(Settings.sounds.start);
@@ -639,7 +594,7 @@ void run() {
           Serial.println(F(""));
           Serial.println(Settings.file);
           Serial.println(F("--------------------------------------------------------------------------------"));
-          char buffer[1024];
+          char buffer[1025];
           char *p = settingsToString(buffer, true);
           Serial.println(p);
           Serial.println(F("--------------------------------------------------------------------------------"));
@@ -685,26 +640,21 @@ void run() {
           char temp[MAX_FILE_COUNT][FILENAME_SIZE];
           int count = listFiles(PROFILES_DIR, temp, MAX_FILE_COUNT, FILE_EXT, false, false);
           for (int i = 0; i < count; i++) {
-            Serial.print(temp[i]);
+            Serial.print(F(temp[i]));
             if (strcasecmp(temp[i], Settings.file) == 0) {
-              Serial.print(" (Loaded)");
+              Serial.print(F(" (Loaded)"));
             }
             if (strcasecmp(temp[i], Settings.file) == 0) {
-              Serial.print(" (Default)");
+              Serial.print(F(" (Default)"));
             }
-            Serial.println("");
+            Serial.println(F(""));
           }
       } else if (strcasecmp(cmd_key, "ls") == 0) {
-          Serial.println("set paths");
           char paths[MAX_FILE_COUNT][FILENAME_SIZE];
-          Serial.println("Set buffer");
-          char buffer[1024];
+          char buffer[1025];
           // return a list of directories on the card
-          Serial.println("call list directories");
           int count = listDirectories("/", paths);
-          Serial.println("conver to json string");
           char *dirs = arrayToStringJson(buffer, paths, count);
-          Serial.println("send to app");
           sendToApp(cmd_key, dirs);
       } else if (strcasecmp(cmd_key, "help") == 0) {
           showFile("HELP.TXT");
@@ -720,12 +670,11 @@ void run() {
         sendConfig();
       } else {
         parseSetting(cmd_key, cmd_val);
-        //applySettings();
         if (strcasecmp(cmd_key, "loop") == 0) {
           playLoop();
         }  
       }
-      Serial.println("");
+      Serial.println(F(""));
       memset(cmd_key, 0, sizeof(cmd_key));
       memset(cmd_val, 0, sizeof(cmd_val));
     }
@@ -744,24 +693,23 @@ void run() {
             continue;
           }
             
-          Serial.print("BUTTON PRESSED (Physical/Virtual): ");
+          Serial.print(F("BUTTON PRESSED (Physical/Virtual): "));
           Serial.print(i);
-          Serial.print("/");
+          Serial.print(F("/"));
           Serial.print(whichButton);
-          Serial.print(" TYPE: ");
+          Serial.print(F(" TYPE: "));
           Serial.println(btype);
         
           switch(btype) {
             // Sound button
             case 2:
               {
-                Serial.println(2);
                 if (effectsPlayer.isPlaying() && lastButton == whichButton && lastControlButton == i) {
                   effectsPlayer.stop();
                 } else {
                   char buffer[FILENAME_SIZE];
                   char *sound = Settings.glove.ControlButtons[i].buttons[whichButton-1].getSound(buffer);
-                  Serial.println(sound);
+                  debug(F("Play glove sound: %s"), sound);
                   if (Settings.loop.mute == true) {
                     loopOff();
                   }
@@ -783,7 +731,7 @@ void run() {
                   Settings.volume.master = 10;
                   berp();
                 } else {
-                  Serial.print("VOLUME UP: ");
+                  debug(F("VOLUME UP: "));
                   Serial.println(Settings.volume.master);
                   audioShield.volume(Settings.volume.master);
                   sendToApp("volume", Settings.volume.master, 3);

@@ -2,17 +2,6 @@
  * Routines for BLE 
  */
 
-void btprintln(const char *str) {
-  if (Config.echo == true) {
-    Serial.print("TX: ");
-    Serial.println(str);
-  }
-  if (App.ble_connected == true) {
-    Serial1.print(str);
-    Serial1.print("\n");
-  }
-}
-
 void btprint(const __FlashStringHelper *fmt, ... ) {
   char buf[1025]; // resulting string limited to 1M chars
   va_list args;
@@ -24,7 +13,7 @@ void btprint(const __FlashStringHelper *fmt, ... ) {
 #endif
   va_end(args);
   if (Config.echo == true) {
-    Serial.print(buf);
+    Serial.print(F(buf));
   }
   // break into chunks
   int l = strlen(buf);
@@ -38,7 +27,7 @@ void btprint(const __FlashStringHelper *fmt, ... ) {
       a++;
       Serial1.print(buf[b]);
     }
-    delay(30);      
+    delay(31);      
   }
 }
 
@@ -141,7 +130,7 @@ void sendConfig()
 
   // Add effects 
   // Does this need to be read again?  They should already be in memory
-  sounds = arrayToStringJson(buffer, Settings.effects.files, SOUND_EFFECTS_COUNT);
+  sounds = arrayToStringJson(buffer, Settings.effects.files, Settings.effects.count);
   btprint(F("\"effects\":%s,"), sounds);
   memset(buffer, 0, sizeof(buffer));
 
@@ -151,18 +140,12 @@ void sendConfig()
   // Add loops 
   sounds = arrayToStringJson(buffer, files, count);
   btprint(F("\"loops\":%s,"), sounds);
-  Serial.println("BEFORE LOOP BUFFER CLEAR");
   memset(buffer, 0, sizeof(buffer));
-  Serial.println("AFTER LOOP BUFFER CLEAR");
 
   // Clear array
   memset(files, 0, sizeof(files));
-  Serial.println("AFTER FILES CLEAR");
 
   // get glove sound files 
-  Serial.print("Gathering sound glove files -> ");
-  Serial.println(Settings.glove.dir);
-  
   count = listFiles(Settings.glove.dir, files, MAX_FILE_COUNT, SOUND_EXT, false, false);
   
   // Add glove sounds 

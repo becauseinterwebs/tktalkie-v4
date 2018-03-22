@@ -11,7 +11,7 @@ void debug(const __FlashStringHelper *fmt, ... ) {
   if (Config.debug == 0) {
     return;
   }
-  char buf[256]; // resulting string limited to 1000 chars
+  char buf[1025]; // resulting string limited to 1M chars
   va_list args;
   va_start (args, fmt);
 #ifdef __AVR__
@@ -20,8 +20,8 @@ void debug(const __FlashStringHelper *fmt, ... ) {
   vsnprintf(buf, sizeof(buf), (const char *)fmt, args); // for the rest of the world
 #endif
   va_end(args);
-  Serial.print("[DEBUG] ");
-  Serial.print(buf);
+  Serial.print(F("[DEBUG] "));
+  Serial.print(F(buf));
 }
 
 /**
@@ -37,22 +37,6 @@ void upcase(char *str)
     toupper(str[i]);
     i++;
    }
-}
-
-/**
- * Convert array of char strings to comma-delimited string 
- */
-char *arrayToString(char result[], const char arr[][SETTING_ENTRY_MAX], int len) 
-{
-  for (int i = 0 ; i < len; i++) {
-    if (i == 0) {
-      strcpy(result, arr[i]);
-    } else {
-      strcat(result, ",");
-      strcat(result, arr[i]);
-    }
-  }
-  return result;
 }
 
 /**
@@ -75,43 +59,7 @@ char *arrayToStringJson(char result[], const char arr[][14], int len)
   return result;
 }
 
-/**
- * Convert array of int to comma-delimited string 
- */
-char *arrayToString(char result[], int arr[], int len) 
-{
-  char buf[20];
-  for (int i = 0 ; i < len; i++) {
-    sprintf(buf, "%d", arr[i]);
-    if (i == 0) {
-      strcpy(result, buf);
-    } else {
-      strcat(result, ",");
-      strcat(result, buf);
-    }
-    memset(buf, 0, sizeof(buf));
-  }
-  return result;
-}
 
-/**
- * Convert array of float to comma-delimited string
- */
-char *arrayToString(char result[], float arr[], const int len) 
-{
-  char buf[20];
-  for (int i = 0 ; i < len; i++) {
-    dtostrf(arr[i], 0, 4, buf);
-    if (i == 0) {
-      strcpy(result, buf);
-    } else {
-      strcat(result, ",");
-      strcat(result, buf);
-    }
-    memset(buf, 0, sizeof(buf));
-  }
-  return result;
-}
 
 
 

@@ -10,8 +10,6 @@ void ConfigureButton(byte a) {
     char buf[25];
     byte pin = Config.buttons[a];
     
-    Serial.print("** Configure Button for Pin: ");
-    Serial.println(pin);
     if (pin > 0) {
 
       // setup physical button
@@ -19,22 +17,14 @@ void ConfigureButton(byte a) {
       
       strcpy(buf, Settings.glove.settings[a]);
       char *part_token, *part_ptr;
-      Serial.print("-- SETTINGS: ");
-      Serial.println(buf);
       part_token = strtok_r(buf, ";", &part_ptr);
       // button_type,data(sound)
-      Serial.print("Initial part token: ");
-      Serial.println(part_token);
       byte b = 0;
 
       while (part_token && b < 2) {
         char *button_token, *button_ptr;
         button_token = strtok_r(part_token, ",", &button_ptr);
-        Serial.print("Intitial button token: ");
-        Serial.println(button_token);
         byte button_type = (byte)atoi(button_token);
-        Serial.print("Button Type: ");
-        Serial.println(button_type);
         // by default, do not continue processing
         byte max = 0;
         // Determine how many options we need to read 
@@ -44,10 +34,9 @@ void ConfigureButton(byte a) {
           case 1:
             {
               debug(F("PTT Button on pin: %d\n"), pin);
-              Serial.println(" -> PTT Button");
               App.ptt_button = a;
               Settings.glove.ControlButtons[a].setPTT(true);
-              if (App.wake_button == NULL || App.wake_button == 255) {
+              if (!App.wake_button || App.wake_button == 255) {
                 App.wake_button = a;
                 snoozeDigital.pinMode(pin, INPUT_PULLUP, FALLING);
               }
@@ -63,8 +52,6 @@ void ConfigureButton(byte a) {
           case 6:
             {
               debug(F("Sleep Button on pin: %d\n"), pin);
-              Serial.print("Sleep Button on pin: ");
-              Serial.println(pin);
               App.wake_button = a;
               snoozeDigital.pinMode(pin, INPUT_PULLUP, FALLING);
             }  
@@ -72,15 +59,6 @@ void ConfigureButton(byte a) {
         }
 
         // setup virtual button type
-        Serial.print("Setting phyical button ");
-        Serial.print(a);
-        Serial.print(", Virtual button ");
-        Serial.print(buttonNum);
-        Serial.print(" to ");
-        Serial.print(button_type);
-        Serial.print(" max: ");
-        Serial.println(max);
-        
         Settings.glove.ControlButtons[a].buttons[buttonNum].setup(button_type);
         
         // start off with one since we have the first part 
@@ -93,10 +71,7 @@ void ConfigureButton(byte a) {
           switch (button_type) {
             case 2:
               {
-                debug(F("Sound Button on pin: %d\n"), pin);
-                Serial.println(" -> Sound Button");
-                Serial.print("Setting sound to: ");
-                Serial.println(button_token);
+                debug(F("Sound Button on pin %d with sound %s\n"), pin, button_token);
                 Settings.glove.ControlButtons[a].buttons[buttonNum].setSound(button_token);
               }  
               break;
@@ -105,16 +80,6 @@ void ConfigureButton(byte a) {
           // NOTE: Each physical button needs to have 
           // to virtual button properties that hold 
           // what to do
-          
-          Serial.print("token -> ");
-          Serial.print(a);
-          Serial.print(" -> ");
-          Serial.print(b);
-          Serial.print(" -> ");
-          Serial.print(c);
-          Serial.print(" -> ");
-          Serial.println(button_token);
-          //byte cb_type = atoi(token);
           c++;
           button_token = strtok_r(NULL, ",", &button_ptr);
         }  
@@ -123,8 +88,6 @@ void ConfigureButton(byte a) {
         part_token = strtok_r(NULL, ";", &part_ptr);
       }
     }
-    Serial.println("--------------END OF BUTTON-----------------");
-    Serial.println("");
 }
 
 void setVolume() {
@@ -302,7 +265,7 @@ void setChorus() {
     if (Settings.effects.chorus.voices < 1) {
       chorus1.voices(0);
     } else if(!chorus1.begin(Settings.effects.chorus.buffer,Settings.effects.chorus.delay*AUDIO_BLOCK_SAMPLES,Settings.effects.chorus.voices)) {
-       Serial.println("chorus: startup failed");
+       Serial.println(F("Chorus: startup failed!"));
     }
 }
 
@@ -376,7 +339,7 @@ void parseSetting(const char *settingName, char *settingValue)
     setEq();
   } else if (strcasecmp(settingName, "eq_bands") == 0) {
     // clear bands and prep for setting
-    for (int i = 0; i < 6; i++) {
+    for (byte i = 0; i < 5; i++) {
       Settings.eq.bands[i] = 0;
     }
     char *band, *ptr;
@@ -587,7 +550,7 @@ boolean saveConfig() {
     file.close();
     return false;
   } else {
-    Serial.println("Config file saved.");
+    Serial.println(F("Config file saved."));
   }
 
   // Close the file (File's destructor doesn't close the file)
@@ -783,17 +746,14 @@ boolean saveSettings(const char *src, const boolean backup = true)
   if (newFile) {
     char buffer[1600];
     char* p = settingsToString(buffer, true);
-    //Serial.println(p);
     newFile.print(p);
     newFile.close();
     //free(p);
     result = true;
     debug(F("Settings saved to %s\n"), srcFileName);
-    Serial.println("here1");
   } else {
     debug(F("**ERROR** saving to %s\n"), srcFileName);
   }
-  Serial.println("Before return");  
   return result;
   
 }
@@ -870,12 +830,11 @@ boolean deleteProfile(char *filename)
 void loadSettings(char *filename, Settings_t *settings, const boolean nameOnly) 
 {
 
-  Serial.println("--- AT READ SETTINGS FILE");
   char *ret = strstr(filename, ".");  
   if (ret == NULL) {
     addFileExt(filename);
   }
-  Serial.println(filename);
+  debug(F("Loading settings file: %s\n"), filename);
   strlcpy(settings->file, filename, sizeof(settings->file));
   
   const size_t bufferSize = 6*JSON_ARRAY_SIZE(2) + JSON_ARRAY_SIZE(5) + JSON_ARRAY_SIZE(6) + 4*JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(3) + 3*JSON_OBJECT_SIZE(4) + JSON_OBJECT_SIZE(5) + JSON_OBJECT_SIZE(8) + JSON_OBJECT_SIZE(9) + 780;
@@ -884,21 +843,17 @@ void loadSettings(char *filename, Settings_t *settings, const boolean nameOnly)
   char srcFileName[27];
   strcpy(srcFileName, PROFILES_DIR);
   strcat(srcFileName, filename);
-  Serial.print("NEW settings file: ");
-  Serial.println(srcFileName);
-  
-  Serial.println("Opening file from SD card");
   
   File file = SD.open(srcFileName);
 
   if (!file) {
-    Serial.println("Error reading file");
+    Serial.println(F("Error reading file"));
   }
   
   JsonObject& root = jsonBuffer.parseObject(file);
 
   if (!root.success()) {
-    Serial.println("ERROR READING SETTINGS FILE!");
+    Serial.println(F("ERROR PARSING SETTINGS FILE!"));
   }
   
   file.close();

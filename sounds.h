@@ -2,19 +2,25 @@
  * Sound utils
  */
 
-/**play
+/**
  * Emit a warning tone
  */
 void beep(const byte times = 1)
 {
-  audioShield.unmuteHeadphone();
-  audioShield.unmuteLineout();
+  if (App.muted) {
+    audioShield.unmuteHeadphone();
+    audioShield.unmuteLineout();
+  }
   for (byte i=0; i<times; i++) {
     waveform1.frequency(720);
     waveform1.amplitude(0.2);
     delay(150);
     waveform1.amplitude(0);
     delay(350);
+  }
+  if (App.muted) {
+    audioShield.muteHeadphone();
+    audioShield.muteLineout();
   }
 }
 
@@ -40,6 +46,7 @@ void boopUp() {
 void boopDown() {
   boop(480, 0, 100);
 }
+
 void berp() {
   for (byte i = 0; i < 2; i++) {
     waveform1.frequency(2440);
@@ -81,12 +88,12 @@ void loopOn()
 void loadSoundEffects() 
 {
   if (strcasecmp(Settings.effects.dir, "") == 0) {
-    SOUND_EFFECTS_COUNT = 0;
+    Settings.effects.count = 0;
     debug(F("No effects directory specified"));
     return;
   }
-  SOUND_EFFECTS_COUNT = listFiles(Settings.effects.dir, Settings.effects.files, MAX_FILE_COUNT, SOUND_EXT, false, false);
-  debug(F("%d Sound effects loaded\n"), SOUND_EFFECTS_COUNT);
+  Settings.effects.count = listFiles(Settings.effects.dir, Settings.effects.files, MAX_FILE_COUNT, SOUND_EXT, false, false);
+  debug(F("%d Sound effects loaded\n"), Settings.effects.count);
 }
 
 /***
@@ -191,13 +198,13 @@ void playLoop()
  */
 void addSoundEffect()
 {
-  if (App.speaking == true || SOUND_EFFECTS_COUNT < 1 || Settings.effects.mute == true || Settings.effects.mute == 1) return;
+  if (App.speaking == true || Settings.effects.count < 1 || Settings.effects.mute == true || Settings.effects.mute == 1) return;
   // generate a random number between 0 and the number of files read - 1
   byte rnd = 0;
   byte count = 0;
   rnd = lastRnd;
   while (rnd == lastRnd && count < 50) {
-   rnd = random(0, SOUND_EFFECTS_COUNT);
+   rnd = random(0, Settings.effects.count);
    count++;
   }
   lastRnd = rnd;

@@ -1,39 +1,6 @@
 /****
  * Global variables/constants
  */
- /** OLD SETTINGS
-// GUItool: begin automatically generated code
-AudioInputI2S            i2s1;           //xy=91.1111068725586,153.88888931274414
-AudioAnalyzeRMS          rms1;           //xy=210.1111068725586,217.88888931274414
-AudioEffectBitcrusher    bitcrusher1;    //xy=283.1111068725586,89.88888931274414
-AudioSynthNoisePink      pink1;          //xy=340.6666717529297,314.5555725097656
-AudioPlaySdWav           loopPlayer;     //xy=347.111083984375,245.88888549804688
-AudioSynthWaveform       waveform1;      //xy=350.1111145019531,279.8888854980469
-AudioPlaySdWav           effectsPlayer;  //xy=356.1111068725586,210.88888931274414
-AudioEffectFlange        flange1;        //xy=418.1111068725586,88.88888931274414
-AudioEffectChorus        chorus1;        //xy=547.1111068725586,88.88888931274414
-AudioMixer4              effectsMixer;   //xy=575.111083984375,255.88888549804688
-AudioMixer4              voiceMixer;     //xy=712.1111068725586,117.88888931274414
-AudioOutputI2S           i2s2;           //xy=877.1111068725586,117.88888931274414
-AudioConnection          patchCord1(i2s1, 0, bitcrusher1, 0);
-AudioConnection          patchCord2(i2s1, 0, voiceMixer, 2);
-AudioConnection          patchCord3(i2s1, 1, rms1, 0);
-AudioConnection          patchCord4(bitcrusher1, flange1);
-AudioConnection          patchCord5(pink1, 0, effectsMixer, 3);
-AudioConnection          patchCord6(loopPlayer, 0, effectsMixer, 1);
-AudioConnection          patchCord7(waveform1, 0, effectsMixer, 2);
-AudioConnection          patchCord8(effectsPlayer, 0, effectsMixer, 0);
-AudioConnection          patchCord9(flange1, chorus1);
-AudioConnection          patchCord10(chorus1, 0, voiceMixer, 0);
-AudioConnection          patchCord11(chorus1, 0, voiceMixer, 1);
-AudioConnection          patchCord12(effectsMixer, 0, voiceMixer, 3);
-AudioConnection          patchCord13(voiceMixer, 0, i2s2, 0);
-AudioConnection          patchCord14(voiceMixer, 0, i2s2, 1);
-AudioControlSGTL5000     audioShield;    //xy=77.1111068725586,263.88888931274414
-// GUItool: end automatically generated code
-
-*/
-
 // GUItool: begin automatically generated code
 AudioInputI2S            i2s1;           //xy=91.1111068725586,153.88888931274414
 AudioAnalyzeRMS          rms1;           //xy=212.11109924316406,189.88888549804688
@@ -63,12 +30,9 @@ AudioConnection          patchCord13(voiceMixer, 0, i2s2, 1);
 AudioControlSGTL5000     audioShield;    //xy=77.1111068725586,263.88888931274414
 // GUItool: end automatically generated code
 
-
-
-
 // version flag
 const char VERSION[5] = "4.0";
-float APP_VER = 1.13;
+float APP_VER = 2.0;
       
 //elapsedMillis ms;                         // running timer...inputs are checked every 24 milliseconds
 elapsedMillis stopped;                      // used to tell how long user has stopped talking
@@ -77,8 +41,6 @@ elapsedMillis stopped;                      // used to tell how long user has st
 #define MAX_SETTINGS_COUNT 40
 #define SETTING_ENTRY_MAX  150
 
-byte SOUND_EFFECTS_COUNT = 0;                             // This keeps count of how many valid WAV files were found.
-                                                          // 99 is an arbitrary number.  You can change it as you need to.
 byte lastRnd  = -1;                                       // Keeps track of the last file played so that it is different each time
 
 /***************************
@@ -120,11 +82,11 @@ struct Loop_t {
 };
 
 struct Voice_t {
-  float volume = 1.0000;
-  float dry    = 0.5000;
-  float start  = 0.0300;
-  float stop   = 0.0200;
-  int   wait   = 275;
+  float         volume = 1.0000;
+  float         dry    = 0.5000;
+  float         start  = 0.0300;
+  float         stop   = 0.0200;
+  unsigned int  wait   = 275;
 };
 
 struct Sounds_t {
@@ -162,6 +124,7 @@ struct Effects_t {
   Chorus_t      chorus;
   Flanger_t     flanger;
   char          files[MAX_FILE_COUNT][14];
+  byte          count;
 };
 
 struct Eq_t {
@@ -170,8 +133,8 @@ struct Eq_t {
 };
 
 struct Sleep_t {
-  int  timer    = 0;
-  char file[14] = "SLEEP.WAV";  
+  unsigned int  timer     = 0;
+  char          file[14]  = "SLEEP.WAV";  
 };
 
 struct Glove_t {
