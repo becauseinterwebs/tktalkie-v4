@@ -450,9 +450,9 @@ void run() {
         Serial.print(F("Profile: "));
         Serial.println(F(Config.profile));
         Serial.print(F("Debug: "));
-        Serial.println(F(Config.debug));
+        Serial.println(Config.debug);
         Serial.print(F("Echo: "));
-        Serial.println(F(Config.echo));
+        Serial.println(Config.echo);
         Serial.print(F("Buttons: "));
         for (byte i = 0; i < 6; i++) {
           Serial.print(Config.buttons[i]);
