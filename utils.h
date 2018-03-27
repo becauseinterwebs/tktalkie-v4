@@ -59,7 +59,9 @@ char *arrayToStringJson(char result[], const char arr[][14], int len)
   return result;
 }
 
-
+size_t jsonBufferSize() { 
+  return 6*JSON_ARRAY_SIZE(2) + JSON_ARRAY_SIZE(5) + JSON_ARRAY_SIZE(6) + 4*JSON_OBJECT_SIZE(2) + 3*JSON_OBJECT_SIZE(3) + 2*JSON_OBJECT_SIZE(4) + 2*JSON_OBJECT_SIZE(5) + 2*JSON_OBJECT_SIZE(9) + 830;
+}
 
 
 

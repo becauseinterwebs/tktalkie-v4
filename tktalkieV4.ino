@@ -227,10 +227,6 @@ void startup()
   // Load settings from specified file
   loadSettings(Config.profile, &Settings, false);
   
-  // Get flange processor ready but keep it off
-  flange1.begin(Settings.effects.flanger.buffer,Settings.effects.flanger.delay*AUDIO_BLOCK_SAMPLES,Settings.effects.flanger.offset, Settings.effects.flanger.depth, Settings.effects.flanger.freq);
-  flange1.voices(FLANGE_DELAY_PASSTHRU,0,0);
-  
   // apply the settings so we can do stuff
   applySettings();
 
@@ -439,7 +435,7 @@ void run() {
     if (strcasecmp(cmd_key, "") != 0) {
       Serial.print(F(">"));
       Serial.print(F(cmd_key));
-      if (strcasecmp(cmd_val, "") != 0) {
+      if (cmd_val != NULL && strcasecmp(cmd_val, "") != 0) {
         Serial.print(F("="));
         Serial.print(F(cmd_val));
       }
@@ -594,7 +590,7 @@ void run() {
           Serial.println(F(""));
           Serial.println(Settings.file);
           Serial.println(F("--------------------------------------------------------------------------------"));
-          char buffer[1025];
+          char buffer[jsonBufferSize()];
           char *p = settingsToString(buffer, true);
           Serial.println(p);
           Serial.println(F("--------------------------------------------------------------------------------"));
@@ -639,6 +635,7 @@ void run() {
       } else if (strcasecmp(cmd_key, "profiles") == 0) {
           char temp[MAX_FILE_COUNT][FILENAME_SIZE];
           int count = listFiles(PROFILES_DIR, temp, MAX_FILE_COUNT, FILE_EXT, false, false);
+          debug(F("%d profiles found\n"), count);
           for (int i = 0; i < count; i++) {
             Serial.print(F(temp[i]));
             if (strcasecmp(temp[i], Settings.file) == 0) {
@@ -668,6 +665,16 @@ void run() {
         gotoSleep();  
       } else if (strcasecmp(cmd_key, "sendconfig") == 0) { 
         sendConfig();
+      } else if (strcasecmp(cmd_key, "stats") == 0) {
+        Serial.print("Proc = ");
+        Serial.print(AudioProcessorUsage());
+        Serial.print(" (");    
+        Serial.print(AudioProcessorUsageMax());
+        Serial.print("),  Mem = ");
+        Serial.print(AudioMemoryUsage());
+        Serial.print(" (");    
+        Serial.print(AudioMemoryUsageMax());
+        Serial.println(")");
       } else {
         parseSetting(cmd_key, cmd_val);
         if (strcasecmp(cmd_key, "loop") == 0) {

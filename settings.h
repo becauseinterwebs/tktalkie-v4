@@ -262,7 +262,7 @@ void setChorus() {
       Settings.effects.chorus.voices = 0;
     }
     debug(F("CHORUS: %d - %d"), Settings.effects.chorus.voices, Settings.effects.chorus.delay);
-    if (Settings.effects.chorus.voices < 1) {
+    if (Settings.effects.chorus.voices < 1 || Settings.effects.chorus.enabled != 1) {
       chorus1.voices(0);
     } else if(!chorus1.begin(Settings.effects.chorus.buffer,Settings.effects.chorus.delay*AUDIO_BLOCK_SAMPLES,Settings.effects.chorus.voices)) {
        Serial.println(F("Chorus: startup failed!"));
@@ -276,7 +276,37 @@ void setFlanger() {
   if (Settings.effects.flanger.delay < 0) {
     Settings.effects.flanger.delay = 0;
   }
-  flange1.begin(Settings.effects.flanger.buffer,Settings.effects.flanger.delay*AUDIO_BLOCK_SAMPLES,Settings.effects.flanger.offset,Settings.effects.flanger.depth,Settings.effects.flanger.freq); 
+  if (Settings.effects.flanger.enabled != 1) {
+    flange1.voices(FLANGE_DELAY_PASSTHRU,0,0);
+  } else {
+    flange1.begin(Settings.effects.flanger.buffer,Settings.effects.flanger.delay*AUDIO_BLOCK_SAMPLES,Settings.effects.flanger.offset,Settings.effects.flanger.depth,Settings.effects.flanger.freq); 
+  }
+}
+
+void setShifter() {
+  if (Settings.effects.shifter.enabled == 1) {
+    float msec = 25.0 + (((float)Settings.effects.shifter.length/1023.0) * 75.0);
+    Serial.print("SPEED BEFORE CALC: ");
+    Serial.println(Settings.effects.shifter.speed);
+    float speed = ((float)Settings.effects.shifter.speed/1023.0) * 8.0;//powf(2.0, (Settings.effects.shifter.speed/1023) * 2.0 - 1.0); // 0.5 to 2.0
+    Serial.print("SPEED AFTER CALC: ");
+    Serial.println(speed);
+    if (speed < .125) { 
+      speed = .125;
+    } else if (speed > 8.0) {
+      speed = 8.0;
+    }
+    //ratio = powf(2.0, knobA2 * 6.0 - 3.0); // 0.125 to 8.0 -- uncomment for far too much range!
+    debug(F("Shifter set length %d speed %d\n"), Settings.effects.shifter.length, Settings.effects.shifter.speed);
+    char buf[10];
+    dtostrf(speed, 1, 7, buf);
+    debug(F("Shifter speed: %s\n"), buf);
+    granular1.beginPitchShift(msec);
+    granular1.setSpeed(speed);
+  } else {
+    debug(F("Shifter STOP"));
+    granular1.stop();
+  }
 }
 /***
  * Parse and set a Configuration setting
@@ -398,9 +428,11 @@ void parseSetting(const char *settingName, char *settingValue)
     strcpy(Settings.sleep.file, settingValue);
   } else if (strcasecmp(settingName, "chorus") == 0) {
     if (strcasecmp(settingValue, "0") == 0) {
-      chorus1.voices(0);
+      //chorus1.voices(0);
+      Settings.effects.chorus.enabled = 0;
     } else if (strcasecmp(settingValue, "1") == 0) {
-      chorus1.voices(Settings.effects.chorus.voices);
+      //chorus1.voices(Settings.effects.chorus.voices);
+      Settings.effects.chorus.enabled = 1;
     } else {
       char *token, *ptr;
       token = strtok_r(settingValue, ",", &ptr);
@@ -419,6 +451,31 @@ void parseSetting(const char *settingName, char *settingValue)
       }  
     }
     setChorus();
+  } else if (strcasecmp(settingName, "shifter") == 0) {
+    if (strcasecmp(settingValue, "0") == 0) {
+      //chorus1.voices(0);
+      Settings.effects.shifter.enabled = 0;
+    } else if (strcasecmp(settingValue, "1") == 0) {
+      //chorus1.voices(Settings.effects.chorus.voices);
+      Settings.effects.shifter.enabled = 1;
+    } else {
+      char *token, *ptr;
+      token = strtok_r(settingValue, ",", &ptr);
+      byte i = 0;
+      while (token && i < 3) {
+        switch (i) {
+          case 0:
+            Settings.effects.shifter.length = atoi(token);
+            break;
+          case 1:
+            Settings.effects.shifter.speed = atoi(token);
+            break;
+        }
+        i++;
+        token = strtok_r(NULL, ",", &ptr);
+      }  
+    }
+    setShifter();  
   } else if (strcasecmp(settingName, "chorus_delay") == 0) {
       Settings.effects.chorus.delay = (byte)atoi(settingValue);
       setChorus();
@@ -460,9 +517,11 @@ void parseSetting(const char *settingName, char *settingValue)
       flange1.voices(Settings.effects.flanger.offset,Settings.effects.flanger.depth,Settings.effects.flanger.freq);
   } else if (strcasecmp(settingName, "flanger") == 0) {
       if (strcasecmp(settingValue, "0") == 0) {
-        flange1.voices(FLANGE_DELAY_PASSTHRU,0,0);
+        //flange1.voices(FLANGE_DELAY_PASSTHRU,0,0);
+        Settings.effects.flanger.enabled = 0;
       } else if (strcasecmp(settingValue, "1") == 0) {
-        flange1.voices(Settings.effects.flanger.offset,Settings.effects.flanger.depth,Settings.effects.flanger.freq);
+        //flange1.voices(Settings.effects.flanger.offset,Settings.effects.flanger.depth,Settings.effects.flanger.freq);
+        Settings.effects.flanger.enabled = 1;
       } else {
         char *token, *ptr;
         token = strtok_r(settingValue, ",", &ptr);
@@ -482,8 +541,9 @@ void parseSetting(const char *settingName, char *settingValue)
           i++;
           token = strtok_r(NULL, ",", &ptr);
         } 
-        flange1.voices(Settings.effects.flanger.offset,Settings.effects.flanger.depth,Settings.effects.flanger.freq); 
+        //flange1.voices(Settings.effects.flanger.offset,Settings.effects.flanger.depth,Settings.effects.flanger.freq); 
       }
+      setFlanger();
   } else if (strcasecmp(settingName, "button") == 0) {
       char *token, *ptr;
       token = strtok_r(settingValue, ",", &ptr);
@@ -565,29 +625,44 @@ boolean saveConfig() {
 char *settingsToString(char result[], const boolean pretty = false) 
 {
 
+  Serial.println("AT SETTINGS TO STRING");
+  
   //const size_t bufferSize = JSON_ARRAY_SIZE(5) + JSON_ARRAY_SIZE(6) + 22*JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(3) + 3*JSON_OBJECT_SIZE(4) + JSON_OBJECT_SIZE(5) + JSON_OBJECT_SIZE(8) + JSON_OBJECT_SIZE(9);
-  const size_t bufferSize = 6*JSON_ARRAY_SIZE(2) + JSON_ARRAY_SIZE(5) + JSON_ARRAY_SIZE(6) + 4*JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(3) + 3*JSON_OBJECT_SIZE(4) + JSON_OBJECT_SIZE(5) + JSON_OBJECT_SIZE(8) + JSON_OBJECT_SIZE(9) + 780;
-  DynamicJsonBuffer jsonBuffer(bufferSize);
+  // pre-shifter -> const size_t bufferSize = 6*JSON_ARRAY_SIZE(2) + JSON_ARRAY_SIZE(5) + JSON_ARRAY_SIZE(6) + 4*JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(3) + 3*JSON_OBJECT_SIZE(4) + JSON_OBJECT_SIZE(5) + JSON_OBJECT_SIZE(8) + JSON_OBJECT_SIZE(9) + 780;
+  // with shifter
+  //const size_t bufferSize = 6*JSON_ARRAY_SIZE(2) + JSON_ARRAY_SIZE(5) + JSON_ARRAY_SIZE(6) + 4*JSON_OBJECT_SIZE(2) + 3*JSON_OBJECT_SIZE(3) + 2*JSON_OBJECT_SIZE(4) + 2*JSON_OBJECT_SIZE(5) + 2*JSON_OBJECT_SIZE(9);
+
+  DynamicJsonBuffer jsonBuffer(jsonBufferSize());
+
+  Serial.println("AFTER ALLOCATION JSON BUFFER");
   
   JsonObject& root = jsonBuffer.createObject();
   root["name"] = Settings.name;
+
+  Serial.println("AFTER ROOT");
   
   JsonObject& volume = root.createNestedObject("volume");
   volume["master"] = Settings.volume.master;
   volume["microphone"] = Settings.volume.microphone;
   volume["linein"] = Settings.volume.linein;
   volume["lineout"] = Settings.volume.lineout;
+
+  Serial.println("AFTER LEVELS");
   
   JsonObject& sounds = root.createNestedObject("sounds");
   sounds["dir"] = Settings.sounds.dir;
   sounds["start"] = Settings.sounds.start;
   sounds["button"] = Settings.sounds.button;
   
+  Serial.println("AFTER SOUNDS");
+  
   JsonObject& loop = root.createNestedObject("loop");
   loop["dir"] = Settings.loop.dir;
   loop["file"] = Settings.loop.file;
   loop["volume"] = Settings.loop.volume;
   loop["mute"] = Settings.loop.mute;
+
+  Serial.println("AFTER LOOP");
   
   JsonObject& voice = root.createNestedObject("voice");
   voice["volume"] = Settings.voice.volume;
@@ -595,31 +670,52 @@ char *settingsToString(char result[], const boolean pretty = false)
   voice["start"] = Settings.voice.start;
   voice["stop"] = Settings.voice.stop;
   voice["wait"] = Settings.voice.wait;
+
+  Serial.println("AFTER VOICE");
   
   JsonObject& effects = root.createNestedObject("effects");
   effects["dir"] = Settings.effects.dir;
   effects["volume"] = Settings.effects.volume;
   effects["highpass"] = Settings.effects.highpass;
+
+  Serial.println("AFTER EFFECTS");
   
   JsonObject& effects_bitcrusher = effects.createNestedObject("bitcrusher");
   effects_bitcrusher["bits"] = Settings.effects.bitcrusher.bits;
   effects_bitcrusher["rate"] = Settings.effects.bitcrusher.rate;
+
+  Serial.println("AFTER BITCRUSHER");
   
   JsonObject& effects_chorus = effects.createNestedObject("chorus");
   effects_chorus["voices"] = Settings.effects.chorus.voices;
   effects_chorus["delay"] = Settings.effects.chorus.delay;
+  effects_chorus["enabled"] = Settings.effects.chorus.enabled;
+
+  Serial.println("AFTER CHORUS");
   
   JsonObject& effects_flanger = effects.createNestedObject("flanger");
   effects_flanger["delay"] = Settings.effects.flanger.delay;
   effects_flanger["offset"] = Settings.effects.flanger.offset;
   effects_flanger["depth"] = Settings.effects.flanger.depth;
   effects_flanger["freq"] = Settings.effects.flanger.freq;
+  effects_flanger["enabled"] = Settings.effects.flanger.enabled;
 
+  Serial.println("AFTER FLANGER");
+
+  JsonObject& effects_shifter = effects.createNestedObject("shifter");
+  effects_shifter["length"] = Settings.effects.shifter.length;
+  effects_shifter["speed"] = Settings.effects.shifter.speed;
+  effects_shifter["enabled"] = Settings.effects.shifter.enabled;
+  
   effects["noise"] = Settings.effects.noise;
   effects["mute"] = Settings.effects.mute;
+
+  Serial.println("END OF EFFECTS");
   
   JsonObject& eq = root.createNestedObject("eq");
   eq["active"] = Settings.eq.active;
+
+  Serial.println("AFTER EQ");
   
   JsonArray& eq_bands = eq.createNestedArray("bands");
   eq_bands.add(Settings.eq.bands[0]);
@@ -627,16 +723,24 @@ char *settingsToString(char result[], const boolean pretty = false)
   eq_bands.add(Settings.eq.bands[2]);
   eq_bands.add(Settings.eq.bands[3]);
   eq_bands.add(Settings.eq.bands[4]);
+
+  Serial.println("AFTER EQ BANDS");
   
   JsonObject& sleep = root.createNestedObject("sleep");
   sleep["timer"] = Settings.sleep.timer;
   sleep["file"] = Settings.sleep.file;
 
+  Serial.println("AFTER SLEEP");
+
   JsonObject& glove = root.createNestedObject("glove");
   glove["dir"] = Settings.glove.dir;
 
+  Serial.println("AFTER GLOVE");
+  
   JsonArray& buttons = glove.createNestedArray("buttons");
 
+  Serial.println("AFTER BUTTONS");
+  
   char *button;
   
   JsonArray& buttons_0 = buttons.createNestedArray();
@@ -645,29 +749,39 @@ char *settingsToString(char result[], const boolean pretty = false)
   button = Settings.glove.ControlButtons[0].buttons[1].getSettings();
   buttons_0.add(button);
 
+  Serial.println("AFTER BUTTON 0");
+  
   JsonArray& buttons_1 = buttons.createNestedArray();
   button = Settings.glove.ControlButtons[1].buttons[0].getSettings();
   buttons_1.add(button);
   button = Settings.glove.ControlButtons[1].buttons[1].getSettings();
   buttons_1.add(button);
+
+  Serial.println("AFTER BUTTON 1");
   
   JsonArray& buttons_2 = buttons.createNestedArray();
   button = Settings.glove.ControlButtons[2].buttons[0].getSettings();
   buttons_2.add(button);
   button = Settings.glove.ControlButtons[2].buttons[1].getSettings();
   buttons_2.add(button);
+
+  Serial.println("AFTER BUTTON 2");
   
   JsonArray& buttons_3 = buttons.createNestedArray();
   button = Settings.glove.ControlButtons[3].buttons[0].getSettings();
   buttons_3.add(button);
   button = Settings.glove.ControlButtons[3].buttons[1].getSettings();
   buttons_3.add(button);
+
+  Serial.println("AFTER BUTTON 3");
   
   JsonArray& buttons_4 = buttons.createNestedArray();
   button = Settings.glove.ControlButtons[4].buttons[0].getSettings();
   buttons_4.add(button);
   button = Settings.glove.ControlButtons[4].buttons[1].getSettings();
   buttons_4.add(button);
+
+  Serial.println("AFTER BUTTON 4");
   
   JsonArray& buttons_5 = buttons.createNestedArray();
   button = Settings.glove.ControlButtons[5].buttons[0].getSettings();
@@ -675,18 +789,26 @@ char *settingsToString(char result[], const boolean pretty = false)
   button = Settings.glove.ControlButtons[5].buttons[1].getSettings();
   buttons_5.add(button);
 
+  Serial.println("AFTER BUTTON 5");
+  
   //root.prettyPrintTo(Serial);
   
   if (pretty == true) {
+    debug(F("ABOUT TO PRETTY PRINT %d"), root.measurePrettyLength() + 1);
     root.prettyPrintTo((char*)result, root.measurePrettyLength() + 1);
+    Serial.println("AFTER PRETTY PRINT");
   } else {
+    Serial.println("ABOUT TO PRINT");
     root.printTo((char*)result, root.measureLength() + 1);
+    Serial.println("AFTER PRINTTO");
   }
 
   //size_t len = root.measureLength();
   //debug(F("Length: %d\n"), len);
-  
+
+  Serial.println("BEFORE FREE BUTTON");
   free(button);
+  Serial.println("AFTER FREE BUTTON");
   
   return result;
 
@@ -834,26 +956,34 @@ void loadSettings(char *filename, Settings_t *settings, const boolean nameOnly)
   if (ret == NULL) {
     addFileExt(filename);
   }
-  debug(F("Loading settings file: %s\n"), filename);
   strlcpy(settings->file, filename, sizeof(settings->file));
   
-  const size_t bufferSize = 6*JSON_ARRAY_SIZE(2) + JSON_ARRAY_SIZE(5) + JSON_ARRAY_SIZE(6) + 4*JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(3) + 3*JSON_OBJECT_SIZE(4) + JSON_OBJECT_SIZE(5) + JSON_OBJECT_SIZE(8) + JSON_OBJECT_SIZE(9) + 780;
-  DynamicJsonBuffer jsonBuffer(bufferSize);
+  // pre-shifter -> const size_t bufferSize = 6*JSON_ARRAY_SIZE(2) + JSON_ARRAY_SIZE(5) + JSON_ARRAY_SIZE(6) + 4*JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(3) + 3*JSON_OBJECT_SIZE(4) + JSON_OBJECT_SIZE(5) + JSON_OBJECT_SIZE(8) + JSON_OBJECT_SIZE(9) + 780;
+  // with shifter
+  //const size_t bufferSize = 6*JSON_ARRAY_SIZE(2) + JSON_ARRAY_SIZE(5) + JSON_ARRAY_SIZE(6) + 4*JSON_OBJECT_SIZE(2) + 3*JSON_OBJECT_SIZE(3) + 2*JSON_OBJECT_SIZE(4) + 2*JSON_OBJECT_SIZE(5) + 2*JSON_OBJECT_SIZE(9) + 830;
+  DynamicJsonBuffer jsonBuffer(jsonBufferSize());
   
   char srcFileName[27];
   strcpy(srcFileName, PROFILES_DIR);
   strcat(srcFileName, filename);
+
+  debug(F("Loading settings file: %s\n"), srcFileName);
   
   File file = SD.open(srcFileName);
 
   if (!file) {
-    Serial.println(F("Error reading file"));
+    debug(F("Error reading file %s\n"), srcFileName);
+  } else {
+    debug(F("Opened %s\n"), srcFileName);
   }
   
   JsonObject& root = jsonBuffer.parseObject(file);
 
   if (!root.success()) {
-    Serial.println(F("ERROR PARSING SETTINGS FILE!"));
+    debug(F("ERROR PARSING SETTINGS FILE!\n"));
+    return;
+  } else {
+    debug(F("Parsed settings file OK\n"));
   }
   
   file.close();
@@ -929,28 +1059,36 @@ void loadSettings(char *filename, Settings_t *settings, const boolean nameOnly)
   
   settings->effects.bitcrusher.bits = effects["bitcrusher"]["bits"]; // 16
   settings->effects.bitcrusher.rate = effects["bitcrusher"]["rate"]; // 44100
-
   debug(F("Bitcrusher.bits: %d\n"), settings->effects.bitcrusher.bits);
   debug(F("Bitcrusher.rate: %d\n"), settings->effects.bitcrusher.rate);
   
   settings->effects.chorus.voices = effects["chorus"]["voices"]; // 10
   settings->effects.chorus.delay = effects["chorus"]["delay"]; // 1000
+  //settings->effects.chorus.enabled = (effects["chorus"]["enabled"] | 0);
 
   debug(F("Chorus.voices: %d\n"), settings->effects.chorus.voices);
   debug(F("Chorus.delay: %d\n"), settings->effects.chorus.delay);
+  debug(F("Chorus.enabled: %d\n"), settings->effects.chorus.enabled);
   
   JsonObject& effects_flanger = effects["flanger"];
   settings->effects.flanger.delay = effects_flanger["delay"]; // 32
   settings->effects.flanger.offset = effects_flanger["offset"]; // 10
   settings->effects.flanger.depth = effects_flanger["depth"]; // 10
   settings->effects.flanger.freq = effects_flanger["freq"]; // 0.0625
-
+  settings->effects.flanger.enabled = (effects["flanger"]["enabled"] | 0);
+  
   debug(F("Flanger.delay: %d\n"), settings->effects.flanger.delay);
   debug(F("Flanger.offset: %d\n"), settings->effects.flanger.offset);
   debug(F("Flanger.depth: %d\n"), settings->effects.flanger.depth);
   dtostrf(settings->effects.flanger.freq, 0, 4, buf);
   debug(F("Flanger.freq: %s\n"), buf);
-  
+  debug(F("Flanger.enabled: %d\n"), settings->effects.flanger.enabled);
+
+  JsonObject& effects_shifter = effects["shifter"];
+  settings->effects.shifter.length = effects_shifter["length"]; // 1023
+  settings->effects.shifter.speed = effects_shifter["speed"]; // 1023
+  settings->effects.shifter.enabled = effects_shifter["enabled"]; // 1
+
   settings->effects.noise = effects["noise"]; // 0.014
   settings->effects.mute = effects["mute"]; // 1
 
@@ -1006,7 +1144,10 @@ void applySettings() {
   setEffectsMute();
   setSleepTimer();
   setChorus();
+  flange1.begin(Settings.effects.flanger.buffer,Settings.effects.flanger.delay*AUDIO_BLOCK_SAMPLES,Settings.effects.flanger.offset,Settings.effects.flanger.depth,Settings.effects.flanger.freq); 
   setFlanger(); 
+  granular1.begin(granularMemory, GRANULAR_MEMORY_SIZE);
+  setShifter();
   // Configure Buttons
   for (byte i = 0; i < 6; i++) {
     ConfigureButton(i);

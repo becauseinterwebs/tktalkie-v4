@@ -2,6 +2,38 @@
  * Global variables/constants
  */
 // GUItool: begin automatically generated code
+
+AudioInputI2S            i2s1;           //xy=59,147
+AudioEffectGranular      granular1;      //xy=175,91
+AudioAnalyzeRMS          rms1;           //xy=248,201
+AudioEffectBitcrusher    bitcrusher1;    //xy=311,100
+AudioSynthNoisePink      pink1;          //xy=376,326
+AudioPlaySdWav           loopPlayer;     //xy=383,257
+AudioSynthWaveform       waveform1;      //xy=386,291
+AudioPlaySdWav           effectsPlayer;  //xy=392,222
+AudioEffectFlange        flange1;        //xy=452,101
+AudioEffectChorus        chorus1;        //xy=583,100
+AudioMixer4              effectsMixer;   //xy=594,264
+AudioMixer4              voiceMixer;     //xy=748,129
+AudioOutputI2S           i2s2;           //xy=913,129
+AudioConnection          patchCord1(i2s1, 0, voiceMixer, 2);
+AudioConnection          patchCord2(i2s1, 0, granular1, 0);
+AudioConnection          patchCord3(i2s1, 1, rms1, 0);
+AudioConnection          patchCord4(granular1, bitcrusher1);
+AudioConnection          patchCord5(bitcrusher1, flange1);
+AudioConnection          patchCord6(pink1, 0, effectsMixer, 3);
+AudioConnection          patchCord7(loopPlayer, 0, effectsMixer, 1);
+AudioConnection          patchCord8(waveform1, 0, effectsMixer, 2);
+AudioConnection          patchCord9(effectsPlayer, 0, effectsMixer, 0);
+AudioConnection          patchCord10(flange1, chorus1);
+AudioConnection          patchCord11(chorus1, 0, voiceMixer, 0);
+AudioConnection          patchCord12(effectsMixer, 0, voiceMixer, 3);
+AudioConnection          patchCord13(voiceMixer, 0, i2s2, 0);
+AudioConnection          patchCord14(voiceMixer, 0, i2s2, 1);
+AudioControlSGTL5000     audioShield;    //xy=113,275
+// GUItool: end automatically generated code
+/*
+// GUItool: begin automatically generated code
 AudioInputI2S            i2s1;           //xy=91.1111068725586,153.88888931274414
 AudioAnalyzeRMS          rms1;           //xy=212.11109924316406,189.88888549804688
 AudioEffectBitcrusher    bitcrusher1;    //xy=275.111083984375,88.88888549804688
@@ -29,6 +61,10 @@ AudioConnection          patchCord12(voiceMixer, 0, i2s2, 0);
 AudioConnection          patchCord13(voiceMixer, 0, i2s2, 1);
 AudioControlSGTL5000     audioShield;    //xy=77.1111068725586,263.88888931274414
 // GUItool: end automatically generated code
+*/
+
+#define GRANULAR_MEMORY_SIZE 12800  // enough for 290 ms at 44.1 kHz
+int16_t granularMemory[GRANULAR_MEMORY_SIZE];
 
 // version flag
 const char VERSION[5] = "4.0";
@@ -74,6 +110,12 @@ byte lastRnd  = -1;                                       // Keeps track of the 
 #define FX_DELAY 16
 #define FILENAME_SIZE 14
 
+struct Shifter_t {
+  int length   = 0;
+  int speed    = 512;
+  byte enabled   = 1;
+};
+
 struct Loop_t {
   char    dir[14]   = "/loops/";
   char    file[14]  = "";
@@ -101,17 +143,19 @@ struct Flanger_t {
   byte  depth  = 0;
   float freq   = 0.0625;
   short buffer[FX_DELAY*AUDIO_BLOCK_SAMPLES];
+  byte enabled = 1;
 };
 
 struct Chorus_t {
   byte voices  = 1;
   byte delay   = FX_DELAY;
   short buffer[FX_DELAY*AUDIO_BLOCK_SAMPLES];
+  byte enabled = 1;
 };
 
 struct Bitcrusher_t {
-  byte bits = 16;
-  int  rate = 44100;
+  byte bits    = 16;
+  int  rate    = 44100;
 };
 
 struct Effects_t {
@@ -123,6 +167,7 @@ struct Effects_t {
   Bitcrusher_t  bitcrusher;
   Chorus_t      chorus;
   Flanger_t     flanger;
+  Shifter_t     shifter;
   char          files[MAX_FILE_COUNT][14];
   byte          count;
 };
