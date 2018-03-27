@@ -63,7 +63,7 @@ AudioControlSGTL5000     audioShield;    //xy=77.1111068725586,263.8888893127441
 // GUItool: end automatically generated code
 */
 
-#define GRANULAR_MEMORY_SIZE 12800  // enough for 290 ms at 44.1 kHz
+#define GRANULAR_MEMORY_SIZE 1024  // enough for 290 ms at 44.1 kHz
 int16_t granularMemory[GRANULAR_MEMORY_SIZE];
 
 // version flag

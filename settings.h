@@ -282,7 +282,6 @@ void setFlanger() {
     flange1.begin(Settings.effects.flanger.buffer,Settings.effects.flanger.delay*AUDIO_BLOCK_SAMPLES,Settings.effects.flanger.offset,Settings.effects.flanger.depth,Settings.effects.flanger.freq); 
   }
 }
-
 void setShifter() {
   if (Settings.effects.shifter.enabled == 1) {
     float msec = 25.0 + (((float)Settings.effects.shifter.length/1023.0) * 75.0);
