@@ -532,13 +532,13 @@ void run() {
           loopPlayer.stop();
           loadSettings(cmd_val, &Settings, false);
           applySettings();
-          long l = playSound(Settings.sounds.start);
-          delay(l+100);
-          playLoop();
           // send to remote if connected
           if (App.ble_connected) {
             sendConfig();
           }
+          long l = playSound(Settings.sounds.start);
+          delay(l+100);
+          playLoop();
       } else if (strcasecmp(cmd_key, "play") == 0) {
           effectsPlayer.play(cmd_val);
       } else if (strcasecmp(cmd_key, "play_effect") == 0) {
@@ -665,16 +665,8 @@ void run() {
         gotoSleep();  
       } else if (strcasecmp(cmd_key, "sendconfig") == 0) { 
         sendConfig();
-      } else if (strcasecmp(cmd_key, "stats") == 0) {
-        Serial.print("Proc = ");
-        Serial.print(AudioProcessorUsage());
-        Serial.print(" (");    
-        Serial.print(AudioProcessorUsageMax());
-        Serial.print("),  Mem = ");
-        Serial.print(AudioMemoryUsage());
-        Serial.print(" (");    
-        Serial.print(AudioMemoryUsageMax());
-        Serial.println(")");
+      } else if (strcasecmp(cmd_key, "mem") == 0) {
+        showMemory();
       } else {
         parseSetting(cmd_key, cmd_val);
         if (strcasecmp(cmd_key, "loop") == 0) {
@@ -1186,6 +1178,37 @@ void softreset() {
  WRITE_RESTART(0x5FA0004);
 }
 
+void showMemory() {
+  Serial.print("Proc = ");
+    Serial.print(AudioProcessorUsage());
+    Serial.print(" (");    
+    Serial.print(AudioProcessorUsageMax());
+    Serial.print("),  Mem = ");
+    Serial.print(AudioMemoryUsage());
+    Serial.print(" (");    
+    Serial.print(AudioMemoryUsageMax());
+    Serial.println(")");
+    Serial.print("Free Mem: ");
+    Serial.println(freeMemory());
+}
+
+#ifdef __arm__
+// should use uinstd.h to define sbrk but Due causes a conflict
+extern "C" char* sbrk(int incr);
+#else  // __ARM__
+extern char *__brkval;
+#endif  // __arm__
+ 
+int freeMemory() {
+  char top;
+#ifdef __arm__
+  return &top - reinterpret_cast<char*>(sbrk(0));
+#elif defined(CORE_TEENSY) || (ARDUINO > 103 && ARDUINO != 151)
+  return &top - __brkval;
+#else  // __arm__
+  return __brkval ? &top - __brkval : &top - __malloc_heap_start;
+#endif  // __arm__
+}
 // END
 
 

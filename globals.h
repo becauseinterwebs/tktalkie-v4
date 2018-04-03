@@ -63,7 +63,7 @@ AudioControlSGTL5000     audioShield;    //xy=77.1111068725586,263.8888893127441
 // GUItool: end automatically generated code
 */
 
-#define GRANULAR_MEMORY_SIZE 1024  // enough for 290 ms at 44.1 kHz
+#define GRANULAR_MEMORY_SIZE 2048  // enough for 290 ms at 44.1 kHz
 int16_t granularMemory[GRANULAR_MEMORY_SIZE];
 
 // version flag
@@ -113,7 +113,8 @@ byte lastRnd  = -1;                                       // Keeps track of the 
 struct Shifter_t {
   int length   = 0;
   int speed    = 512;
-  byte enabled   = 1;
+  float range  = 5.0;
+  byte enabled = 1;
 };
 
 struct Loop_t {

@@ -179,16 +179,11 @@ unsigned long playEffect(const char *filename)
 void playLoop() 
 {
   loopLength = 0;
-  Serial.println("AT PLAY LOOP");
-  if (strcasecmp(Settings.loop.file, "") != 0) {
+  if (strcasecmp(Settings.loop.file, "") != 0 && strlen(Settings.loop.file) > 0) {
     char buf[FILENAME_SIZE*2];
     strcpy(buf, Settings.loop.dir);
     strcat(buf, Settings.loop.file);
-    Serial.print("PLAYING LOOP: ");
-    Serial.println(buf);
     loopLength = playSoundFile(LOOP_PLAYER, buf);
-  } else {
-    Serial.println("NO LOOP FILE");
   }
   loopMillis = 0;
 }
