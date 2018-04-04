@@ -1,67 +1,10 @@
 /****
  * Global variables/constants
  */
-// GUItool: begin automatically generated code
 
-AudioInputI2S            i2s1;           //xy=59,147
-AudioEffectGranular      granular1;      //xy=175,91
-AudioAnalyzeRMS          rms1;           //xy=248,201
-AudioEffectBitcrusher    bitcrusher1;    //xy=311,100
-AudioSynthNoisePink      pink1;          //xy=376,326
-AudioPlaySdWav           loopPlayer;     //xy=383,257
-AudioSynthWaveform       waveform1;      //xy=386,291
-AudioPlaySdWav           effectsPlayer;  //xy=392,222
-AudioEffectFlange        flange1;        //xy=452,101
-AudioEffectChorus        chorus1;        //xy=583,100
-AudioMixer4              effectsMixer;   //xy=594,264
-AudioMixer4              voiceMixer;     //xy=748,129
-AudioOutputI2S           i2s2;           //xy=913,129
-AudioConnection          patchCord1(i2s1, 0, voiceMixer, 2);
-AudioConnection          patchCord2(i2s1, 0, granular1, 0);
-AudioConnection          patchCord3(i2s1, 1, rms1, 0);
-AudioConnection          patchCord4(granular1, bitcrusher1);
-AudioConnection          patchCord5(bitcrusher1, flange1);
-AudioConnection          patchCord6(pink1, 0, effectsMixer, 3);
-AudioConnection          patchCord7(loopPlayer, 0, effectsMixer, 1);
-AudioConnection          patchCord8(waveform1, 0, effectsMixer, 2);
-AudioConnection          patchCord9(effectsPlayer, 0, effectsMixer, 0);
-AudioConnection          patchCord10(flange1, chorus1);
-AudioConnection          patchCord11(chorus1, 0, voiceMixer, 0);
-AudioConnection          patchCord12(effectsMixer, 0, voiceMixer, 3);
-AudioConnection          patchCord13(voiceMixer, 0, i2s2, 0);
-AudioConnection          patchCord14(voiceMixer, 0, i2s2, 1);
-AudioControlSGTL5000     audioShield;    //xy=113,275
-// GUItool: end automatically generated code
-/*
-// GUItool: begin automatically generated code
-AudioInputI2S            i2s1;           //xy=91.1111068725586,153.88888931274414
-AudioAnalyzeRMS          rms1;           //xy=212.11109924316406,189.88888549804688
-AudioEffectBitcrusher    bitcrusher1;    //xy=275.111083984375,88.88888549804688
-AudioSynthNoisePink      pink1;          //xy=340.6666717529297,314.5555725097656
-AudioPlaySdWav           loopPlayer;     //xy=347.111083984375,245.88888549804688
-AudioSynthWaveform       waveform1;      //xy=350.1111145019531,279.8888854980469
-AudioPlaySdWav           effectsPlayer;  //xy=356.1111068725586,210.88888931274414
-AudioEffectFlange        flange1;        //xy=416.1111145019531,89.88888549804688
-AudioEffectChorus        chorus1;        //xy=547.1111068725586,88.88888931274414
-AudioMixer4              effectsMixer;   //xy=558.111083984375,252.88888549804688
-AudioMixer4              voiceMixer;     //xy=712.1111068725586,117.88888931274414
-AudioOutputI2S           i2s2;           //xy=877.1111068725586,117.88888931274414
-AudioConnection          patchCord1(i2s1, 0, bitcrusher1, 0);
-AudioConnection          patchCord2(i2s1, 0, voiceMixer, 2);
-AudioConnection          patchCord3(i2s1, 1, rms1, 0);
-AudioConnection          patchCord4(bitcrusher1, flange1);
-AudioConnection          patchCord5(pink1, 0, effectsMixer, 3);
-AudioConnection          patchCord6(loopPlayer, 0, effectsMixer, 1);
-AudioConnection          patchCord7(waveform1, 0, effectsMixer, 2);
-AudioConnection          patchCord8(effectsPlayer, 0, effectsMixer, 0);
-AudioConnection          patchCord9(flange1, chorus1);
-AudioConnection          patchCord10(chorus1, 0, voiceMixer, 0);
-AudioConnection          patchCord11(effectsMixer, 0, voiceMixer, 3);
-AudioConnection          patchCord12(voiceMixer, 0, i2s2, 0);
-AudioConnection          patchCord13(voiceMixer, 0, i2s2, 1);
-AudioControlSGTL5000     audioShield;    //xy=77.1111068725586,263.88888931274414
-// GUItool: end automatically generated code
-*/
+// version flag
+#define VERSION     4.0
+#define MIN_APP_VER 2.0
 
 /***************************
    BUTTON TYPE VALUES
@@ -143,47 +86,32 @@ int16_t granularMemory[GRANULAR_MEMORY_SIZE];
 
 #define JSON_BUFFER_SIZE  6*JSON_ARRAY_SIZE(2) + JSON_ARRAY_SIZE(5) + JSON_ARRAY_SIZE(6) + 4*JSON_OBJECT_SIZE(2) + 3*JSON_OBJECT_SIZE(3) + 2*JSON_OBJECT_SIZE(4) + 2*JSON_OBJECT_SIZE(5) + 2*JSON_OBJECT_SIZE(9) + 830
 
-// version flag
-#define VERSION     4.0
-#define MIN_APP_VER 2.0
-      
-//elapsedMillis ms;                         // running timer...inputs are checked every 24 milliseconds
-elapsedMillis stopped;                      // used to tell how long user has stopped talking
+// Other defaults
+#define SOUND_EXT   ".WAV"
+#define FILE_EXT    ".TXT"
+#define BACKUP_EXT  ".BAK"
 
+// loop and serial command handlers
+#define MAX_DATA_SIZE 100
+      
 #define MAX_FILE_COUNT 99
 #define MAX_SETTINGS_COUNT 40
 #define SETTING_ENTRY_MAX  150
-
-/***************************
- * BUTTON TYPE VALUES
- *   1  = PTT (SLEEP/WAKE unless otherwise configured)
- *   2  = Play/Stop Specified Sound
- *   3  = Spkr Volume Up 
- *   4  = Spkr Volume Down 
- *   5  = Mute Everything
- *   6  = Sleep/Wake (Overrides PTT)
- *   7  = LineOut Volume Up
- *   8  = LineOut Volume Down
- *   9  = MIC_GAIN up
- *   10 = MIC_GAIN down
- *   11 = Start/Stop Loop
- *   12 = Loop gain up
- *   13 = Loop gain down
- *   14 = Voice gain up
- *   15 = Voice gain down
- *   16 = Dry gain up
- *   17 = Dry gain down
- *   18 = Effects gain up
- *   19 = Effects gain down   
- *   
- *   NOTE:  Pin 3 CANNOT wake up...
- *          only digital pins (like 2) work!
- */
 
 #define EFFECTS_PLAYER 1
 #define LOOP_PLAYER    2
 #define FX_DELAY 16
 #define FILENAME_SIZE 14
+
+#define PROFILES_DIR  "/profile4/"
+
+/**
+ * OPERATIONAL STATES - Used for tracking at what stage the app is currently running
+ */
+#define STATE_NONE      0
+#define STATE_BOOTING   1
+#define STATE_RUNNING   2
+#define STATE_SLEEPING  3
 
 struct Shifter_t {
   int length   = 0;
@@ -299,16 +227,6 @@ struct Config_t {
   long baud              = 9600;
 } Config;
 
-#define PROFILES_DIR  "/profile4/"
-
-/**
- * OPERATIONAL STATES - Used for tracking at what stage the app is currently running
- */
-#define STATE_NONE      0
-#define STATE_BOOTING   1
-#define STATE_RUNNING   2
-#define STATE_SLEEPING  3
-
 struct App_t {
   byte    state               = STATE_NONE;   // tracks the operational state of the application
   boolean silent              = false;        // used for PTT and to switch back to Voice Activated mode
@@ -320,24 +238,42 @@ struct App_t {
   byte    wake_button         = 255;
   byte    ptt_button;
   char    device_id[50];
+  unsigned int  loopLength;
+  elapsedMillis loopMillis    = 0;
+  elapsedMillis autoSleepMillis = 0;
+  elapsedMillis stopped;                      // used to tell how long user has stopped talking
 } App;
 
-// Loops
-unsigned int  loopLength;
-elapsedMillis loopMillis      = 0;
-elapsedMillis autoSleepMillis = 0;
-
-// Other defaults
-#define SOUND_EXT   ".WAV"
-#define FILE_EXT    ".TXT"
-#define BACKUP_EXT  ".BAK"
-
-
-// loop and serial command handlers
-#define MAX_DATA_SIZE 100
-//char cmd_key[20] = "";
-//char cmd_val[MAX_DATA_SIZE] = "";
-//char received[MAX_DATA_SIZE] = "";
+// GUItool: begin automatically generated code
+AudioInputI2S            i2s1;           //xy=59,147
+AudioEffectGranular      granular1;      //xy=175,91
+AudioAnalyzeRMS          rms1;           //xy=248,201
+AudioEffectBitcrusher    bitcrusher1;    //xy=311,100
+AudioSynthNoisePink      pink1;          //xy=376,326
+AudioPlaySdWav           loopPlayer;     //xy=383,257
+AudioSynthWaveform       waveform1;      //xy=386,291
+AudioPlaySdWav           effectsPlayer;  //xy=392,222
+AudioEffectFlange        flange1;        //xy=452,101
+AudioEffectChorus        chorus1;        //xy=583,100
+AudioMixer4              effectsMixer;   //xy=594,264
+AudioMixer4              voiceMixer;     //xy=748,129
+AudioOutputI2S           i2s2;           //xy=913,129
+AudioConnection          patchCord1(i2s1, 0, voiceMixer, 2);
+AudioConnection          patchCord2(i2s1, 0, granular1, 0);
+AudioConnection          patchCord3(i2s1, 1, rms1, 0);
+AudioConnection          patchCord4(granular1, bitcrusher1);
+AudioConnection          patchCord5(bitcrusher1, flange1);
+AudioConnection          patchCord6(pink1, 0, effectsMixer, 3);
+AudioConnection          patchCord7(loopPlayer, 0, effectsMixer, 1);
+AudioConnection          patchCord8(waveform1, 0, effectsMixer, 2);
+AudioConnection          patchCord9(effectsPlayer, 0, effectsMixer, 0);
+AudioConnection          patchCord10(flange1, chorus1);
+AudioConnection          patchCord11(chorus1, 0, voiceMixer, 0);
+AudioConnection          patchCord12(effectsMixer, 0, voiceMixer, 3);
+AudioConnection          patchCord13(voiceMixer, 0, i2s2, 0);
+AudioConnection          patchCord14(voiceMixer, 0, i2s2, 1);
+AudioControlSGTL5000     audioShield;    //xy=113,275
+// GUItool: end automatically generated code
 
 SnoozeDigital snoozeDigital;
 SnoozeAudio   snoozeAudio;

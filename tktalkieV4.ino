@@ -363,7 +363,7 @@ void run() {
   // check loop
   if (App.state == STATE_RUNNING) {
 
-    if (loopLength > 0 && loopMillis > loopLength) {
+    if (App.loopLength > 0 && App.loopMillis > App.loopLength) {
         playLoop();
     }
 
@@ -381,7 +381,7 @@ void run() {
       val = strtok_r(NULL, "=", &buf);
       strcpy(cmd_key, key);
       strcpy(cmd_val, val);
-      autoSleepMillis = 0;
+      App.autoSleepMillis = 0;
     } else if (Serial1.available() > 0) {
       char *key, *val, *buf, *buf2, *uid;      
       Serial1.readBytesUntil('\n', received, MAX_DATA_SIZE);
@@ -398,7 +398,7 @@ void run() {
       strcpy(App.device_id, uid);
       strcpy(cmd_key, key);
       strcpy(cmd_val, val);
-      autoSleepMillis = 0;
+      App.autoSleepMillis = 0;
       debug(F("BLE Cmd: %s Value: %s Uid: %s\n"), cmd_key, cmd_val, uid);
     }
 
@@ -582,7 +582,7 @@ void run() {
               break;
            case CMD_STOP_LOOP:
               loopPlayer.stop();
-              loopLength = 0;
+              App.loopLength = 0;
               break;
            case CMD_BEEP:
               {
@@ -1088,7 +1088,7 @@ void run() {
       // Play notification sound if there has been silence for 2 or 5 seconds:
       //    2 seconds: switching back to VA mode
       //    5 seconds: go into sleep mode
-      if (App.speaking == true && App.silent == true && (stopped == 2000 || (stopped == 5000 && App.ptt_button == App.wake_button))) {
+      if (App.speaking == true && App.silent == true && (App.stopped == 2000 || (App.stopped == 5000 && App.ptt_button == App.wake_button))) {
           connectSound();
       }
   
@@ -1112,15 +1112,15 @@ void run() {
       //        it will NOT switch back...or if you talk and pause for 
       //        2 seconds or more it will NOT switch back.
       if (Settings.glove.ControlButtons[App.ptt_button].rose()) {
-        if (App.silent == true && stopped >= 5000 && App.ptt_button == App.wake_button) {
+        if (App.silent == true && App.stopped >= 5000 && App.ptt_button == App.wake_button) {
           gotoSleep();
           return;
-        } else if (App.silent == true && stopped >= 2000) {
+        } else if (App.silent == true && App.stopped >= 2000) {
           voiceOff();
           App.button_initialized = false;
           return;
         } else {
-          stopped = 0;
+          App.stopped = 0;
           //while (stopped < Settings.voice.wait) {}
           voiceOff();
           // Random comm sound
@@ -1163,7 +1163,7 @@ void run() {
                 // sound from the card.  NOTE:  You can adjust the delay time to your liking...
                 // but it should probably be AT LEAST 1/4 second (250 milliseconds.)
     
-                if (stopped >= Settings.voice.wait) {
+                if (App.stopped >= Settings.voice.wait) {
                   //debug(F("Voice stop: %4f\n"), val);
                   voiceOff();
                   // play random sound effect
@@ -1173,7 +1173,7 @@ void run() {
               } else {
                   
                   // Reset the "silence" counter 
-                  stopped = 0;
+                  App.stopped = 0;
                   
               }
     
@@ -1189,7 +1189,7 @@ void run() {
   }
 
   // Sleep mode check
-  if (Settings.sleep.timer > 0 && (autoSleepMillis >= (Settings.sleep.timer * 60000))) {
+  if (Settings.sleep.timer > 0 && (App.autoSleepMillis >= (Settings.sleep.timer * 60000))) {
       gotoSleep();
   }
 

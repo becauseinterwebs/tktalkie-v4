@@ -178,14 +178,14 @@ unsigned long playEffect(const char *filename)
  */
 void playLoop() 
 {
-  loopLength = 0;
+  App.loopLength = 0;
   if (strcasecmp(Settings.loop.file, "") != 0 && strlen(Settings.loop.file) > 0) {
     char buf[FILENAME_SIZE*2];
     strcpy(buf, Settings.loop.dir);
     strcat(buf, Settings.loop.file);
-    loopLength = playSoundFile(LOOP_PLAYER, buf);
+    App.loopLength = playSoundFile(LOOP_PLAYER, buf);
   }
-  loopMillis = 0;
+  App.loopMillis = 0;
 }
 
 /***
@@ -268,10 +268,10 @@ void disconnectSound()
  */
 void voiceOff() 
 {
-  autoSleepMillis = 0;
+  App.autoSleepMillis = 0;
   App.speaking = false;
   App.silent = false;
-  stopped = 0;
+  App.stopped = 0;
   pink1.amplitude(0);
   voiceMixer.gain(0, 0);
   voiceMixer.gain(1, 0);
@@ -286,14 +286,14 @@ void voiceOff()
  */
 void voiceOn() 
 {
-  autoSleepMillis = 0;
+  App.autoSleepMillis = 0;
   App.speaking = true;
   App.silent = true;
   if (Settings.loop.mute == true) {
     loopOff();
   }
   // Reset the "user is talking" timer
-  stopped = 0;
+  App.stopped = 0;
   // pops are ok here ;)
   Serial.print("VOICE: ");
   Serial.println(Settings.voice.volume);
