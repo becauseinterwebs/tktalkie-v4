@@ -454,6 +454,8 @@ void run() {
           break;
        case CMD_CONFIG:
           {
+            showFile("CONFIG.TXT");
+            /*
             Serial.print(F("Profile: "));
             Serial.println(F(Config.profile));
             Serial.print(F("Debug: "));
@@ -470,6 +472,7 @@ void run() {
             Serial.println(F(Config.input));
             Serial.print(F("Access Code: "));
             Serial.println(F(Config.access_code));
+            */
           }
           break; 
        case CMD_SAVE:
@@ -634,12 +637,10 @@ void run() {
           {
             Serial.println(F(""));
             Serial.println(Settings.file);
-            Serial.println(F("--------------------------------------------------------------------------------"));
-            char buffer[JSON_BUFFER_SIZE];
-            char *p = settingsToString(buffer, true);
-            Serial.println(p);
-            Serial.println(F("--------------------------------------------------------------------------------"));
-            Serial.println(F(""));
+            char path[(MAX_FILENAME*2)];
+            strcpy(path, PROFILES_DIR);
+            strcat(path, Settings.file);
+            showFile(path);
           }
           break;
        case CMD_SHOW:
