@@ -631,7 +631,7 @@ char *settingsToString(char result[], const boolean pretty = false)
   // with shifter
   //const size_t bufferSize = 6*JSON_ARRAY_SIZE(2) + JSON_ARRAY_SIZE(5) + JSON_ARRAY_SIZE(6) + 4*JSON_OBJECT_SIZE(2) + 3*JSON_OBJECT_SIZE(3) + 2*JSON_OBJECT_SIZE(4) + 2*JSON_OBJECT_SIZE(5) + 2*JSON_OBJECT_SIZE(9);
 
-  DynamicJsonBuffer jsonBuffer(jsonBufferSize());
+  DynamicJsonBuffer jsonBuffer(JSON_BUFFER_SIZE);
 
   JsonObject& root = jsonBuffer.createObject();
   root["name"] = Settings.name;
@@ -910,7 +910,7 @@ void loadSettings(char *filename, Settings_t *settings, const boolean nameOnly)
   // pre-shifter -> const size_t bufferSize = 6*JSON_ARRAY_SIZE(2) + JSON_ARRAY_SIZE(5) + JSON_ARRAY_SIZE(6) + 4*JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(3) + 3*JSON_OBJECT_SIZE(4) + JSON_OBJECT_SIZE(5) + JSON_OBJECT_SIZE(8) + JSON_OBJECT_SIZE(9) + 780;
   // with shifter
   //const size_t bufferSize = 6*JSON_ARRAY_SIZE(2) + JSON_ARRAY_SIZE(5) + JSON_ARRAY_SIZE(6) + 4*JSON_OBJECT_SIZE(2) + 3*JSON_OBJECT_SIZE(3) + 2*JSON_OBJECT_SIZE(4) + 2*JSON_OBJECT_SIZE(5) + 2*JSON_OBJECT_SIZE(9) + 830;
-  DynamicJsonBuffer jsonBuffer(jsonBufferSize());
+  DynamicJsonBuffer jsonBuffer(JSON_BUFFER_SIZE);
   
   char srcFileName[27];
   strcpy(srcFileName, PROFILES_DIR);

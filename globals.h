@@ -63,12 +63,89 @@ AudioControlSGTL5000     audioShield;    //xy=77.1111068725586,263.8888893127441
 // GUItool: end automatically generated code
 */
 
+/***************************
+   BUTTON TYPE VALUES
+   NOTE: Only digital pins (like 2) work for Sleep/Wake
+*/
+#define BUTTON_PTT              1   // PTT (SLEEP/WAKE unless otherwise configured)
+#define BUTTON_SOUND            2   // Play/Stop Specified Sound
+#define BUTTON_VOL_UP           3   // Spkr Volume Up
+#define BUTTON_VOL_DOWN         4   // Spkr Volume Down
+#define BUTTON_MUTE             5   // Mute Everything
+#define BUTTON_SLEEP            6   // Sleep/Wake (Overrides PTT)
+#define BUTTON_LINE_UP          7   // LineOut Volume Up
+#define BUTTON_LINE_DOWN        8   // LineOut Volume Down
+#define BUTTON_MIC_UP           9   // MIC_GAIN up
+#define BUTTON_MIC_DOWN         10  // MIC_GAIN down
+#define BUTTON_LOOP             11  // Start/Stop Loop
+#define BUTTON_LOOP_UP          12  // Loop gain up
+#define BUTTON_LOOP_DOWN        13  // Loop gain down
+#define BUTTON_VOICE_UP         14  // Voice gain up
+#define BUTTON_VOICE_DOWN       15  // Voice gain down
+#define BUTTON_DRY_UP           16  // Dry gain up
+#define BUTTON_DRY_DOWN         17  // Dry gain down
+#define BUTTON_EFFECTS_UP       18  // Effects gain up
+#define BUTTON_EFFECTS_DOWN     19  // Effects gain down
+#define BUTTON_SHIFT_RANGE_UP   20  // Voice Shifter range up
+#define BUTTON_SHIFT_RANGE_DOWN 21  // Voice Shifter range down
+#define BUTTON_SHIFT_SPEED_UP   22  // Voice Shifter speed up
+#define BUTTON_SHIFT_SPEED_DOWN 23  // Voice Shifter speed down
+
+/***********************
+ * Command Mapping
+ */
+#define CMD_DEBUG       0
+#define CMD_ECHO        1
+#define CMD_DEFAULT     2
+#define CMD_DELETE      3    
+#define CMD_LOAD        4
+#define CMD_PLAY        5
+#define CMD_PLAY_EFFECT 6
+#define CMD_PLAY_SOUND  7
+#define CMD_PLAY_GLOVE  8
+#define CMD_PLAY_LOOP   9
+#define CMD_STOP_LOOP   10
+#define CMD_CONFIG      11
+#define CMD_MUTE        12
+#define CMD_UNMUTE      13
+#define CMD_SAVE        14
+#define CMD_ACCESS_CODE 15
+#define CMD_CONNECT     16
+#define CMD_DISCONNECT  17
+#define CMD_DOWNLOAD    18
+#define CMD_BACKUP      19
+#define CMD_RESTORE     20
+#define CMD_SETTINGS    21
+#define CMD_FILES       22
+#define CMD_SOUNDS      23
+#define CMD_EFFECTS     24
+#define CMD_LOOPS       25
+#define CMD_GLOVE       26
+#define CMD_PROFILES    27
+#define CMD_LS          28
+#define CMD_HELP        29
+#define CMD_CALIBRATE   30
+#define CMD_RESET       31
+#define CMD_SLEEP       32
+#define CMD_BAUD        33
+#define CMD_MEM         34
+#define CMD_BEEP        35
+#define CMD_BERP        36
+#define CMD_SHOW        37
+#define CMD_NONE        255
+
+#define MAX_GAIN 10
+
+#define MAX_FILENAME 14
+
 #define GRANULAR_MEMORY_SIZE 2048  // enough for 290 ms at 44.1 kHz
 int16_t granularMemory[GRANULAR_MEMORY_SIZE];
 
+#define JSON_BUFFER_SIZE  6*JSON_ARRAY_SIZE(2) + JSON_ARRAY_SIZE(5) + JSON_ARRAY_SIZE(6) + 4*JSON_OBJECT_SIZE(2) + 3*JSON_OBJECT_SIZE(3) + 2*JSON_OBJECT_SIZE(4) + 2*JSON_OBJECT_SIZE(5) + 2*JSON_OBJECT_SIZE(9) + 830
+
 // version flag
-const char VERSION[5] = "4.0";
-float APP_VER = 2.0;
+#define VERSION     4.0
+#define MIN_APP_VER 2.0
       
 //elapsedMillis ms;                         // running timer...inputs are checked every 24 milliseconds
 elapsedMillis stopped;                      // used to tell how long user has stopped talking
@@ -76,8 +153,6 @@ elapsedMillis stopped;                      // used to tell how long user has st
 #define MAX_FILE_COUNT 99
 #define MAX_SETTINGS_COUNT 40
 #define SETTING_ENTRY_MAX  150
-
-byte lastRnd  = -1;                                       // Keeps track of the last file played so that it is different each time
 
 /***************************
  * BUTTON TYPE VALUES
@@ -118,8 +193,8 @@ struct Shifter_t {
 };
 
 struct Loop_t {
-  char    dir[14]   = "/loops/";
-  char    file[14]  = "";
+  char    dir[MAX_FILENAME]   = "/loops/";
+  char    file[MAX_FILENAME]  = "";
   boolean mute      = true;
   float   volume    = 1;  
 };
@@ -133,9 +208,9 @@ struct Voice_t {
 };
 
 struct Sounds_t {
-  char dir[14]    = "/sounds/";
-  char start[14]  = "STARTUP.WAV";
-  char button[14] = "CLICK3.WAV";
+  char dir[MAX_FILENAME]    = "/sounds/";
+  char start[MAX_FILENAME]  = "STARTUP.WAV";
+  char button[MAX_FILENAME] = "CLICK3.WAV";
 };
 
 struct Flanger_t {
@@ -160,7 +235,7 @@ struct Bitcrusher_t {
 };
 
 struct Effects_t {
-  char          dir[14]   = "/effects/";
+  char          dir[MAX_FILENAME]   = "/effects/";
   float         volume    = 1.0000;
   byte          highpass  = 1;
   float         noise     = 0.0140;
@@ -169,7 +244,7 @@ struct Effects_t {
   Chorus_t      chorus;
   Flanger_t     flanger;
   Shifter_t     shifter;
-  char          files[MAX_FILE_COUNT][14];
+  char          files[MAX_FILE_COUNT][MAX_FILENAME];
   byte          count;
 };
 
@@ -180,11 +255,11 @@ struct Eq_t {
 
 struct Sleep_t {
   unsigned int  timer     = 0;
-  char          file[14]  = "SLEEP.WAV";  
+  char          file[MAX_FILENAME]  = "SLEEP.WAV";  
 };
 
 struct Glove_t {
-  char dir[14] = "/glove/";
+  char dir[MAX_FILENAME] = "/glove/";
   char settings[6][30] = { "0","0","0","0","0","0" };
   // This could be turned into a management class, but there is not a lot of stuff to do with it...so....
   ControlButton ControlButtons[6] = { ControlButton(), ControlButton(), ControlButton(), ControlButton(), ControlButton(), ControlButton() }; 
@@ -199,7 +274,7 @@ struct Volume_t {
 
 struct Settings_t {
   char      name[25] = "Default Profile";
-  char      file[14] = "DEFAULT.TXT";
+  char      file[MAX_FILENAME] = "DEFAULT.TXT";
   Volume_t  volume;
   Loop_t    loop;
   Voice_t   voice;
@@ -211,7 +286,7 @@ struct Settings_t {
 } Settings;
 
 struct Config_t {
-  char profile[14] = "DEFAULT.TXT";
+  char profile[MAX_FILENAME] = "DEFAULT.TXT";
   // These define the pins the (up to) 6 control buttons can be connected to
 // NOTE:  Only digital pins can be used for waking:
 //        2,4,6,7,9,10,11,13,16,21,22,26,30,33
@@ -224,44 +299,45 @@ struct Config_t {
   long baud              = 9600;
 } Config;
 
-const char PROFILES_DIR[11]         = "/profile4/";
-
-struct App_t {
-  boolean silent              = false;          // used for PTT and to switch back to Voice Activated mode
-  boolean speaking = false;                   // flag to let us know if the user is speaking or not
-  boolean button_initialized  = false;          // flag that lets us know if the PTT has been pushed or not to go into PTT mode
-  byte  ptt_button;  
-  byte  wake_button = 255;
-  // Bluetooth App 
-  char device_id[50];                 // the uuid of the device connecting 
-  boolean ble_connected = false;       // flag to indicate whether a remote app is connected or not
-  boolean muted        = false;       // flag to indicate whether all sounds should be muted
-} App;
+#define PROFILES_DIR  "/profile4/"
 
 /**
  * OPERATIONAL STATES - Used for tracking at what stage the app is currently running
  */
-byte STATE;                      
-const byte STATE_NONE     = 0;   
-const byte STATE_BOOTING  = 1;
-const byte STATE_RUNNING  = 2;
-const byte STATE_SLEEPING = 3;
+#define STATE_NONE      0
+#define STATE_BOOTING   1
+#define STATE_RUNNING   2
+#define STATE_SLEEPING  3
 
-// Other defaults
-const char SOUND_EXT[5]  = ".WAV";
-const char FILE_EXT[5]   = ".TXT";
-const char BACKUP_EXT[5] = ".BAK";
+struct App_t {
+  byte    state               = STATE_NONE;   // tracks the operational state of the application
+  boolean silent              = false;        // used for PTT and to switch back to Voice Activated mode
+  boolean speaking            = false;        // flag to let us know if the user is speaking or not
+  boolean button_initialized  = false;        // flag that lets us know if the PTT has been pushed or not to go into PTT mode
+  boolean ble_connected       = false;        // flag to indicate whether a remote app is connected or not
+  boolean muted               = false;        // flag to indicate whether all sounds should be muted
+  byte    lastRnd             = -1;           // Keeps track of the last file played so that it is different each time
+  byte    wake_button         = 255;
+  byte    ptt_button;
+  char    device_id[50];
+} App;
 
 // Loops
-elapsedMillis loopMillis = 0;
-unsigned int loopLength;
+unsigned int  loopLength;
+elapsedMillis loopMillis      = 0;
 elapsedMillis autoSleepMillis = 0;
 
+// Other defaults
+#define SOUND_EXT   ".WAV"
+#define FILE_EXT    ".TXT"
+#define BACKUP_EXT  ".BAK"
+
+
 // loop and serial command handlers
-char cmd_key[SETTING_ENTRY_MAX] = "";
-char cmd_val[SETTING_ENTRY_MAX] = "";
-const byte MAX_DATA_SIZE = 100;
-char received[MAX_DATA_SIZE] = "";
+#define MAX_DATA_SIZE 100
+//char cmd_key[20] = "";
+//char cmd_val[MAX_DATA_SIZE] = "";
+//char received[MAX_DATA_SIZE] = "";
 
 SnoozeDigital snoozeDigital;
 SnoozeAudio   snoozeAudio;
