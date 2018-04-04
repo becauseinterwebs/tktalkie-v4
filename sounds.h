@@ -16,7 +16,7 @@ void beep(const byte times = 1)
     waveform1.amplitude(0.2);
     delay(150);
     waveform1.amplitude(0);
-    delay(350);
+    delay(150);
   }
   if (App.muted) {
     audioShield.muteHeadphone();
@@ -229,39 +229,6 @@ float readVolume()
     }
     return vol;
 }
-
-
-/***
- * This is played when switching from PTT back to Voice Activated mode.
- * It is also played when a device connects via Bluetooth. 
- */
-void connectSound() 
-{
-  for (byte i=0; i<3; i++) {
-    waveform1.frequency(1440);
-    waveform1.amplitude(0.3);
-    delay(100);
-    waveform1.amplitude(0);
-    delay(100);
-  }
-  waveform1.amplitude(0);
-}
-
-/***
- * This is played when a mobile device connects via Bluetooth 
- */
-void disconnectSound() 
-{
-  for (byte i=0; i<3; i++) {
-    waveform1.frequency(720);
-    waveform1.amplitude(0.3);
-    delay(100);
-    waveform1.amplitude(0);
-    delay(100);
-  }
-  waveform1.amplitude(0);
-}
-
 
 /***
  * Turns off the voice channels on the mixer

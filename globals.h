@@ -77,6 +77,15 @@
 #define CMD_SHOW        37
 #define CMD_NONE        255
 
+/**********************
+ * BLE Connect Errors
+ */
+#define CONNECT_SUCCESS "0"
+#define CONNECT_BAD_UID "1"
+#define CONNECT_BAD_PWD "2"
+#define CONNECT_IN_USE  "3"
+#define CONNECT_BAD_VER "4"
+ 
 #define MAX_GAIN 10
 
 #define MAX_FILENAME 14

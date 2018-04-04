@@ -79,7 +79,7 @@ void sendConfig()
 
   debug(F("Sending config\n"));
 
-  btprint(F("{\"cmd\":\"config\", \"data\": { \"ver\":\"%s\","), VERSION);
+  btprint(F("{\"cmd\":\"config\", \"data\": { \"ver\":\"%2f\","), VERSION);
 
   char buffer[1024];
   char files[MAX_FILE_COUNT][FILENAME_SIZE];

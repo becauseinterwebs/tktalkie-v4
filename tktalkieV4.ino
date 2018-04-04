@@ -390,16 +390,37 @@ void run() {
       key = strtok_r(received, "=", &buf);
       // get other side of string after the '='
       val = strtok_r(NULL, "=", &buf);
-      // extract device id
+      // extract device id, then "val" will hold the rest of the command
       uid = strtok_r(val, "|", &buf2);
-      // extract rest of the command string (will be command value)
-      val = strtok_r(NULL, "|", &buf2);
-      memset(App.device_id, 0, sizeof(App.device_id));
-      strcpy(App.device_id, uid);
-      strcpy(cmd_key, key);
-      strcpy(cmd_val, val);
-      App.autoSleepMillis = 0;
-      debug(F("BLE Cmd: %s Value: %s Uid: %s\n"), cmd_key, cmd_val, uid);
+      // if there is no device id sent...no soup for you!
+      if (uid == NULL || strcasecmp(uid, "") == 0) {
+          App.ble_connected = true;
+          debug(F("Invalid device id: %s\n"), uid);
+          sendToApp("access", CONNECT_BAD_UID);
+          App.ble_connected = false;
+      } else {
+          // store the command
+          strcpy(cmd_key, key);
+          // the rest of "val" has the remaining command parameters
+          strcpy(cmd_val, buf2);
+          // if the ble is already connected, make sure we are still talking
+          // to the same device!
+          if (App.ble_connected && strcmp(uid, App.device_id) != 0) {
+              // this is not the same user...
+              debug(F("Device in use\n"));
+              memset(cmd_key, 0, sizeof(cmd_key));
+              App.ble_connected = true;
+              sendToApp("access", CONNECT_IN_USE);
+              App.ble_connected = false;
+          } else {
+            // store the device id
+            if (strcasecmp(App.device_id, "") == 0) {
+              strcpy(App.device_id, uid);
+            }
+            App.autoSleepMillis = 0;
+            debug(F("BLE Cmd: %s Value: %s Uid: %s\n"), cmd_key, cmd_val, uid);
+        }
+      }
     }
 
     if (strcasecmp(cmd_key, "") != 0) {
@@ -410,33 +431,42 @@ void run() {
           case CMD_CONNECT:
               {
                 // validate data received from mobile device!
-                char *val, *ver, *buf;
-                val = strtok_r(cmd_val, "|", &buf);
-                ver = strtok_r(NULL, "|", &buf);
-                if (ver == NULL || strcasecmp(ver, "") == 0) {
-                  strcpy(ver, "0");
-                }
-                debug(F("Received access code %s Ver: %s\n"), val, ver);
-                if (strcmp(Config.access_code, val) == 0 && atof(ver) >= MIN_APP_VER) {
-                  connectSound();
+                char *pwd, *ver, *buf;
+                // get the access code
+                pwd = strtok_r(cmd_val, "|", &buf);
+                debug(F("Received access code %s\n"), pwd);
+                if (pwd == NULL || strcmp(pwd, Config.access_code) != 0) {
+                  debug(F("Invalid access code: %s\n"), pwd);
                   App.ble_connected = true;
-                  debug(F("DEVICE ID %s...Send Access OK\n"), App.device_id);
-                  sendToApp("access", "1");
-                } else {
-                  memset(App.device_id, 0, sizeof(App.device_id));
-                  App.ble_connected = true;
-                  if (atof(ver) < MIN_APP_VER) {
-                    sendToApp("access", "0|Incorrect app version");
-                  } else {
-                    sendToApp("access", "0|Incorrect access code");
-                  }
+                  sendToApp("access", CONNECT_BAD_PWD);
                   App.ble_connected = false;
+                } else {
+                  // get the version of the app accessing the device
+                  ver = strtok_r(NULL, "|", &buf);
+                  debug(F("Received app version %s\n"), ver);
+                  if (ver == NULL || strcasecmp(ver, "") == 0) {
+                    strcpy(ver, "0");
+                  }
+                  if (atof(ver) < MIN_APP_VER) {
+                    // App is below min required version
+                    debug(F("App below required version: %s\n"), ver);
+                    memset(App.device_id, 0, sizeof(App.device_id));
+                    App.ble_connected = true;
+                    sendToApp("access", CONNECT_BAD_VER);
+                    App.ble_connected = false;
+                  } else {
+                    // All ok!
+                    berp();
+                    App.ble_connected = true;
+                    debug(F("Access granted\n"));
+                    sendToApp("access", CONNECT_SUCCESS);
+                  }
                 }
               }
               break;
            case CMD_DISCONNECT:
               App.ble_connected = false;
-              disconnectSound();
+              beep(2);
               memset(App.device_id, 0, sizeof(App.device_id));
               break;
            case CMD_DOWNLOAD:
@@ -490,7 +520,7 @@ void run() {
                  }
                  if (saveSettings(Settings.file, true) == true) {
                   sendToApp("save", "1");
-                  connectSound();
+                  berp();
                  } else {
                   sendToApp("save", "0");
                  }
@@ -1089,7 +1119,11 @@ void run() {
       //    2 seconds: switching back to VA mode
       //    5 seconds: go into sleep mode
       if (App.speaking == true && App.silent == true && (App.stopped == 2000 || (App.stopped == 5000 && App.ptt_button == App.wake_button))) {
-          connectSound();
+          if (App.stopped == 2000) {
+            beep(2);
+          } else {
+            beep(3);
+          }
       }
   
       // Button press
