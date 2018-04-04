@@ -295,6 +295,8 @@ void voiceOn()
   // Reset the "user is talking" timer
   stopped = 0;
   // pops are ok here ;)
+  Serial.print("VOICE: ");
+  Serial.println(Settings.voice.volume);
   pink1.amplitude(Settings.effects.noise);
   voiceMixer.gain(0, Settings.voice.volume);
   voiceMixer.gain(1, Settings.voice.volume);

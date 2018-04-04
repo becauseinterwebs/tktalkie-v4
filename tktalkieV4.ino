@@ -402,335 +402,328 @@ void run() {
       debug(F("BLE Cmd: %s Value: %s Uid: %s\n"), cmd_key, cmd_val, uid);
     }
 
-    if (strcasecmp(cmd_key, "") != 0) {
-      debug(F(">"));
-      debug(F(cmd_key));
-      if (cmd_val != NULL && strcasecmp(cmd_val, "") != 0) {
-        debug(F("="));
-        debug(F(cmd_val));
-      }
-      debug(F("<"));
-    }
-      
     // translate character command into a number for 
     // faster processing
     byte cmdIdx = getCommand(cmd_key);
-    
-    switch (cmdIdx) {
-      case CMD_CONNECT:
-          {
-            // validate data received from mobile device!
-            char *val, *ver, *buf;
-            val = strtok_r(cmd_val, "|", &buf);
-            ver = strtok_r(NULL, "|", &buf);
-            if (ver == NULL || strcasecmp(ver, "") == 0) {
-              strcpy(ver, "0");
-            }
-            debug(F("Received access code %s Ver: %s\n"), val, ver);
-            if (strcmp(Config.access_code, val) == 0 && atof(ver) >= MIN_APP_VER) {
-              connectSound();
-              App.ble_connected = true;
-              debug(F("DEVICE ID %s...Send Access OK\n"), App.device_id);
-              sendToApp("access", "1");
-            } else {
-              memset(App.device_id, 0, sizeof(App.device_id));
-              App.ble_connected = true;
-              if (atof(ver) < MIN_APP_VER) {
-                sendToApp("access", "0|Incorrect app version");
-              } else {
-                sendToApp("access", "0|Incorrect access code");
-              }
-              App.ble_connected = false;
-            }
-          }
-          break;
-       case CMD_DISCONNECT:
-          App.ble_connected = false;
-          disconnectSound();
-          memset(App.device_id, 0, sizeof(App.device_id));
-          break;
-       case CMD_DOWNLOAD:
-          sendConfig();
-          break;
-       case CMD_CONFIG:
-          {
-            showFile("CONFIG.TXT");
-            /*
-            Serial.print(F("Profile: "));
-            Serial.println(F(Config.profile));
-            Serial.print(F("Debug: "));
-            Serial.println(Config.debug);
-            Serial.print(F("Echo: "));
-            Serial.println(Config.echo);
-            Serial.print(F("Buttons: "));
-            for (byte i = 0; i < 6; i++) {
-              Serial.print(Config.buttons[i]);
-              Serial.print(F(" "));
-            }
-            Serial.println(F(""));
-            Serial.print(F("Input: "));
-            Serial.println(F(Config.input));
-            Serial.print(F("Access Code: "));
-            Serial.println(F(Config.access_code));
-            */
-          }
-          break; 
-       case CMD_SAVE:
-          {
-            char *pfile;
-            if (strcasecmp(cmd_val, "") != 0) {
-                char *ptr, *pname;
-                pfile = strtok_r(cmd_val, ";", &ptr);
-                if (strcasecmp(pfile, "") != 0) {
-                  memset(Settings.file, 0, sizeof(Settings.file));
-                  strcpy(Settings.file, pfile);
-                }
-                pname = strtok_r(NULL, ";", &ptr);
-                if (strcasecmp(pname, "") != 0) {
-                  memset(Settings.name, 0, sizeof(Settings.name));
-                  strcpy(Settings.name, pname);
-                }
-             }
-             addFileExt(Settings.file);
-             debug(F("Save settings file %s with description %s\n"), Settings.file, Settings.name);
-             boolean wasPlaying = false;
-             if (loopPlayer.isPlaying()) {
-                wasPlaying = true;
-                loopPlayer.stop();
-             }
-             if (saveSettings(Settings.file, true) == true) {
-              sendToApp("save", "1");
-              connectSound();
-             } else {
-              sendToApp("save", "0");
-             }
-             if (wasPlaying == true) {
-                playLoop();
-             } 
-          }
-          break;
-       case CMD_ACCESS_CODE:
-          if (strcasecmp(cmd_val, "") != 0) {
-            memset(Config.access_code, 0, sizeof(Config.access_code));
-            strlcpy(Config.access_code, cmd_val, sizeof(Config.access_code));
-            saveConfig();
-          }
-          break;
-       case CMD_DEBUG:
-          Config.debug = (atoi(cmd_val) == 0) ? false : true;
-          saveConfig();
-          break;
-       case CMD_ECHO:
-          Config.echo = atoi(cmd_val) | 0;
-          saveConfig();
-          break;
-       case CMD_BAUD:
-          Config.baud = atol(cmd_val) | 9600;
-          saveConfig();
-          break;
-       case CMD_DEFAULT:
-          {
-            if (strcasecmp(cmd_val, "") == 0) {
-              strcpy(cmd_val, Settings.file);
-            }
-            char ret[16];
-            if (setDefaultProfile(cmd_val)) {
-              strcpy(ret, "1;");
-            } else {
-              strcpy(ret, "0;");
-            }
-            strcat(ret, cmd_val);
-            sendToApp("default", ret);
-          }
-          break;
-       case CMD_DELETE:
-          {
-            if (strcasecmp(cmd_val, "") != 0) {
-              char ret[FILENAME_SIZE];
-              if (deleteProfile(cmd_val)) {
-                strcpy(ret, "1;");
-                strcat(ret, cmd_val);
-              } else {
-                strcpy(ret, "0;Could not remove profile");
-              }
-              sendToApp("delete", ret);
-            }
-          }
-          break;
-       case CMD_LOAD:
-          {
-            loopPlayer.stop();
-            loadSettings(cmd_val, &Settings, false);
-            applySettings();
-            // send to remote if connected
-            if (App.ble_connected) {
-              sendConfig();
-            }
-            long l = playSound(Settings.sounds.start);
-            delay(l+100);
-            playLoop();
-          }
-          break;
-       case CMD_PLAY:
-          effectsPlayer.play(cmd_val);
-          break; 
-       case CMD_PLAY_EFFECT:
-          playEffect(cmd_val);
-          break;
-       case CMD_PLAY_SOUND:
-          playSound(cmd_val);
-          break;
-       case CMD_PLAY_GLOVE:
-          playGloveSound(cmd_val);
-          break;
-       case CMD_PLAY_LOOP:
-          if (strcasecmp(cmd_val, "") != 0) {
-            memset(Settings.loop.file, 0, sizeof(Settings.loop.file));
-            strcpy(Settings.loop.file, cmd_val);
-            playLoop();
-          }
-          break;
-       case CMD_STOP_LOOP:
-          loopPlayer.stop();
-          loopLength = 0;
-          break;
-       case CMD_BEEP:
-          {
-            int i = atoi(cmd_val);
-            if (i < 1) {
-              i = 1;
-            }
-            beep(i);
-          }
-          break;
-       case CMD_BERP:
-          berp();
-          break;
-       case CMD_MUTE:
-          audioShield.muteHeadphone();
-          audioShield.muteLineout();
-          App.muted = true;
-          break;
-       case CMD_UNMUTE:
-          audioShield.unmuteHeadphone();
-          audioShield.unmuteLineout();
-          App.muted = false;
-          break;
-       case CMD_BACKUP:
-          if (strcasecmp(cmd_val, "") == 0) {
-            strcpy(cmd_val, Settings.file);
-          }
-          addBackupExt(cmd_val);
-          break;
-       case CMD_RESTORE:
-          {
-             loopPlayer.stop();
-             addBackupExt(cmd_val);
-             loadSettings(cmd_val, &Settings, false);    
-             applySettings();
-             long l = playSound(Settings.sounds.start);
-             delay(l+100);
-             playLoop();
-          }
-          break;
-       case CMD_SETTINGS:
-          {
-            Serial.println(F(""));
-            Serial.println(Settings.file);
-            char path[(MAX_FILENAME*2)];
-            strcpy(path, PROFILES_DIR);
-            strcat(path, Settings.file);
-            showFile(path);
-          }
-          break;
-       case CMD_SHOW:
-          showFile(cmd_val);
-          break;
-       case CMD_SOUNDS:   
-       case CMD_EFFECTS:
-       case CMD_LOOPS:
-       case CMD_GLOVE:
-       case CMD_PROFILES:
-       case CMD_FILES:
-          {
-            char path[MAX_FILENAME];
-            char ext[5];
-            boolean recurse = false;
-            boolean echo = false;
-            strcpy(ext, SOUND_EXT);
-            switch (cmdIdx) {
-              case CMD_SOUNDS:
-                strcpy(path, Settings.sounds.dir);
-                break;
-              case CMD_EFFECTS:
-                strcpy(path, Settings.effects.dir);
-                break;
-              case CMD_LOOPS:
-                strcpy(path, Settings.loop.dir);
-                break;
-              case CMD_GLOVE:
-                strcpy(path, Settings.glove.dir);
-                break;
-              case CMD_PROFILES:
-                strcpy(path, PROFILES_DIR);
-                strcpy(ext, FILE_EXT);
-                break;
-              case CMD_FILES:
-                strcpy(path, "/");
-                strcpy(ext, "");
-                recurse = true;
-                echo = true;
-                break;
-            }
-            char temp[MAX_FILE_COUNT][FILENAME_SIZE];
-            int count = listFiles(path, temp, MAX_FILE_COUNT, ext, recurse, echo);
-            if (strcasecmp(cmd_val, "1") == 0) {
-              char buffer[1024];
-              char *files = arrayToStringJson(buffer, temp, count);
-              sendToApp(cmd_key, files);
-            }
-            if (Config.debug && echo == false) {
-              for (int i = 0; i < count; i++) {
-                debug(F(temp[i]));
-              }
-            }
-          }
-          break;
-       case CMD_LS:
-          {
-            char paths[MAX_FILE_COUNT][FILENAME_SIZE];
-            char buffer[1025];
-            // return a list of directories on the card
-            int count = listDirectories("/", paths);
-            char *dirs = arrayToStringJson(buffer, paths, count);
-            sendToApp(cmd_key, dirs);
-          }
-          break;
-       case CMD_HELP:
-          showFile("HELP.TXT");
-          break;
-       case CMD_CALIBRATE:
-          calibrate();
-          break;
-       case CMD_RESET:
-          softreset();
-          break;
-       case CMD_SLEEP:
-          gotoSleep();
-          break;
-       case CMD_MEM:
-          showMemory();
-          break;
-       default:
-          {
-            parseSetting(cmd_key, cmd_val);
-            if (strcasecmp(cmd_key, "loop") == 0) {
-              playLoop();
-            }
-          }
-          break;    
-    }
 
+    if (cmdIdx != CMD_NONE) {
+        switch (cmdIdx) {
+          case CMD_CONNECT:
+              {
+                // validate data received from mobile device!
+                char *val, *ver, *buf;
+                val = strtok_r(cmd_val, "|", &buf);
+                ver = strtok_r(NULL, "|", &buf);
+                if (ver == NULL || strcasecmp(ver, "") == 0) {
+                  strcpy(ver, "0");
+                }
+                debug(F("Received access code %s Ver: %s\n"), val, ver);
+                if (strcmp(Config.access_code, val) == 0 && atof(ver) >= MIN_APP_VER) {
+                  connectSound();
+                  App.ble_connected = true;
+                  debug(F("DEVICE ID %s...Send Access OK\n"), App.device_id);
+                  sendToApp("access", "1");
+                } else {
+                  memset(App.device_id, 0, sizeof(App.device_id));
+                  App.ble_connected = true;
+                  if (atof(ver) < MIN_APP_VER) {
+                    sendToApp("access", "0|Incorrect app version");
+                  } else {
+                    sendToApp("access", "0|Incorrect access code");
+                  }
+                  App.ble_connected = false;
+                }
+              }
+              break;
+           case CMD_DISCONNECT:
+              App.ble_connected = false;
+              disconnectSound();
+              memset(App.device_id, 0, sizeof(App.device_id));
+              break;
+           case CMD_DOWNLOAD:
+              sendConfig();
+              break;
+           case CMD_CONFIG:
+              {
+                showFile("CONFIG.TXT");
+                /*
+                Serial.print(F("Profile: "));
+                Serial.println(F(Config.profile));
+                Serial.print(F("Debug: "));
+                Serial.println(Config.debug);
+                Serial.print(F("Echo: "));
+                Serial.println(Config.echo);
+                Serial.print(F("Buttons: "));
+                for (byte i = 0; i < 6; i++) {
+                  Serial.print(Config.buttons[i]);
+                  Serial.print(F(" "));
+                }
+                Serial.println(F(""));
+                Serial.print(F("Input: "));
+                Serial.println(F(Config.input));
+                Serial.print(F("Access Code: "));
+                Serial.println(F(Config.access_code));
+                */
+              }
+              break; 
+           case CMD_SAVE:
+              {
+                char *pfile;
+                if (strcasecmp(cmd_val, "") != 0) {
+                    char *ptr, *pname;
+                    pfile = strtok_r(cmd_val, ";", &ptr);
+                    if (strcasecmp(pfile, "") != 0) {
+                      memset(Settings.file, 0, sizeof(Settings.file));
+                      strcpy(Settings.file, pfile);
+                    }
+                    pname = strtok_r(NULL, ";", &ptr);
+                    if (strcasecmp(pname, "") != 0) {
+                      memset(Settings.name, 0, sizeof(Settings.name));
+                      strcpy(Settings.name, pname);
+                    }
+                 }
+                 addFileExt(Settings.file);
+                 debug(F("Save settings file %s with description %s\n"), Settings.file, Settings.name);
+                 boolean wasPlaying = false;
+                 if (loopPlayer.isPlaying()) {
+                    wasPlaying = true;
+                    loopPlayer.stop();
+                 }
+                 if (saveSettings(Settings.file, true) == true) {
+                  sendToApp("save", "1");
+                  connectSound();
+                 } else {
+                  sendToApp("save", "0");
+                 }
+                 if (wasPlaying == true) {
+                    playLoop();
+                 } 
+              }
+              break;
+           case CMD_ACCESS_CODE:
+              if (strcasecmp(cmd_val, "") != 0) {
+                memset(Config.access_code, 0, sizeof(Config.access_code));
+                strlcpy(Config.access_code, cmd_val, sizeof(Config.access_code));
+                saveConfig();
+              }
+              break;
+           case CMD_DEBUG:
+              Config.debug = (atoi(cmd_val) == 0) ? false : true;
+              saveConfig();
+              break;
+           case CMD_ECHO:
+              Config.echo = atoi(cmd_val) | 0;
+              saveConfig();
+              break;
+           case CMD_BAUD:
+              Config.baud = atol(cmd_val) | 9600;
+              saveConfig();
+              break;
+           case CMD_DEFAULT:
+              {
+                if (strcasecmp(cmd_val, "") == 0) {
+                  strcpy(cmd_val, Settings.file);
+                }
+                char ret[16];
+                if (setDefaultProfile(cmd_val)) {
+                  strcpy(ret, "1;");
+                } else {
+                  strcpy(ret, "0;");
+                }
+                strcat(ret, cmd_val);
+                sendToApp("default", ret);
+              }
+              break;
+           case CMD_DELETE:
+              {
+                if (strcasecmp(cmd_val, "") != 0) {
+                  char ret[FILENAME_SIZE];
+                  if (deleteProfile(cmd_val)) {
+                    strcpy(ret, "1;");
+                    strcat(ret, cmd_val);
+                  } else {
+                    strcpy(ret, "0;Could not remove profile");
+                  }
+                  sendToApp("delete", ret);
+                }
+              }
+              break;
+           case CMD_LOAD:
+              {
+                loopPlayer.stop();
+                loadSettings(cmd_val, &Settings, false);
+                applySettings();
+                // send to remote if connected
+                if (App.ble_connected) {
+                  sendConfig();
+                }
+                long l = playSound(Settings.sounds.start);
+                delay(l+100);
+                playLoop();
+              }
+              break;
+           case CMD_PLAY:
+              effectsPlayer.play(cmd_val);
+              break; 
+           case CMD_PLAY_EFFECT:
+              playEffect(cmd_val);
+              break;
+           case CMD_PLAY_SOUND:
+              playSound(cmd_val);
+              break;
+           case CMD_PLAY_GLOVE:
+              playGloveSound(cmd_val);
+              break;
+           case CMD_PLAY_LOOP:
+              if (strcasecmp(cmd_val, "") != 0) {
+                memset(Settings.loop.file, 0, sizeof(Settings.loop.file));
+                strcpy(Settings.loop.file, cmd_val);
+                playLoop();
+              }
+              break;
+           case CMD_STOP_LOOP:
+              loopPlayer.stop();
+              loopLength = 0;
+              break;
+           case CMD_BEEP:
+              {
+                int i = atoi(cmd_val);
+                if (i < 1) {
+                  i = 1;
+                }
+                beep(i);
+              }
+              break;
+           case CMD_BERP:
+              berp();
+              break;
+           case CMD_MUTE:
+              audioShield.muteHeadphone();
+              audioShield.muteLineout();
+              App.muted = true;
+              break;
+           case CMD_UNMUTE:
+              audioShield.unmuteHeadphone();
+              audioShield.unmuteLineout();
+              App.muted = false;
+              break;
+           case CMD_BACKUP:
+              if (strcasecmp(cmd_val, "") == 0) {
+                strcpy(cmd_val, Settings.file);
+              }
+              addBackupExt(cmd_val);
+              break;
+           case CMD_RESTORE:
+              {
+                 loopPlayer.stop();
+                 addBackupExt(cmd_val);
+                 loadSettings(cmd_val, &Settings, false);    
+                 applySettings();
+                 long l = playSound(Settings.sounds.start);
+                 delay(l+100);
+                 playLoop();
+              }
+              break;
+           case CMD_SETTINGS:
+              {
+                Serial.println(F(""));
+                Serial.println(Settings.file);
+                char path[(MAX_FILENAME*2)];
+                strcpy(path, PROFILES_DIR);
+                strcat(path, Settings.file);
+                showFile(path);
+              }
+              break;
+           case CMD_SHOW:
+              showFile(cmd_val);
+              break;
+           case CMD_SOUNDS:   
+           case CMD_EFFECTS:
+           case CMD_LOOPS:
+           case CMD_GLOVE:
+           case CMD_PROFILES:
+           case CMD_FILES:
+              {
+                char path[MAX_FILENAME];
+                char ext[5];
+                boolean recurse = false;
+                boolean echo = false;
+                strcpy(ext, SOUND_EXT);
+                switch (cmdIdx) {
+                  case CMD_SOUNDS:
+                    strcpy(path, Settings.sounds.dir);
+                    break;
+                  case CMD_EFFECTS:
+                    strcpy(path, Settings.effects.dir);
+                    break;
+                  case CMD_LOOPS:
+                    strcpy(path, Settings.loop.dir);
+                    break;
+                  case CMD_GLOVE:
+                    strcpy(path, Settings.glove.dir);
+                    break;
+                  case CMD_PROFILES:
+                    strcpy(path, PROFILES_DIR);
+                    strcpy(ext, FILE_EXT);
+                    break;
+                  case CMD_FILES:
+                    strcpy(path, "/");
+                    strcpy(ext, "");
+                    recurse = true;
+                    echo = true;
+                    break;
+                }
+                char temp[MAX_FILE_COUNT][FILENAME_SIZE];
+                int count = listFiles(path, temp, MAX_FILE_COUNT, ext, recurse, echo);
+                if (strcasecmp(cmd_val, "1") == 0) {
+                  char buffer[1024];
+                  char *files = arrayToStringJson(buffer, temp, count);
+                  sendToApp(cmd_key, files);
+                }
+                if (Config.debug && echo == false) {
+                  for (int i = 0; i < count; i++) {
+                    debug(F(temp[i]));
+                  }
+                }
+              }
+              break;
+           case CMD_LS:
+              {
+                char paths[MAX_FILE_COUNT][FILENAME_SIZE];
+                char buffer[1025];
+                // return a list of directories on the card
+                int count = listDirectories("/", paths);
+                char *dirs = arrayToStringJson(buffer, paths, count);
+                sendToApp(cmd_key, dirs);
+              }
+              break;
+           case CMD_HELP:
+              showFile("HELP.TXT");
+              break;
+           case CMD_CALIBRATE:
+              calibrate();
+              break;
+           case CMD_RESET:
+              softreset();
+              break;
+           case CMD_SLEEP:
+              gotoSleep();
+              break;
+           case CMD_MEM:
+              showMemory();
+              break;
+           default:
+              {
+                parseSetting(cmd_key, cmd_val);
+                if (strcasecmp(cmd_key, "loop") == 0) {
+                  playLoop();
+                }
+              }
+              break;    
+        }
+
+    }
+    
     // clear command buffers
     memset(cmd_key, 0, sizeof(cmd_key));
     memset(cmd_val, 0, sizeof(cmd_val));         
@@ -1150,7 +1143,7 @@ void run() {
           // by breathing, etc.  Adjust this level as necessary!
           if (val >= Settings.voice.start) {
 
-             //debug(F("Voice start: %4f\n"), val);
+             debug(F("Voice start: %4f\n"), val);
              
             // If user is not currently App.speaking, then they just started talking :)
             if (App.speaking == false) {

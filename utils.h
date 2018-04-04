@@ -129,7 +129,7 @@ byte getCommand(const char cmd[14])
     }
   }
 
-  debug(F("cmd: %s index: %d"), cmd, index);
+  //debug(F("cmd: %s index: %d\n"), cmd, index);
 
   return (index);
   

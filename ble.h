@@ -91,11 +91,28 @@ void sendConfig()
   btprint(F("\"current\":\"%s\","), Settings.file, Settings.name);
 
   // This is already formatted correctly
-  char *json = settingsToString(buffer);
-  btprint(F("\"profile\":%s,"), json);
-  memset(buffer, 0, sizeof(buffer));
+  //char *json = settingsToString(buffer);
+  btprint(F("\"profile\":"));
+  //memset(buffer, 0, sizeof(buffer));
 
-  btprint(F("\"profiles\":["));
+  char filename[MAX_FILENAME*2];
+  strcpy(filename, PROFILES_DIR);
+  strcat(filename, Settings.file);
+  File file = SD.open(filename);
+  if (file) {
+    char c;
+    while (file.available()) {
+      c = file.read();
+      if (c != '\n') {
+        Serial1.print(c);
+      }  
+    }
+    file.close();
+  } else {
+    Serial1.print("{}");
+  }
+    
+  btprint(F(",\"profiles\":["));
   
   // get config profile files 
   byte count = listFiles(PROFILES_DIR, files, MAX_FILE_COUNT, FILE_EXT, false, false);
