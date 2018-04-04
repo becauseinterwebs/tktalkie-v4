@@ -31,12 +31,12 @@ AudioConnection          patchCord8(waveform1, 0, effectsMixer, 2);
 AudioConnection          patchCord9(effectsPlayer, 0, effectsMixer, 0);
 AudioConnection          patchCord10(flange1, chorus1);
 AudioConnection          patchCord11(chorus1, 0, voiceMixer, 0);
-AudioConnection          patchCord12(chorus1, 0, voiceMixer, 1);
-AudioConnection          patchCord13(effectsMixer, 0, voiceMixer, 3);
-AudioConnection          patchCord14(voiceMixer, 0, i2s2, 0);
-AudioConnection          patchCord15(voiceMixer, 0, i2s2, 1);
+AudioConnection          patchCord12(effectsMixer, 0, voiceMixer, 3);
+AudioConnection          patchCord13(voiceMixer, 0, i2s2, 0);
+AudioConnection          patchCord14(voiceMixer, 0, i2s2, 1);
 AudioControlSGTL5000     audioShield;    //xy=113,275
 // GUItool: end automatically generated code
+
 
 /*
   // GUItool: begin automatically generated code

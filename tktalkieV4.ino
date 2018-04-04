@@ -402,11 +402,10 @@ void run() {
       debug(F("BLE Cmd: %s Value: %s Uid: %s\n"), cmd_key, cmd_val, uid);
     }
 
-    // translate character command into a number for 
-    // faster processing
-    byte cmdIdx = getCommand(cmd_key);
-
-    if (cmdIdx != CMD_NONE) {
+    if (strcasecmp(cmd_key, "") != 0) {
+        // translate character command into a number for 
+        // faster processing
+        byte cmdIdx = getCommand(cmd_key);
         switch (cmdIdx) {
           case CMD_CONNECT:
               {
@@ -628,10 +627,12 @@ void run() {
               {
                 Serial.println(F(""));
                 Serial.println(Settings.file);
-                char path[(MAX_FILENAME*2)];
-                strcpy(path, PROFILES_DIR);
-                strcat(path, Settings.file);
-                showFile(path);
+                Serial.println(F("--------------------------------------------------------------------------------"));
+                char buffer[JSON_BUFFER_SIZE];
+                char *p = settingsToString(buffer, true);
+                Serial.println(p);
+                Serial.println(F("--------------------------------------------------------------------------------"));
+                Serial.println(F(""));
               }
               break;
            case CMD_SHOW:
@@ -713,11 +714,10 @@ void run() {
               showMemory();
               break;
            default:
-              {
-                parseSetting(cmd_key, cmd_val);
-                if (strcasecmp(cmd_key, "loop") == 0) {
-                  playLoop();
-                }
+              debug(F("Default -> %s = %s\n"), cmd_key, cmd_val);
+              parseSetting(cmd_key, cmd_val);
+              if (strcasecmp(cmd_key, "loop") == 0) {
+                playLoop();
               }
               break;    
         }
