@@ -1,27 +1,23 @@
 /****
-   Global variables/constants
-*/
-
-// version flag
-#define VERSION     4.0
-#define MIN_APP_VER 2.0
-
+ * Global variables/constants
+ */
 // GUItool: begin automatically generated code
+
 AudioInputI2S            i2s1;           //xy=59,147
-AudioEffectGranular      granular1;      //xy=167,72
+AudioEffectGranular      granular1;      //xy=175,91
 AudioAnalyzeRMS          rms1;           //xy=248,201
-AudioEffectBitcrusher    bitcrusher1;    //xy=314,72
+AudioEffectBitcrusher    bitcrusher1;    //xy=311,100
 AudioSynthNoisePink      pink1;          //xy=376,326
 AudioPlaySdWav           loopPlayer;     //xy=383,257
 AudioSynthWaveform       waveform1;      //xy=386,291
 AudioPlaySdWav           effectsPlayer;  //xy=392,222
-AudioEffectFlange        flange1;        //xy=452,72
-AudioEffectChorus        chorus1;        //xy=585,73
+AudioEffectFlange        flange1;        //xy=452,101
+AudioEffectChorus        chorus1;        //xy=583,100
 AudioMixer4              effectsMixer;   //xy=594,264
 AudioMixer4              voiceMixer;     //xy=748,129
 AudioOutputI2S           i2s2;           //xy=913,129
-AudioConnection          patchCord1(i2s1, 0, granular1, 0);
-AudioConnection          patchCord2(i2s1, 0, voiceMixer, 2);
+AudioConnection          patchCord1(i2s1, 0, voiceMixer, 2);
+AudioConnection          patchCord2(i2s1, 0, granular1, 0);
 AudioConnection          patchCord3(i2s1, 1, rms1, 0);
 AudioConnection          patchCord4(granular1, bitcrusher1);
 AudioConnection          patchCord5(bitcrusher1, flange1);
@@ -36,39 +32,36 @@ AudioConnection          patchCord13(voiceMixer, 0, i2s2, 0);
 AudioConnection          patchCord14(voiceMixer, 0, i2s2, 1);
 AudioControlSGTL5000     audioShield;    //xy=113,275
 // GUItool: end automatically generated code
-
-
 /*
-  // GUItool: begin automatically generated code
-  AudioInputI2S            i2s1;           //xy=91.1111068725586,153.88888931274414
-  AudioAnalyzeRMS          rms1;           //xy=212.11109924316406,189.88888549804688
-  AudioEffectBitcrusher    bitcrusher1;    //xy=275.111083984375,88.88888549804688
-  AudioSynthNoisePink      pink1;          //xy=340.6666717529297,314.5555725097656
-  AudioPlaySdWav           loopPlayer;     //xy=347.111083984375,245.88888549804688
-  AudioSynthWaveform       waveform1;      //xy=350.1111145019531,279.8888854980469
-  AudioPlaySdWav           effectsPlayer;  //xy=356.1111068725586,210.88888931274414
-  AudioEffectFlange        flange1;        //xy=416.1111145019531,89.88888549804688
-  AudioEffectChorus        chorus1;        //xy=547.1111068725586,88.88888931274414
-  AudioMixer4              effectsMixer;   //xy=558.111083984375,252.88888549804688
-  AudioMixer4              voiceMixer;     //xy=712.1111068725586,117.88888931274414
-  AudioOutputI2S           i2s2;           //xy=877.1111068725586,117.88888931274414
-  AudioConnection          patchCord1(i2s1, 0, bitcrusher1, 0);
-  AudioConnection          patchCord2(i2s1, 0, voiceMixer, 2);
-  AudioConnection          patchCord3(i2s1, 1, rms1, 0);
-  AudioConnection          patchCord4(bitcrusher1, flange1);
-  AudioConnection          patchCord5(pink1, 0, effectsMixer, 3);
-  AudioConnection          patchCord6(loopPlayer, 0, effectsMixer, 1);
-  AudioConnection          patchCord7(waveform1, 0, effectsMixer, 2);
-  AudioConnection          patchCord8(effectsPlayer, 0, effectsMixer, 0);
-  AudioConnection          patchCord9(flange1, chorus1);
-  AudioConnection          patchCord10(chorus1, 0, voiceMixer, 0);
-  AudioConnection          patchCord11(effectsMixer, 0, voiceMixer, 3);
-  AudioConnection          patchCord12(voiceMixer, 0, i2s2, 0);
-  AudioConnection          patchCord13(voiceMixer, 0, i2s2, 1);
-  AudioControlSGTL5000     audioShield;    //xy=77.1111068725586,263.88888931274414
-  // GUItool: end automatically generated code
+// GUItool: begin automatically generated code
+AudioInputI2S            i2s1;           //xy=91.1111068725586,153.88888931274414
+AudioAnalyzeRMS          rms1;           //xy=212.11109924316406,189.88888549804688
+AudioEffectBitcrusher    bitcrusher1;    //xy=275.111083984375,88.88888549804688
+AudioSynthNoisePink      pink1;          //xy=340.6666717529297,314.5555725097656
+AudioPlaySdWav           loopPlayer;     //xy=347.111083984375,245.88888549804688
+AudioSynthWaveform       waveform1;      //xy=350.1111145019531,279.8888854980469
+AudioPlaySdWav           effectsPlayer;  //xy=356.1111068725586,210.88888931274414
+AudioEffectFlange        flange1;        //xy=416.1111145019531,89.88888549804688
+AudioEffectChorus        chorus1;        //xy=547.1111068725586,88.88888931274414
+AudioMixer4              effectsMixer;   //xy=558.111083984375,252.88888549804688
+AudioMixer4              voiceMixer;     //xy=712.1111068725586,117.88888931274414
+AudioOutputI2S           i2s2;           //xy=877.1111068725586,117.88888931274414
+AudioConnection          patchCord1(i2s1, 0, bitcrusher1, 0);
+AudioConnection          patchCord2(i2s1, 0, voiceMixer, 2);
+AudioConnection          patchCord3(i2s1, 1, rms1, 0);
+AudioConnection          patchCord4(bitcrusher1, flange1);
+AudioConnection          patchCord5(pink1, 0, effectsMixer, 3);
+AudioConnection          patchCord6(loopPlayer, 0, effectsMixer, 1);
+AudioConnection          patchCord7(waveform1, 0, effectsMixer, 2);
+AudioConnection          patchCord8(effectsPlayer, 0, effectsMixer, 0);
+AudioConnection          patchCord9(flange1, chorus1);
+AudioConnection          patchCord10(chorus1, 0, voiceMixer, 0);
+AudioConnection          patchCord11(effectsMixer, 0, voiceMixer, 3);
+AudioConnection          patchCord12(voiceMixer, 0, i2s2, 0);
+AudioConnection          patchCord13(voiceMixer, 0, i2s2, 1);
+AudioControlSGTL5000     audioShield;    //xy=77.1111068725586,263.88888931274414
+// GUItool: end automatically generated code
 */
-
 
 /***************************
    BUTTON TYPE VALUES
@@ -150,6 +143,10 @@ int16_t granularMemory[GRANULAR_MEMORY_SIZE];
 
 #define JSON_BUFFER_SIZE  6*JSON_ARRAY_SIZE(2) + JSON_ARRAY_SIZE(5) + JSON_ARRAY_SIZE(6) + 4*JSON_OBJECT_SIZE(2) + 3*JSON_OBJECT_SIZE(3) + 2*JSON_OBJECT_SIZE(4) + 2*JSON_OBJECT_SIZE(5) + 2*JSON_OBJECT_SIZE(9) + 830
 
+// version flag
+#define VERSION     4.0
+#define MIN_APP_VER 2.0
+      
 //elapsedMillis ms;                         // running timer...inputs are checked every 24 milliseconds
 elapsedMillis stopped;                      // used to tell how long user has stopped talking
 
@@ -157,34 +154,42 @@ elapsedMillis stopped;                      // used to tell how long user has st
 #define MAX_SETTINGS_COUNT 40
 #define SETTING_ENTRY_MAX  150
 
+/***************************
+ * BUTTON TYPE VALUES
+ *   1  = PTT (SLEEP/WAKE unless otherwise configured)
+ *   2  = Play/Stop Specified Sound
+ *   3  = Spkr Volume Up 
+ *   4  = Spkr Volume Down 
+ *   5  = Mute Everything
+ *   6  = Sleep/Wake (Overrides PTT)
+ *   7  = LineOut Volume Up
+ *   8  = LineOut Volume Down
+ *   9  = MIC_GAIN up
+ *   10 = MIC_GAIN down
+ *   11 = Start/Stop Loop
+ *   12 = Loop gain up
+ *   13 = Loop gain down
+ *   14 = Voice gain up
+ *   15 = Voice gain down
+ *   16 = Dry gain up
+ *   17 = Dry gain down
+ *   18 = Effects gain up
+ *   19 = Effects gain down   
+ *   
+ *   NOTE:  Pin 3 CANNOT wake up...
+ *          only digital pins (like 2) work!
+ */
+
 #define EFFECTS_PLAYER 1
 #define LOOP_PLAYER    2
-#define FX_DELAY       16
-#define FILENAME_SIZE  14
-#define MAX_DATA_SIZE  100
-
-// Files and extensions
-#define MAX_FILENAME 14
-#define PROFILES_DIR "/profile4/"
-#define SOUND_EXT    ".WAV"
-#define FILE_EXT     ".TXT"
-#define BACKUP_EXT   ".BAK"
-
-/**
-   OPERATIONAL STATES - Used for tracking at what stage the app is currently running
-*/
-#define STATE_NONE     0
-#define STATE_BOOTING  1
-#define STATE_RUNNING  2
-#define STATE_SLEEPING 3
-
-#define JSON_BUFFER_SIZE 6*JSON_ARRAY_SIZE(2) + JSON_ARRAY_SIZE(5) + JSON_ARRAY_SIZE(6) + 4*JSON_OBJECT_SIZE(2) + 3*JSON_OBJECT_SIZE(3) + 2*JSON_OBJECT_SIZE(4) + 2*JSON_OBJECT_SIZE(5) + 2*JSON_OBJECT_SIZE(9) + 830
+#define FX_DELAY 16
+#define FILENAME_SIZE 14
 
 struct Shifter_t {
-  int   length  = 0;
-  int   speed   = 512;
-  float range   = 5.0;
-  byte  enabled = 0;
+  int length   = 0;
+  int speed    = 512;
+  float range  = 5.0;
+  byte enabled = 1;
 };
 
 struct Loop_t {
@@ -213,15 +218,15 @@ struct Flanger_t {
   byte  offset = 1;
   byte  depth  = 0;
   float freq   = 0.0625;
-  short buffer[FX_DELAY * AUDIO_BLOCK_SAMPLES];
-  byte enabled = 0;
+  short buffer[FX_DELAY*AUDIO_BLOCK_SAMPLES];
+  byte enabled = 1;
 };
 
 struct Chorus_t {
-  byte  voices  = 1;
-  byte  delay   = FX_DELAY;
-  byte  enabled = 0;
-  short buffer[FX_DELAY * AUDIO_BLOCK_SAMPLES];
+  byte voices  = 1;
+  byte delay   = FX_DELAY;
+  short buffer[FX_DELAY*AUDIO_BLOCK_SAMPLES];
+  byte enabled = 1;
 };
 
 struct Bitcrusher_t {
@@ -245,7 +250,7 @@ struct Effects_t {
 
 struct Eq_t {
   boolean active   = true;
-  float   bands[5] = { -1.0, 0, 1, 0, -1.0 };
+  float   bands[5] = { -1.0,0,1,0,-1.0 };
 };
 
 struct Sleep_t {
@@ -257,7 +262,7 @@ struct Glove_t {
   char dir[MAX_FILENAME] = "/glove/";
   char settings[6][30] = { "0","0","0","0","0","0" };
   // This could be turned into a management class, but there is not a lot of stuff to do with it...so....
-  ControlButton ControlButtons[6] = { ControlButton(), ControlButton(), ControlButton(), ControlButton(), ControlButton(), ControlButton() };
+  ControlButton ControlButtons[6] = { ControlButton(), ControlButton(), ControlButton(), ControlButton(), ControlButton(), ControlButton() }; 
 };
 
 struct Volume_t {
@@ -267,7 +272,6 @@ struct Volume_t {
   byte  microphone = 3;
 };
 
-// Global settings object
 struct Settings_t {
   char      name[25] = "Default Profile";
   char      file[MAX_FILENAME] = "DEFAULT.TXT";
@@ -281,17 +285,18 @@ struct Settings_t {
   Glove_t   glove;
 } Settings;
 
+struct Config_t {
+  char profile[MAX_FILENAME] = "DEFAULT.TXT";
+  // These define the pins the (up to) 6 control buttons can be connected to
 // NOTE:  Only digital pins can be used for waking:
 //        2,4,6,7,9,10,11,13,16,21,22,26,30,33
-struct Config_t {
-  char    profile[MAX_FILENAME] = "DEFAULT.TXT";
-  byte    buttons[6]            = {0, 0, 0, 0, 0, 0}; // These define the pins the (up to) 6 control buttons can be connected to
-  boolean debug                 = false;            // Set to true to have debug messages printed out...useful for testing
-  boolean echo                  = false;            // Set to true to have BLE TX/RX messages displayed in serial monitor
-  char    input[5]              = "BOTH";            // Set to "MIC", "LINE" or "BOTH" (default)
-  char    output[5]             = "BOTH";            // Set to "SPKR", "LINE" or "BOTH" (default)
-  char    access_code[25]       = "1138";            // the password for remote apps to access this device (specified in global settings file)
-  long    baud                  = 9600;              // Serial communication speed between BLE and Teensy
+  byte buttons[6]       = {0,0,0,0,0,0};
+  boolean debug         = false;          // Set to true to have debug messages printed out...useful for testing
+  boolean echo          = false;          // Set to true to have BLE TX/RX messages displayed in serial monitor
+  char input[5]         = "BOTH";  // Set to "MIC", "LINE" or "BOTH" (default)
+  char output[5]        = "BOTH";  // Set to "SPKR", "LINE" or "BOTH" (default)
+  char access_code[25]  = "1138";      // the password for remote apps to access this device (specified in global settings file)
+  long baud              = 9600;
 } Config;
 
 #define PROFILES_DIR  "/profile4/"
@@ -336,6 +341,5 @@ elapsedMillis autoSleepMillis = 0;
 
 SnoozeDigital snoozeDigital;
 SnoozeAudio   snoozeAudio;
-SnoozeBlock   config_teensy3x(snoozeDigital, snoozeAudio);
-
+SnoozeBlock config_teensy3x(snoozeDigital, snoozeAudio);
 
