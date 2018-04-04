@@ -143,9 +143,14 @@ AudioControlSGTL5000     audioShield;    //xy=113,275
 
 #define MAX_GAIN 10
 
+#define MAX_FILENAME 14
+
 #define GRANULAR_MEMORY_SIZE 2048  // enough for 290 ms at 44.1 kHz
 int16_t granularMemory[GRANULAR_MEMORY_SIZE];
 
+#define JSON_BUFFER_SIZE  6*JSON_ARRAY_SIZE(2) + JSON_ARRAY_SIZE(5) + JSON_ARRAY_SIZE(6) + 4*JSON_OBJECT_SIZE(2) + 3*JSON_OBJECT_SIZE(3) + 2*JSON_OBJECT_SIZE(4) + 2*JSON_OBJECT_SIZE(5) + 2*JSON_OBJECT_SIZE(9) + 830
+
+//elapsedMillis ms;                         // running timer...inputs are checked every 24 milliseconds
 elapsedMillis stopped;                      // used to tell how long user has stopped talking
 
 #define MAX_FILE_COUNT 99
@@ -185,8 +190,8 @@ struct Shifter_t {
 struct Loop_t {
   char    dir[MAX_FILENAME]   = "/loops/";
   char    file[MAX_FILENAME]  = "";
-  boolean mute                = true;
-  float   volume              = 1;
+  boolean mute      = true;
+  float   volume    = 1;  
 };
 
 struct Voice_t {
@@ -226,10 +231,10 @@ struct Bitcrusher_t {
 
 struct Effects_t {
   char          dir[MAX_FILENAME]   = "/effects/";
-  float         volume              = 1.0000;
-  byte          highpass            = 1;
-  float         noise               = 0.0140;
-  boolean       mute                = true;
+  float         volume    = 1.0000;
+  byte          highpass  = 1;
+  float         noise     = 0.0140;
+  boolean       mute      = true;   
   Bitcrusher_t  bitcrusher;
   Chorus_t      chorus;
   Flanger_t     flanger;
@@ -244,13 +249,13 @@ struct Eq_t {
 };
 
 struct Sleep_t {
-  unsigned int  timer               = 0;
-  char          file[MAX_FILENAME]  = "SLEEP.WAV";
+  unsigned int  timer     = 0;
+  char          file[MAX_FILENAME]  = "SLEEP.WAV";  
 };
 
 struct Glove_t {
   char dir[MAX_FILENAME] = "/glove/";
-  char settings[6][30]   = { "0", "0", "0", "0", "0", "0" };
+  char settings[6][30] = { "0","0","0","0","0","0" };
   // This could be turned into a management class, but there is not a lot of stuff to do with it...so....
   ControlButton ControlButtons[6] = { ControlButton(), ControlButton(), ControlButton(), ControlButton(), ControlButton(), ControlButton() };
 };
@@ -264,7 +269,7 @@ struct Volume_t {
 
 // Global settings object
 struct Settings_t {
-  char      name[25]           = "Default Profile";
+  char      name[25] = "Default Profile";
   char      file[MAX_FILENAME] = "DEFAULT.TXT";
   Volume_t  volume;
   Loop_t    loop;
@@ -289,6 +294,16 @@ struct Config_t {
   long    baud                  = 9600;              // Serial communication speed between BLE and Teensy
 } Config;
 
+#define PROFILES_DIR  "/profile4/"
+
+/**
+ * OPERATIONAL STATES - Used for tracking at what stage the app is currently running
+ */
+#define STATE_NONE      0
+#define STATE_BOOTING   1
+#define STATE_RUNNING   2
+#define STATE_SLEEPING  3
+
 struct App_t {
   byte    state               = STATE_NONE;   // tracks the operational state of the application
   boolean silent              = false;        // used for PTT and to switch back to Voice Activated mode
@@ -306,6 +321,18 @@ struct App_t {
 unsigned int  loopLength;
 elapsedMillis loopMillis      = 0;
 elapsedMillis autoSleepMillis = 0;
+
+// Other defaults
+#define SOUND_EXT   ".WAV"
+#define FILE_EXT    ".TXT"
+#define BACKUP_EXT  ".BAK"
+
+
+// loop and serial command handlers
+#define MAX_DATA_SIZE 100
+//char cmd_key[20] = "";
+//char cmd_val[MAX_DATA_SIZE] = "";
+//char received[MAX_DATA_SIZE] = "";
 
 SnoozeDigital snoozeDigital;
 SnoozeAudio   snoozeAudio;

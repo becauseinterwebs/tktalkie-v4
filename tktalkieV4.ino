@@ -368,9 +368,9 @@ void run() {
     }
 
     // loop and serial command handlers
-    char cmd_key[SETTING_ENTRY_MAX] = "";
-    char cmd_val[SETTING_ENTRY_MAX] = "";
-    char received[MAX_DATA_SIZE]    = "";
+    char cmd_key[15] = "";
+    char cmd_val[MAX_DATA_SIZE] = "";
+    char received[SETTING_ENTRY_MAX]    = "";
 
     if (Serial.available() > 0) { 
       Serial.readBytesUntil('\n', received, MAX_DATA_SIZE);
@@ -1280,5 +1280,6 @@ int freeMemory() {
 #endif  // __arm__
 }
 // END
+
 
 
