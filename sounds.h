@@ -197,12 +197,12 @@ void addSoundEffect()
   // generate a random number between 0 and the number of files read - 1
   byte rnd = 0;
   byte count = 0;
-  rnd = lastRnd;
-  while (rnd == lastRnd && count < 50) {
+  rnd = App.lastRnd;
+  while (rnd == App.lastRnd && count < 50) {
    rnd = random(0, Settings.effects.count);
    count++;
   }
-  lastRnd = rnd;
+  App.lastRnd = rnd;
   // play the file
   playEffect(Settings.effects.files[rnd]);
 }
