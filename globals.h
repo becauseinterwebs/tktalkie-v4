@@ -78,6 +78,49 @@
 #define CMD_NONE        255
 
 /**********************
+ * Settings commands
+ */
+#define SETTING_NAME            "name"
+#define SETTING_VOLUME          "volume"
+#define SETTING_LINEOUT         "lineout"
+#define SETTING_LINEIN          "linein"
+#define SETTING_HIPASS          "highpass"
+#define SETTING_MIC             "mic"
+#define SETTING_BUTTON_CLICK    "button_click"
+#define SETTING_STARTUP_SOUND   "startup_sound"
+#define SETTING_LOOP_FILE       "loop_file"
+#define SETTING_NOISE_GAIN      "noise_gain"
+#define SETTING_VOICE_GAIN      "voice_gain"
+#define SETTING_DRY_GAIN        "dry_gain"
+#define SETTING_EFFECTS_GAIN    "effects_gain"
+#define SETTING_LOOP_GAIN       "loop_gain"
+#define SETTING_SILENCE_TIME    "silence_time"
+#define SETTING_VOICE_START     "voice_start"
+#define SETTING_VOICE_STOP      "voice_stop"
+#define SETTING_EQ              "eq"
+#define SETTING_EQ_BANDS        "eq_bands"
+#define SETTING_BITCRUSHER      "bitcrusher"
+#define SETTING_EFFECTS_DIR     "effects_dir"
+#define SETTING_SOUNDS_DIR      "sounds_dir"
+#define SETTING_LOOP_DIR        "loop_dir"
+#define SETTING_GLOVE_DIR       "glove_dir"
+#define SETTING_MUTE_LOOP       "mute_loop"
+#define SETTING_MUTE_EFFECTS    "mute_effects"
+#define SETTING_SLEEP_TIME      "sleep_time"
+#define SETTING_SLEEP_SOUND     "sleep_sound"
+#define SETTING_CHORUS          "chorus"
+#define SETTING_SHIFTER         "shifter"
+#define SETTING_CHORUS_DELAY    "chorus_delay"
+#define SETTING_CHORUS_VOICES   "chorus_voices"
+#define SETTING_FLANGER_DELAY   "flanger_delay"
+#define SETTING_FLANGER_FREQ    "flanger_freq"
+#define SETTING_FLANGER_DEPTH   "flanger_depth"
+#define SETTING_FLANGER_OFFSET  "flanger_offset"
+#define SETTING_FLANGER         "flanger"
+#define SETTING_BUTTON          "button"
+#define SETTING_BUTTONS         "buttons"
+
+/**********************
  * BLE Connect Errors
  */
 #define CONNECT_SUCCESS "0"
@@ -86,13 +129,13 @@
 #define CONNECT_IN_USE  "3"
 #define CONNECT_BAD_VER "4"
  
-#define MAX_GAIN 10
-
+#define MAX_GAIN     10
 #define MAX_FILENAME 14
 
 #define GRANULAR_MEMORY_SIZE 2048  // enough for 290 ms at 44.1 kHz
 int16_t granularMemory[GRANULAR_MEMORY_SIZE];
 
+// Memory buffer for encoding/decoding JSON data
 #define JSON_BUFFER_SIZE  6*JSON_ARRAY_SIZE(2) + JSON_ARRAY_SIZE(5) + JSON_ARRAY_SIZE(6) + 4*JSON_OBJECT_SIZE(2) + 3*JSON_OBJECT_SIZE(3) + 2*JSON_OBJECT_SIZE(4) + 2*JSON_OBJECT_SIZE(5) + 2*JSON_OBJECT_SIZE(9) + 830
 
 // Other defaults
@@ -103,15 +146,16 @@ int16_t granularMemory[GRANULAR_MEMORY_SIZE];
 // loop and serial command handlers
 #define MAX_DATA_SIZE 100
       
-#define MAX_FILE_COUNT 99
+#define MAX_FILE_COUNT     99
 #define MAX_SETTINGS_COUNT 40
 #define SETTING_ENTRY_MAX  150
 
 #define EFFECTS_PLAYER 1
 #define LOOP_PLAYER    2
-#define FX_DELAY 16
-#define FILENAME_SIZE 14
+#define FX_DELAY       16
+#define FILENAME_SIZE  14
 
+#define CONFIG_FILE   "CONFIG.TXT"
 #define PROFILES_DIR  "/profile4/"
 
 /**

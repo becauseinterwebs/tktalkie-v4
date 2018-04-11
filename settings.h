@@ -170,7 +170,8 @@ void setEffectsVolume() {
   effectsMixer.gain(0, Settings.effects.volume);
   //effectsMixer.gain(1, Settings.effects.volume);
   // Waveform (BLE) connect sound
-  effectsMixer.gain(2, Settings.effects.volume);
+  //effectsMixer.gain(2, Settings.effects.volume);
+  effectsMixer.gain(2, .5);
 }
 
 void setLoopVolume() {
@@ -314,58 +315,58 @@ void parseSetting(const char *settingName, char *settingValue)
 
   debug(F("Parse Setting: %s = %s\n"), settingName, settingValue);
 
-  if (strcasecmp(settingName, "name") == 0) {
+  if (strcasecmp(settingName, SETTING_NAME) == 0) {
     memset(Settings.name, 0, sizeof(Settings.name));
     strcpy(Settings.name, settingValue);
-  } else if (strcasecmp(settingName, "volume") == 0) {
+  } else if (strcasecmp(settingName, SETTING_VOLUME) == 0) {
     Settings.volume.master = atof(settingValue);
     setVolume();  
-  } else if (strcasecmp(settingName, "lineout") == 0) {
+  } else if (strcasecmp(settingName, SETTING_LINEOUT) == 0) {
     Settings.volume.lineout = (byte)atoi(settingValue);
     setLineout();
-  } else if (strcasecmp(settingName, "linein") == 0) {
+  } else if (strcasecmp(settingName, SETTING_LINEIN) == 0) {
     Settings.volume.linein = (byte)atoi(settingValue);
     setLinein();
-  } else if ((strcasecmp(settingName, "high_pass") == 0) || (strcasecmp(settingName, "highpass") == 0)) {
+  } else if (strcasecmp(settingName, SETTING_HIPASS) == 0) {
     Settings.effects.highpass = (byte)atoi(settingValue);
     setHipass();
-  } else if (strcasecmp(settingName, "microphone") == 0 || strcasecmp(settingName, "mic_gain") == 0) {
+  } else if (strcasecmp(settingName, SETTING_MIC) == 0) {
     Settings.volume.microphone = atoi(settingValue);
     setMicGain();
-  } else if (strcasecmp(settingName, "button_click") == 0) {
+  } else if (strcasecmp(settingName, SETTING_BUTTON_CLICK) == 0) {
     memset(Settings.sounds.button, 0, sizeof(Settings.sounds.button));
     strcpy(Settings.sounds.button, settingValue);
-  } else if ( (strcasecmp(settingName, "startup") == 0) || (strcasecmp(settingName, "startup_sound") == 0) ) {
+  } else if (strcasecmp(settingName, SETTING_STARTUP_SOUND) == 0) {
     memset(Settings.sounds.start, 0, sizeof(Settings.sounds.start));
     strcpy(Settings.sounds.start, settingValue);
-  } else if ( (strcasecmp(settingName, "loop") == 0) || (strcasecmp(settingName, "loop.file") == 0) ) {
+  } else if (strcasecmp(settingName, SETTING_LOOP_FILE) == 0) {
     memset(Settings.loop.file, 0, sizeof(Settings.loop.file));
     strcpy(Settings.loop.file, settingValue);
-  } else if ( (strcasecmp(settingName, "noise_gain") == 0) || (strcasecmp(settingName, "noise") == 0) ) {
+  } else if ( strcasecmp(settingName, SETTING_NOISE_GAIN) == 0 ) {
     Settings.effects.noise = atof(settingValue);
     setNoiseVolume();
-  } else if ( (strcasecmp(settingName, "voice_gain") == 0) || (strcasecmp(settingName, "voice.volume") == 0) ) {
+  } else if ( strcasecmp(settingName, SETTING_VOICE_GAIN) == 0 ) {
     Settings.voice.volume = atof(settingValue);
     setVoiceVolume();
-  } else if (strcasecmp(settingName, "dry_gain") == 0) {
+  } else if (strcasecmp(settingName, SETTING_DRY_GAIN) == 0) {
     Settings.voice.dry = atof(settingValue);  
     setDryVolume();
-  } else if (strcasecmp(settingName, "effects_gain") == 0) {
+  } else if (strcasecmp(settingName, SETTING_EFFECTS_GAIN) == 0) {
     Settings.effects.volume = atof(settingValue);
     setEffectsVolume();
-  } else if (strcasecmp(settingName, "loop_gain") == 0) {
+  } else if (strcasecmp(settingName, SETTING_LOOP_GAIN) == 0) {
     Settings.loop.volume = atof(settingValue);
     setLoopVolume();
-  } else if (strcasecmp(settingName, "silence_time") == 0) {
+  } else if (strcasecmp(settingName, SETTING_SILENCE_TIME) == 0) {
     Settings.voice.wait = atoi(settingValue);
-  } else if (strcasecmp(settingName, "voice_start") == 0) {
+  } else if (strcasecmp(settingName, SETTING_VOICE_START) == 0) {
     Settings.voice.start = atof(settingValue);
-  } else if (strcasecmp(settingName, "voice_stop") == 0) {  
+  } else if (strcasecmp(settingName, SETTING_VOICE_STOP) == 0) {  
     Settings.voice.stop = atof(settingValue);
-  } else if (strcasecmp(settingName, "eq") == 0) {
+  } else if (strcasecmp(settingName, SETTING_EQ) == 0) {
     Settings.eq.active = (byte)atoi(settingValue);
     setEq();
-  } else if (strcasecmp(settingName, "eq_bands") == 0) {
+  } else if (strcasecmp(settingName, SETTING_EQ_BANDS) == 0) {
     // clear bands and prep for setting
     for (byte i = 0; i < 5; i++) {
       Settings.eq.bands[i] = 0;
@@ -379,7 +380,7 @@ void parseSetting(const char *settingName, char *settingValue)
       band = strtok_r(NULL, ",", &ptr);
     }
     setEqBands();
-  } else if (strcasecmp(settingName, "bitcrushers") == 0 || strcasecmp(settingName, "bitcrusher") == 0) {
+  } else if (strcasecmp(settingName, SETTING_BITCRUSHER) == 0) {
     char *token, *ptr;
     token = strtok_r(settingValue, ",", &ptr);
     byte i = 0;
@@ -396,40 +397,38 @@ void parseSetting(const char *settingName, char *settingValue)
       token = strtok_r(NULL, ",", &ptr);
     }
     setBitcrusher();
-  } else if (strcasecmp(settingName, "effects_dir") == 0) {
+  } else if (strcasecmp(settingName, SETTING_EFFECTS_DIR) == 0) {
     memset(Settings.effects.dir, 0, sizeof(Settings.effects.dir));
     strcpy(Settings.effects.dir, settingValue);
     setEffectsDir();
-  } else if (strcasecmp(settingName, "sounds_dir") == 0) {
+  } else if (strcasecmp(settingName, SETTING_SOUNDS_DIR) == 0) {
     memset(Settings.sounds.dir, 0, sizeof(Settings.sounds.dir));
     strcpy(Settings.sounds.dir, settingValue);
     setSoundsDir();
-  } else if (strcasecmp(settingName, "loop_dir") == 0) {
+  } else if (strcasecmp(settingName, SETTING_LOOP_DIR) == 0) {
     memset(Settings.loop.dir, 0, sizeof(Settings.loop.dir));
     strcpy(Settings.loop.dir, settingValue);
     setLoopDir();
-  } else if (strcasecmp(settingName, "glove_dir") == 0) {
+  } else if (strcasecmp(settingName, SETTING_GLOVE_DIR) == 0) {
     memset(Settings.glove.dir, 0, sizeof(Settings.glove.dir));
     strcpy(Settings.glove.dir, settingValue);
     setGloveDir();  
-  } else if (strcasecmp(settingName, "mute_loop") == 0) {
+  } else if (strcasecmp(settingName, SETTING_MUTE_LOOP) == 0) {
     Settings.loop.mute = (byte)atoi(settingValue);
     setLoopMute();
-  } else if (strcasecmp(settingName, "mute_effects") == 0) {
+  } else if (strcasecmp(settingName, SETTING_MUTE_EFFECTS) == 0) {
     Settings.effects.mute = (byte)atoi(settingValue);
     setEffectsMute();
-  } else if (strcasecmp(settingName, "sleep_time") == 0) {
+  } else if (strcasecmp(settingName, SETTING_SLEEP_TIME) == 0) {
     Settings.sleep.timer = (byte)atoi(settingValue);
     setSleepTimer();
-  } else if (strcasecmp(settingName, "sleep_sound") == 0) {
+  } else if (strcasecmp(settingName, SETTING_SLEEP_SOUND) == 0) {
     memset(Settings.sleep.file, 0, sizeof(Settings.sleep.file));
     strcpy(Settings.sleep.file, settingValue);
-  } else if (strcasecmp(settingName, "chorus") == 0) {
+  } else if (strcasecmp(settingName, SETTING_CHORUS) == 0) {
     if (strcasecmp(settingValue, "0") == 0) {
-      //chorus1.voices(0);
       Settings.effects.chorus.enabled = 0;
     } else if (strcasecmp(settingValue, "1") == 0) {
-      //chorus1.voices(Settings.effects.chorus.voices);
       Settings.effects.chorus.enabled = 1;
     } else {
       char *token, *ptr;
@@ -449,12 +448,10 @@ void parseSetting(const char *settingName, char *settingValue)
       }  
     }
     setChorus();
-  } else if (strcasecmp(settingName, "shifter") == 0) {
+  } else if (strcasecmp(settingName, SETTING_SHIFTER) == 0) {
     if (strcasecmp(settingValue, "0") == 0) {
-      //chorus1.voices(0);
       Settings.effects.shifter.enabled = 0;
     } else if (strcasecmp(settingValue, "1") == 0) {
-      //chorus1.voices(Settings.effects.chorus.voices);
       Settings.effects.shifter.enabled = 1;
     } else {
       char *token, *ptr;
@@ -477,19 +474,19 @@ void parseSetting(const char *settingName, char *settingValue)
       }  
     }
     setShifter();  
-  } else if (strcasecmp(settingName, "chorus_delay") == 0) {
+  } else if (strcasecmp(settingName, SETTING_CHORUS_DELAY) == 0) {
       Settings.effects.chorus.delay = (byte)atoi(settingValue);
       setChorus();
-  } else if (strcasecmp(settingName, "chorus_voices") == 0) {
+  } else if (strcasecmp(settingName, SETTING_CHORUS_VOICES) == 0) {
       Settings.effects.chorus.voices = (byte)atoi(settingValue);
       if (Settings.effects.chorus.voices < 0) {
         Settings.effects.chorus.voices = 0;
       }
       chorus1.voices(Settings.effects.chorus.voices);
-  } else if (strcasecmp(settingName, "flanger_delay") == 0) {
+  } else if (strcasecmp(settingName, SETTING_FLANGER_DELAY) == 0) {
       Settings.effects.flanger.delay = (byte)atoi(settingValue);
       setFlanger();   
-  } else if (strcasecmp(settingName, "flanger_freq") == 0) {
+  } else if (strcasecmp(settingName, SETTING_FLANGER_FREQ) == 0) {
       Settings.effects.flanger.freq = atof(settingValue);
       if (Settings.effects.flanger.freq < 0) {
         Settings.effects.flanger.freq = 0;
@@ -498,7 +495,7 @@ void parseSetting(const char *settingName, char *settingValue)
         Settings.effects.flanger.freq = 10;
       }
       flange1.voices(Settings.effects.flanger.offset,Settings.effects.flanger.depth,Settings.effects.flanger.freq);
-  } else if (strcasecmp(settingName, "flanger_depth") == 0) {
+  } else if (strcasecmp(settingName, SETTING_FLANGER_DEPTH) == 0) {
       Settings.effects.flanger.depth = (byte)atoi(settingValue);
       if (Settings.effects.flanger.depth < 0) {
         Settings.effects.flanger.depth = 0;
@@ -507,7 +504,7 @@ void parseSetting(const char *settingName, char *settingValue)
         Settings.effects.flanger.depth = 255;
       }
       flange1.voices(Settings.effects.flanger.offset,Settings.effects.flanger.depth,Settings.effects.flanger.freq);
-  } else if (strcasecmp(settingName, "flanger_offset") == 0) {
+  } else if (strcasecmp(settingName, SETTING_FLANGER_OFFSET) == 0) {
       Settings.effects.flanger.offset = (byte)atoi(settingValue);// * Settings.effects.flanger.delay_LENGTH;
       if (Settings.effects.flanger.offset < 1) {
         Settings.effects.flanger.offset = 1;
@@ -516,12 +513,10 @@ void parseSetting(const char *settingName, char *settingValue)
         Settings.effects.flanger.offset = 128;
       }
       flange1.voices(Settings.effects.flanger.offset,Settings.effects.flanger.depth,Settings.effects.flanger.freq);
-  } else if (strcasecmp(settingName, "flanger") == 0) {
+  } else if (strcasecmp(settingName, SETTING_FLANGER) == 0) {
       if (strcasecmp(settingValue, "0") == 0) {
-        //flange1.voices(FLANGE_DELAY_PASSTHRU,0,0);
         Settings.effects.flanger.enabled = 0;
       } else if (strcasecmp(settingValue, "1") == 0) {
-        //flange1.voices(Settings.effects.flanger.offset,Settings.effects.flanger.depth,Settings.effects.flanger.freq);
         Settings.effects.flanger.enabled = 1;
       } else {
         char *token, *ptr;
@@ -542,10 +537,9 @@ void parseSetting(const char *settingName, char *settingValue)
           i++;
           token = strtok_r(NULL, ",", &ptr);
         } 
-        //flange1.voices(Settings.effects.flanger.offset,Settings.effects.flanger.depth,Settings.effects.flanger.freq); 
       }
       setFlanger();
-  } else if (strcasecmp(settingName, "button") == 0) {
+  } else if (strcasecmp(settingName, SETTING_BUTTON) == 0) {
       char *token, *ptr;
       token = strtok_r(settingValue, ",", &ptr);
       byte b = (byte)atoi(token);
@@ -553,7 +547,7 @@ void parseSetting(const char *settingName, char *settingValue)
         strcpy(Settings.glove.settings[b], ptr);
         ConfigureButton(b);
       }
-  } else if (strcasecmp(settingName, "buttons") == 0) {
+  } else if (strcasecmp(settingName, SETTING_BUTTONS) == 0) {
       char *token, *ptr;
       token = strtok_r(settingValue, "|", &ptr);
       byte a = 0;
@@ -572,7 +566,7 @@ void parseSetting(const char *settingName, char *settingValue)
  */
 boolean saveConfig() {
 
-  const char filename[13] = "CONFIG.TXT";
+  const char filename[13] = CONFIG_FILE;
   
   debug(F("Saving Config data to %s\n"), filename);
   
@@ -625,11 +619,6 @@ boolean saveConfig() {
  */
 char *settingsToString(char result[], const boolean pretty = false) 
 {
-
-  //const size_t bufferSize = JSON_ARRAY_SIZE(5) + JSON_ARRAY_SIZE(6) + 22*JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(3) + 3*JSON_OBJECT_SIZE(4) + JSON_OBJECT_SIZE(5) + JSON_OBJECT_SIZE(8) + JSON_OBJECT_SIZE(9);
-  // pre-shifter -> const size_t bufferSize = 6*JSON_ARRAY_SIZE(2) + JSON_ARRAY_SIZE(5) + JSON_ARRAY_SIZE(6) + 4*JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(3) + 3*JSON_OBJECT_SIZE(4) + JSON_OBJECT_SIZE(5) + JSON_OBJECT_SIZE(8) + JSON_OBJECT_SIZE(9) + 780;
-  // with shifter
-  //const size_t bufferSize = 6*JSON_ARRAY_SIZE(2) + JSON_ARRAY_SIZE(5) + JSON_ARRAY_SIZE(6) + 4*JSON_OBJECT_SIZE(2) + 3*JSON_OBJECT_SIZE(3) + 2*JSON_OBJECT_SIZE(4) + 2*JSON_OBJECT_SIZE(5) + 2*JSON_OBJECT_SIZE(9);
 
   DynamicJsonBuffer jsonBuffer(JSON_BUFFER_SIZE);
 
@@ -747,18 +736,12 @@ char *settingsToString(char result[], const boolean pretty = false)
   button = Settings.glove.ControlButtons[5].buttons[1].getSettings();
   buttons_5.add(button);
 
-  //root.prettyPrintTo(Serial);
-  
   if (pretty == true) {
     root.prettyPrintTo((char*)result, root.measurePrettyLength() + 1);
   } else {
     root.printTo((char*)result, root.measureLength() + 1);
   }
 
-  //size_t len = root.measureLength();
-  //debug(F("Length: %d\n"), len);
-  //free(button);
-   
   return result;
 
 }
