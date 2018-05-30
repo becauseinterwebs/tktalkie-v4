@@ -11,7 +11,7 @@ void debug(const __FlashStringHelper *fmt, ... ) {
   if (Config.debug == 0) {
     return;
   }
-  char buf[256]; // resulting string limited to 1000 chars
+  char buf[1025]; // resulting string limited to 1M chars
   va_list args;
   va_start (args, fmt);
 #ifdef __AVR__
@@ -20,8 +20,8 @@ void debug(const __FlashStringHelper *fmt, ... ) {
   vsnprintf(buf, sizeof(buf), (const char *)fmt, args); // for the rest of the world
 #endif
   va_end(args);
-  Serial.print("[DEBUG] ");
-  Serial.print(buf);
+  Serial.print(F("[DEBUG] "));
+  Serial.print(F(buf));
 }
 
 /**
@@ -40,22 +40,6 @@ void upcase(char *str)
 }
 
 /**
- * Convert array of char strings to comma-delimited string 
- */
-char *arrayToString(char result[], const char arr[][SETTING_ENTRY_MAX], int len) 
-{
-  for (int i = 0 ; i < len; i++) {
-    if (i == 0) {
-      strcpy(result, arr[i]);
-    } else {
-      strcat(result, ",");
-      strcat(result, arr[i]);
-    }
-  }
-  return result;
-}
-
-/**
  * Convert array of char strings to comma-delimited char-based string 
  */
 char *arrayToStringJson(char result[], const char arr[][14], int len) 
@@ -70,48 +54,82 @@ char *arrayToStringJson(char result[], const char arr[][14], int len)
     }
   }
   strcat(result, "]");
-  //Serial.print("ARRAYTOSTRINGJSON: ");
-  //Serial.println(result);
   return result;
 }
 
-/**
- * Convert array of int to comma-delimited string 
- */
-char *arrayToString(char result[], int arr[], int len) 
+byte getCommand(const char cmd[14])
 {
-  char buf[20];
-  for (int i = 0 ; i < len; i++) {
-    sprintf(buf, "%d", arr[i]);
-    if (i == 0) {
-      strcpy(result, buf);
+  
+  char commands[38][12] = { 
+    "debug", 
+    "echo", 
+    "default", 
+    "delete", 
+    "load", 
+    "play", 
+    "play_effect", 
+    "play_sound", 
+    "play_glove", 
+    "play_loop", 
+    "stop_loop", 
+    "config", 
+    "mute", 
+    "unmute", 
+    "save", 
+    "access_code", 
+    "connect", 
+    "disconnect", 
+    "download",
+    "backup", 
+    "restore", 
+    "settings", 
+    "files", 
+    "sounds", 
+    "effects",
+    "loops",
+    "glove",
+    "profiles",
+    "ls",
+    "help",
+    "calibrate",
+    "reset",
+    "sleep",
+    "baud",
+    "mem",
+    "beep", 
+    "berp",
+    "show"
+  };
+
+  byte min   = 0;
+  byte max   = 37;
+  byte r     = round((min+max)/2);
+  byte l     = r-1;
+  byte index = 255;
+
+  while (1) {
+    if (strcasecmp(cmd, commands[l]) == 0) { 
+      index = l;
+      break;
+    } else if (strcasecmp(cmd, commands[r]) == 0) {
+      index = r;
+      break;
     } else {
-      strcat(result, ",");
-      strcat(result, buf);
+      if (l == min && r == max && index == 255) {
+        break;
+      }
+      if (l > min) {
+        l--;
+      }
+      if (r < max) {
+        r++;
+      }
     }
-    memset(buf, 0, sizeof(buf));
   }
-  return result;
+
+  //debug(F("cmd: %s index: %d\n"), cmd, index);
+
+  return (index);
+  
 }
-
-/**
- * Convert array of float to comma-delimited string
- */
-char *arrayToString(char result[], float arr[], const int len) 
-{
-  char buf[20];
-  for (int i = 0 ; i < len; i++) {
-    dtostrf(arr[i], 0, 4, buf);
-    if (i == 0) {
-      strcpy(result, buf);
-    } else {
-      strcat(result, ",");
-      strcat(result, buf);
-    }
-    memset(buf, 0, sizeof(buf));
-  }
-  return result;
-}
-
-
 

@@ -61,12 +61,6 @@ void ControlButton::setPin(byte buttonPin)
     pinMode(this->_pin, INPUT_PULLUP);
     this->_button.attach(this->_pin);
     this->_button.interval(this->_interval);
-    Serial.println("+++++++++++++++++++++++++++++");
-    Serial.print("THIS PIN SET TO: ");
-    Serial.print(this->_pin);
-    Serial.print(" with interval ");
-    Serial.println(this->_interval);
-    Serial.println("+++++++++++++++++++++++++++++");
   }  
 }
 

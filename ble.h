@@ -2,17 +2,6 @@
  * Routines for BLE 
  */
 
-void btprintln(const char *str) {
-  if (Config.echo == true) {
-    Serial.print("TX: ");
-    Serial.println(str);
-  }
-  if (App.ble_connected == true) {
-    Serial1.print(str);
-    Serial1.print("\n");
-  }
-}
-
 void btprint(const __FlashStringHelper *fmt, ... ) {
   char buf[1025]; // resulting string limited to 1M chars
   va_list args;
@@ -24,7 +13,7 @@ void btprint(const __FlashStringHelper *fmt, ... ) {
 #endif
   va_end(args);
   if (Config.echo == true) {
-    Serial.print(buf);
+    Serial.print(F(buf));
   }
   // break into chunks
   int l = strlen(buf);
@@ -38,7 +27,7 @@ void btprint(const __FlashStringHelper *fmt, ... ) {
       a++;
       Serial1.print(buf[b]);
     }
-    delay(30);      
+    delay(31);      
   }
 }
 
@@ -90,17 +79,62 @@ void sendConfig()
 
   debug(F("Sending config\n"));
 
-  btprint(F("{\"cmd\":\"config\", \"data\": { \"ver\":\"%s\","), VERSION);
+  btprint(F("{\"cmd\":\"config\", \"data\": { \"ver\":\"%2f\","), VERSION);
 
   char buffer[1024];
   char files[MAX_FILE_COUNT][FILENAME_SIZE];
 
+  //char *profile = getSettingValue(buffer, "profile");
+  btprint(F("\"default\":\"%s\","), Config.profile);
+  memset(buffer, 0, sizeof(buffer));
+  
+  btprint(F("\"current\":\"%s\","), Settings.file, Settings.name);
+
+  // This is already formatted correctly
+  //char *json = settingsToString(buffer);
+  btprint(F("\"profile\":"));
+  //memset(buffer, 0, sizeof(buffer));
+
+  char filename[MAX_FILENAME*2];
+  strcpy(filename, PROFILES_DIR);
+  strcat(filename, Settings.file);
+  File file = SD.open(filename);
+  if (file) {
+    char c;
+    while (file.available()) {
+      c = file.read();
+      if (c != '\n') {
+        Serial1.print(c);
+      }  
+    }
+    file.close();
+  } else {
+    Serial1.print("{}");
+  }
+    
+  btprint(F(",\"profiles\":["));
+  
+  // get config profile files 
+  byte count = listFiles(PROFILES_DIR, files, MAX_FILE_COUNT, FILE_EXT, false, false);
+  
+  for (byte i = 0; i < count; i++) {
+     char filename[30];
+     strcpy(filename, files[i]);//_'PROFILES_DIR);
+     //strcat(filename, files[i]);
+     Settings_t settings;
+     loadSettings(filename, &settings, true);
+     btprint(F("{\"name\":\"%s\",\"desc\":\"%s\"}"), files[i], settings.name);
+     if (i < count-1) {
+       btprint(F(","));
+     }
+  }
+  
   // add buttons
   char buttons[20];
   sprintf(buttons, "[%d,%d,%d,%d,%d,%d]", Config.buttons[0], Config.buttons[1], Config.buttons[2], Config.buttons[3], Config.buttons[4], Config.buttons[5]);
-  btprint(F("\"buttons\":%s,"), buttons);
+  btprint(F("],\"buttons\":%s,"), buttons);
   
-  byte count = listFiles(Settings.sounds.dir, files, MAX_FILE_COUNT, SOUND_EXT, false, false);
+  count = listFiles(Settings.sounds.dir, files, MAX_FILE_COUNT, SOUND_EXT, false, false);
 
   // Add sound files
   
@@ -113,7 +147,7 @@ void sendConfig()
 
   // Add effects 
   // Does this need to be read again?  They should already be in memory
-  sounds = arrayToStringJson(buffer, Settings.effects.files, SOUND_EFFECTS_COUNT);
+  sounds = arrayToStringJson(buffer, Settings.effects.files, Settings.effects.count);
   btprint(F("\"effects\":%s,"), sounds);
   memset(buffer, 0, sizeof(buffer));
 
@@ -123,57 +157,23 @@ void sendConfig()
   // Add loops 
   sounds = arrayToStringJson(buffer, files, count);
   btprint(F("\"loops\":%s,"), sounds);
-  Serial.println("BEFORE LOOP BUFFER CLEAR");
   memset(buffer, 0, sizeof(buffer));
-  Serial.println("AFTER LOOP BUFFER CLEAR");
 
   // Clear array
   memset(files, 0, sizeof(files));
-  Serial.println("AFTER FILES CLEAR");
 
   // get glove sound files 
-  Serial.print("Gathering sound glove files -> ");
-  Serial.println(Settings.glove.dir);
-  
   count = listFiles(Settings.glove.dir, files, MAX_FILE_COUNT, SOUND_EXT, false, false);
   
   // Add glove sounds 
   sounds = arrayToStringJson(buffer, files, count);
   btprint(F("\"glove\":%s,"), sounds);
-  memset(buffer, 0, sizeof(buffer));
+  //memset(buffer, 0, sizeof(buffer));
 
   // Clear array
-  memset(files, 0, sizeof(files)); 
+  //memset(files, 0, sizeof(files)); 
 
-  //char *profile = getSettingValue(buffer, "profile");
-  btprint(F("\"default\":\"%s\","), Config.profile);
-  memset(buffer, 0, sizeof(buffer));
-  
-  btprint(F("\"current\":\"%s\","), Settings.file, Settings.name);
-
-  // This is already formatted correctly
-  char *json = settingsToString(buffer);
-  btprint(F("\"profile\":%s,"), json);
-  memset(buffer, 0, sizeof(buffer));
-
-  btprint(F("\"profiles\":["));
-  
-  // get config profile files 
-  count = listFiles(PROFILES_DIR, files, MAX_FILE_COUNT, FILE_EXT, false, false);
-  
-  for (byte i = 0; i < count; i++) {
-     char filename[30];
-     strcpy(filename, PROFILES_DIR);
-     strcat(filename, files[i]);
-     Settings_t settings;
-     loadSettings(filename, &settings, false);
-     btprint(F("{\"name\":\"%s\",\"desc\":\"%s\"}"), files[i], settings.name);
-     if (i < count-1) {
-       btprint(F(","));
-     }
-  }
-  
-  btprint(F("],\"mute\":%s,"), App.muted == true ? "1" : "0");
+  btprint(F("\"mute\":%s,"), App.muted == true ? "1" : "0");
 
   btprint(F("\"bg\":%s,"), loopPlayer.isPlaying() ? "1" : "0");
 

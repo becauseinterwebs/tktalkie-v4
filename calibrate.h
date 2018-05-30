@@ -58,7 +58,7 @@
   {
   
     // disable normal operation
-    STATE = STATE_BOOTING;  
+    App.state = STATE_BOOTING;  
   
     char recom[SETTING_ENTRY_MAX*2];
     
@@ -129,7 +129,7 @@
   
     loopOn();
     
-    STATE = STATE_RUNNING;
+    App.state = STATE_RUNNING;
     
   }
 #endif
