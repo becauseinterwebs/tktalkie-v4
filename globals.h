@@ -75,6 +75,7 @@
 #define CMD_BEEP        35
 #define CMD_BERP        36
 #define CMD_SHOW        37
+#define CMD_PROFILE_DIR 38
 #define CMD_NONE        255
 
 /**********************
@@ -86,7 +87,9 @@
 #define SETTING_LINEIN          "linein"
 #define SETTING_HIPASS          "highpass"
 #define SETTING_MIC             "mic"
-#define SETTING_BUTTON_CLICK    "button_click"
+#define SETTING_BUTTON_ON       "button_click"
+#define SETTING_BUTTON_OFF      "button_off"
+#define SETTING_VOICE_OFF       "voice_off"
 #define SETTING_STARTUP_SOUND   "startup_sound"
 #define SETTING_LOOP_FILE       "loop_file"
 #define SETTING_NOISE_GAIN      "noise_gain"
@@ -136,12 +139,13 @@
 int16_t granularMemory[GRANULAR_MEMORY_SIZE];
 
 // Memory buffer for encoding/decoding JSON data
-#define JSON_BUFFER_SIZE  6*JSON_ARRAY_SIZE(2) + JSON_ARRAY_SIZE(5) + JSON_ARRAY_SIZE(6) + 4*JSON_OBJECT_SIZE(2) + 3*JSON_OBJECT_SIZE(3) + 2*JSON_OBJECT_SIZE(4) + 2*JSON_OBJECT_SIZE(5) + 2*JSON_OBJECT_SIZE(9) + 830
+#define JSON_BUFFER_SIZE  6*JSON_ARRAY_SIZE(2) + JSON_ARRAY_SIZE(5) + JSON_ARRAY_SIZE(6) + 4*JSON_OBJECT_SIZE(2) + 3*JSON_OBJECT_SIZE(3) + 2*JSON_OBJECT_SIZE(4) + 2*JSON_OBJECT_SIZE(5) + 2*JSON_OBJECT_SIZE(9) + 1024
 
 // Other defaults
 #define SOUND_EXT   ".WAV"
 #define FILE_EXT    ".TXT"
 #define BACKUP_EXT  ".BAK"
+#define BEEP_VOLUME 0.5
 
 // loop and serial command handlers
 #define MAX_DATA_SIZE 100
@@ -156,7 +160,6 @@ int16_t granularMemory[GRANULAR_MEMORY_SIZE];
 #define FILENAME_SIZE  14
 
 #define CONFIG_FILE   "CONFIG.TXT"
-#define PROFILES_DIR  "/profile4/"
 
 /**
  * OPERATIONAL STATES - Used for tracking at what stage the app is currently running
@@ -171,6 +174,12 @@ struct Shifter_t {
   int speed    = 512;
   float range  = 5.0;
   byte enabled = 1;
+  void reset() {
+    length = 0;
+    speed = 512;
+    range = 5.0;
+    enabled = 0;
+  }
 };
 
 struct Loop_t {
@@ -178,6 +187,12 @@ struct Loop_t {
   char    file[MAX_FILENAME]  = "";
   boolean mute      = true;
   float   volume    = 1;  
+  void reset() {
+    strcpy(dir, "/loops/");
+    strcpy(file, "");
+    mute = true;
+    volume = 1;
+  }
 };
 
 struct Voice_t {
@@ -186,12 +201,28 @@ struct Voice_t {
   float         start  = 0.0300;
   float         stop   = 0.0200;
   unsigned int  wait   = 275;
+  void reset() {
+    volume = 1.0000;
+    dry    = 0.5000;
+    start  = 0.0300;
+    stop   = 0.0200;
+    wait   = 275;
+  }
 };
 
 struct Sounds_t {
-  char dir[MAX_FILENAME]    = "/sounds/";
-  char start[MAX_FILENAME]  = "STARTUP.WAV";
-  char button[MAX_FILENAME] = "CLICK3.WAV";
+  char dir[MAX_FILENAME]       = "/sounds/";
+  char start[MAX_FILENAME]     = "STARTUP.WAV";
+  char button[MAX_FILENAME]    = "*";
+  char buttonOff[MAX_FILENAME] = "*";
+  char voiceOff[MAX_FILENAME]  = "*";
+  void reset() {
+    strcpy(dir, "/sounds/");
+    strcpy(start, "");
+    strcpy(button, "*");
+    strcpy(buttonOff, "*");
+    strcpy(voiceOff, "*");
+  }
 };
 
 struct Flanger_t {
@@ -201,6 +232,13 @@ struct Flanger_t {
   float freq   = 0.0625;
   short buffer[FX_DELAY*AUDIO_BLOCK_SAMPLES];
   byte enabled = 1;
+  void reset() {
+    delay = FX_DELAY;
+    offset = 1;
+    depth = 0;
+    freq = 0.625;
+    enabled = false;
+  }
 };
 
 struct Chorus_t {
@@ -208,11 +246,20 @@ struct Chorus_t {
   byte delay   = FX_DELAY;
   short buffer[FX_DELAY*AUDIO_BLOCK_SAMPLES];
   byte enabled = 1;
+  void reset() {
+    enabled = 1;
+    voices = 1;
+    delay = FX_DELAY;
+  }
 };
 
 struct Bitcrusher_t {
   byte bits    = 16;
   int  rate    = 44100;
+  void reset() {
+    bits = 16;
+    rate = 44100;
+  }
 };
 
 struct Effects_t {
@@ -227,16 +274,33 @@ struct Effects_t {
   Shifter_t     shifter;
   char          files[MAX_FILE_COUNT][MAX_FILENAME];
   byte          count;
+  void reset() {
+    strcpy(dir, "/effects/");
+    bitcrusher.reset();
+    chorus.reset();
+    flanger.reset();
+    shifter.reset();
+  }
 };
 
 struct Eq_t {
   boolean active   = true;
   float   bands[5] = { -1.0,0,1,0,-1.0 };
+  void reset() {
+    active = false;
+    for (byte i = 0; i < 5; i++) {
+      bands[i] = 0;
+    }
+  }
 };
 
 struct Sleep_t {
   unsigned int  timer     = 0;
   char          file[MAX_FILENAME]  = "SLEEP.WAV";  
+  void reset() {
+    timer = 0;
+    strcpy(file, "SLEEP.WAV");
+  }
 };
 
 struct Glove_t {
@@ -244,6 +308,13 @@ struct Glove_t {
   char settings[6][30] = { "0","0","0","0","0","0" };
   // This could be turned into a management class, but there is not a lot of stuff to do with it...so....
   ControlButton ControlButtons[6] = { ControlButton(), ControlButton(), ControlButton(), ControlButton(), ControlButton(), ControlButton() }; 
+  void reset() {
+    strcpy(dir, "/glove/");
+    for (byte i = 0; i < 6; i++) {
+      strcpy(settings[i], "0");
+      ControlButtons[i].reset();
+    }
+  }
 };
 
 struct Volume_t {
@@ -251,6 +322,12 @@ struct Volume_t {
   byte  lineout    = 29;  // Valid values 13 to 31. Default teensy setting is 29.
   byte  linein     = 5;   // Value values 0 to 15. Default teensy setting is 5;
   byte  microphone = 3;
+  void reset() {
+    master = 0;
+    lineout = 0;
+    linein = 0;
+    microphone = 0;
+  }
 };
 
 struct Settings_t {
@@ -264,10 +341,23 @@ struct Settings_t {
   Eq_t      eq;
   Sleep_t   sleep;
   Glove_t   glove;
+  void reset() {
+    memset(name, 0, sizeof(name));
+    memset(file, 0, sizeof(file));
+    volume.reset();
+    loop.reset();
+    voice.reset();
+    sounds.reset();
+    effects.reset();
+    eq.reset();
+    sleep.reset();
+    glove.reset();
+  }
 } Settings;
 
 struct Config_t {
   char profile[MAX_FILENAME] = "DEFAULT.TXT";
+  char profile_dir[MAX_FILENAME] = "/profiles/";
   // These define the pins the (up to) 6 control buttons can be connected to
 // NOTE:  Only digital pins can be used for waking:
 //        2,4,6,7,9,10,11,13,16,21,22,26,30,33
@@ -289,12 +379,20 @@ struct App_t {
   boolean muted               = false;        // flag to indicate whether all sounds should be muted
   byte    lastRnd             = -1;           // Keeps track of the last file played so that it is different each time
   byte    wake_button         = 255;
-  byte    ptt_button;
+  byte    ptt_button          = 254;
   char    device_id[50];
-  unsigned int  loopLength;
-  elapsedMillis loopMillis    = 0;
+  unsigned int  loopLength      = 0;
+  unsigned int  muteLoopTimeout = 0;
+  elapsedMillis loopMillis      = 0;
   elapsedMillis autoSleepMillis = 0;
-  elapsedMillis stopped;                      // used to tell how long user has stopped talking
+  elapsedMillis muteLoopMillis  = 0;
+  elapsedMillis stopped         = 0;          // used to tell how long user has stopped talking
+  void reset() {
+    wake_button = 255;
+    ptt_button = 254;
+    muted = false;
+    button_initialized = false;
+  }
 } App;
 
 // GUItool: begin automatically generated code

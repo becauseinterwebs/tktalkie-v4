@@ -13,7 +13,7 @@ void beep(const byte times = 1)
   }
   for (byte i=0; i<times; i++) {
     waveform1.frequency(720);
-    waveform1.amplitude(0.2);
+    waveform1.amplitude(BEEP_VOLUME);
     delay(150);
     waveform1.amplitude(0);
     delay(150);
@@ -50,7 +50,7 @@ void boopDown() {
 void berp() {
   for (byte i = 0; i < 2; i++) {
     waveform1.frequency(2440);
-    waveform1.amplitude(.2);
+    waveform1.amplitude(BEEP_VOLUME);
     delay(50);
     waveform1.frequency(380);
     delay(75);
@@ -207,6 +207,18 @@ void addSoundEffect()
   playEffect(Settings.effects.files[rnd]);
 }
 
+/***
+ * Play a specified or random sound effect after talking
+ */
+void playCommEffect(const char *sound)
+{
+  if (Settings.effects.mute) return;
+  if (strcasecmp(sound, "*") == 0) {
+    addSoundEffect();
+  } else { 
+    playEffect(sound);
+  }
+}
 /***
  * Check the optional volume pot for output level
  */

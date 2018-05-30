@@ -31,7 +31,6 @@ void btprint(const __FlashStringHelper *fmt, ... ) {
   }
 }
 
-
 /**
  * Shortcut to send output to in JSON format
  */
@@ -96,15 +95,20 @@ void sendConfig()
   //memset(buffer, 0, sizeof(buffer));
 
   char filename[MAX_FILENAME*2];
-  strcpy(filename, PROFILES_DIR);
+  strcpy(filename, Config.profile_dir);
   strcat(filename, Settings.file);
   File file = SD.open(filename);
   if (file) {
     char c;
+    char lastChar;
     while (file.available()) {
       c = file.read();
-      if (c != '\n') {
-        Serial1.print(c);
+      if (c != '\n' && c != '\r') {
+        if ( (c == ' ' && lastChar != ' ' && lastChar != '{' && lastChar != ',' && lastChar != ':' && lastChar != '}' && lastChar != ']' && lastChar != '[') || ( c != ' ') ) {
+          lastChar = c;
+          Serial.print(c);
+          Serial1.print(c);
+        }
       }  
     }
     file.close();
@@ -115,11 +119,11 @@ void sendConfig()
   btprint(F(",\"profiles\":["));
   
   // get config profile files 
-  byte count = listFiles(PROFILES_DIR, files, MAX_FILE_COUNT, FILE_EXT, false, false);
+  byte count = listFiles(Config.profile_dir, files, MAX_FILE_COUNT, FILE_EXT, false, false);
   
   for (byte i = 0; i < count; i++) {
      char filename[30];
-     strcpy(filename, files[i]);//_'PROFILES_DIR);
+     strcpy(filename, files[i]);//_'Config.profile_dir);
      //strcat(filename, files[i]);
      Settings_t settings;
      loadSettings(filename, &settings, true);
@@ -188,5 +192,13 @@ void sendConfig()
   // end
   btprint(F("}}\n"));
   
+}
+
+void sendButtonPress(const byte pbutton, const byte vbutton)
+{
+  char val[4] = "";
+  debug(F("Button %d / %d\n"), pbutton, vbutton);
+  sprintf(val, "%d,%d", pbutton, vbutton);
+  sendToApp("press", val);
 }
 

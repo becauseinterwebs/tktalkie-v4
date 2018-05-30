@@ -106,6 +106,10 @@ byte ControlButton::read() {
 }
 
 void ControlButton::reset() {
+  this->_pin = 0;
+  this->_interval = 15;
+  this->_value = 0;
+  this->_type = 0;
   this->_isPTT = false;
 }
 

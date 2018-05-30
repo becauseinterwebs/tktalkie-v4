@@ -103,17 +103,15 @@
  */
 boolean checkPTTButton() 
 {
-  if (!App.ptt_button) {
+  if (App.ptt_button == 254) {
+    //debug(F("No PTT button specifed...returning\n"));
     return false;
   }
   Settings.glove.ControlButtons[App.ptt_button].update();
   if (Settings.glove.ControlButtons[App.ptt_button].fell()) {
     if (App.state == STATE_RUNNING) {
-      if (strcasecmp(Settings.sounds.button, "*") == 0) {
-        addSoundEffect();
-      } else { 
-        playEffect(Settings.sounds.button);
-      }
+      sendButtonPress(App.ptt_button, 1);
+      playCommEffect(Settings.sounds.button);
     }
     return true;
   } else {
@@ -132,7 +130,7 @@ void startup()
 
   File file = SD.open(CONFIG_FILE);
 
-  const size_t bufferSize = JSON_ARRAY_SIZE(6) + JSON_OBJECT_SIZE(7) + 120;
+  const size_t bufferSize = JSON_ARRAY_SIZE(6) + JSON_OBJECT_SIZE(8) + 170;
   DynamicJsonBuffer jsonBuffer(bufferSize);
   
   //const char* json = "{\"profile\":\"PYLEPRO4.TXT\",\"access_code\":\"0525\",\"debug\":1,\"input\":\"mic\",\"echo\":0,\"buttons\":[1,2,3,4,5,6]}";
@@ -143,6 +141,7 @@ void startup()
     Serial.println(F("Failed to read file, using default configuration"));
     strlcpy(Config.profile, "DEFAULT.TXT", sizeof(Config.profile)); // "123456789012"
     strlcpy(Config.access_code, "1138", sizeof(Config.access_code)); // "1111111111111111111111111"
+    strlcpy(Config.profile_dir, "/profiles/", sizeof(Config.profile_dir));
     Config.debug = 1;
     Config.baud  = 9600;
     strlcpy(Config.input,"BOTH", sizeof(Config.input)); // "both"
@@ -156,6 +155,7 @@ void startup()
   } else {
     strlcpy(Config.profile, (root["profile"] | ""), sizeof(Config.profile)); // "123456789012"
     strlcpy(Config.access_code, (root["access_code"] | "1138"), sizeof(Config.access_code)); // "1111111111111111111111111"
+    strlcpy(Config.profile_dir, (root["profiles"] | "/profiles/"), sizeof(Config.profile_dir)); // "1111111111111111111111111"
     //Config.debug = ((root["debug"] | 0) == 1) ? true : false; // 1
     Config.debug = root["debug"];
     strlcpy(Config.input, (root["input"] | "BOTH"), sizeof(Config.input)); // "both"
@@ -187,7 +187,7 @@ void startup()
   if (strcasecmp(Config.profile, "") == 0) {
     // No profile specified, try to find one and load it
     char files[MAX_FILE_COUNT][FILENAME_SIZE];
-    byte total = listFiles(PROFILES_DIR, files, MAX_FILE_COUNT, FILE_EXT, false, false);
+    byte total = listFiles(Config.profile_dir, files, MAX_FILE_COUNT, FILE_EXT, false, false);
     if (total > 0) {
       memset(Config.profile, 0, sizeof(Config.profile));
       strcpy(Config.profile, files[0]);
@@ -367,6 +367,16 @@ void run() {
         playLoop();
     }
 
+    // check if loop was muted while a sound played
+    if (App.muteLoopTimeout > 0) {
+      if (App.muteLoopMillis >= App.muteLoopTimeout) {
+        App.muteLoopMillis = 0;
+        loopOn();  
+      }
+    } else {
+      App.muteLoopMillis = 0;
+    }
+    
     // loop and serial command handlers
     char cmd_key[15] = "";
     char cmd_val[MAX_DATA_SIZE] = "";
@@ -466,6 +476,7 @@ void run() {
               break;
            case CMD_DISCONNECT:
               App.ble_connected = false;
+              sendToApp("disconnect", 1);
               beep(2);
               memset(App.device_id, 0, sizeof(App.device_id));
               break;
@@ -526,8 +537,16 @@ void run() {
               Config.echo = atoi(cmd_val) | 0;
               saveConfig();
               break;
+           case CMD_PROFILE_DIR:
+              if (strcasecmp(cmd_val, "") != 0) {
+                memset(Config.profile_dir, 0, sizeof(Config.profile_dir));
+                strcpy(Config.profile_dir, cmd_val);
+                saveConfig();
+              }  
+              break;
            case CMD_BAUD:
-              Config.baud = atol(cmd_val) | 9600;
+              Config.baud = atol(cmd_val);
+              debug(F("Setting BLE Baud Rate to %d\n"),Config.baud);
               saveConfig();
               break;
            case CMD_DEFAULT:
@@ -577,7 +596,7 @@ void run() {
               effectsPlayer.play(cmd_val);
               break; 
            case CMD_PLAY_EFFECT:
-              playEffect(cmd_val);
+              playCommEffect(cmd_val);
               break;
            case CMD_PLAY_SOUND:
               playSound(cmd_val);
@@ -676,7 +695,7 @@ void run() {
                     strcpy(path, Settings.glove.dir);
                     break;
                   case CMD_PROFILES:
-                    strcpy(path, PROFILES_DIR);
+                    strcpy(path, Config.profile_dir);
                     strcpy(ext, FILE_EXT);
                     break;
                   case CMD_FILES:
@@ -695,7 +714,7 @@ void run() {
                 }
                 if (Config.debug && echo == false) {
                   for (int i = 0; i < count; i++) {
-                    debug(F(temp[i]));
+                    debug(F("%s\n"), temp[i]);
                   }
                 }
               }
@@ -754,29 +773,32 @@ void run() {
             continue;
           }
 
-          char val[4] = "";
-          sprintf(val, "%d,%d", i, whichButton);
-          sendToApp("press", val);  
+          sendButtonPress(i, whichButton);
         
           switch(btype) {
             // Sound button
             case BUTTON_SOUND:
               {
                 if (effectsPlayer.isPlaying() && lastButton == whichButton && lastControlButton == i) {
+                  debug(F("Stop current sound\n"));
                   effectsPlayer.stop();
                 } else {
                   char buffer[FILENAME_SIZE];
                   char *sound = Settings.glove.ControlButtons[i].buttons[whichButton-1].getSound(buffer);
-                  debug(F("Play glove sound: %s"), sound);
+                  debug(F("Play glove sound: %s\n"), sound);
                   if (Settings.loop.mute == true) {
+                    App.muteLoopTimeout = 0;
+                    App.muteLoopMillis = 0;
                     loopOff();
                   }
                   long l = playGloveSound(sound);
                   lastButton = whichButton;
                   lastControlButton = i;
                   if (Settings.loop.mute == true) {
-                    delay(l+100);
-                    loopOn();
+                    //delay(l+100);
+                    App.muteLoopMillis = 0;
+                    App.muteLoopTimeout = l + 100;
+                    //loopOn();
                   }
                 }
               }  
@@ -1047,10 +1069,11 @@ void run() {
               }
               break;
           }
-        }  
+        }
+         
     }  
 
-    if (App.ptt_button && App.button_initialized == false) {
+    if (App.ptt_button < 254 && App.button_initialized == false) {
       App.button_initialized = checkPTTButton();
       if (App.button_initialized) {
         // turn voice on with background noise
@@ -1060,7 +1083,7 @@ void run() {
       Settings.glove.ControlButtons[App.ptt_button].update();
     }
     
-    if (App.ptt_button && App.button_initialized) {
+    if (App.ptt_button < 254 && App.button_initialized) {
 
       float val = 0;
       
@@ -1092,11 +1115,8 @@ void run() {
       // Button press
 
       if (Settings.glove.ControlButtons[App.ptt_button].fell()) {
-        if (strcasecmp(Settings.sounds.button, "*") == 0) {
-          addSoundEffect();
-        } else {
-          playEffect(Settings.sounds.button);
-        }
+        sendButtonPress(App.ptt_button, 1);
+        playCommEffect(Settings.sounds.button);
         //ms = 0;
         voiceOn();
       }
@@ -1120,8 +1140,8 @@ void run() {
           App.stopped = 0;
           //while (stopped < Settings.voice.wait) {}
           voiceOff();
-          // Random comm sound
-          addSoundEffect();
+          // Play comm sound
+          playCommEffect(Settings.sounds.buttonOff);
         }
       }
       
@@ -1163,8 +1183,8 @@ void run() {
                 if (App.stopped >= Settings.voice.wait) {
                   //debug(F("Voice stop: %4f\n"), val);
                   voiceOff();
-                  // play random sound effect
-                  addSoundEffect();
+                  // play comm effect
+                  playCommEffect(Settings.sounds.voiceOff);
                 }
     
               } else {
@@ -1195,7 +1215,7 @@ void run() {
 
 bool buttonHeld(uint16_t msecs) {
     elapsedMillis duration = 0;
-    if (!App.wake_button || App.wake_button == 255) {
+    if (App.wake_button == 255) {
       return false;
     }
     while (duration < msecs) {

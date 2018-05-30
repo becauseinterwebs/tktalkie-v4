@@ -152,6 +152,10 @@ int listDirectories(const char *path, char directories[][FILENAME_SIZE])
     debug(F("Filter: %s\n"), filter);
   }
   int index = 0;
+  if (!SD.exists(path)) {
+    debug(F("Path %s not found!\n"), path);
+    return 0;
+  }
   File dir = SD.open(path);
   if (!dir) {
     debug(F("Could not open %s!\n"), path);

@@ -47,6 +47,7 @@ char *VirtualButton::getSound(char sound[])
 char *VirtualButton::getSettings() 
 {
   char * buf = (char *) malloc (16);
+  //memset(settings, 0, sizeof(settings));
   sprintf(buf, "%d", this->_type);
   if (strcasecmp(this->_sound, "") != 0) {
     strcat(buf, ",");

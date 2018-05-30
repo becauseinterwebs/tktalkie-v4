@@ -3,7 +3,13 @@
  */
 
 void ConfigureButton(byte a) {
-  
+
+    if (a == App.ptt_button) {
+      App.ptt_button = 254;
+    }
+    if (a == App.wake_button) {
+      App.wake_button = 255;  
+    }
     Settings.glove.ControlButtons[a].setPTT(false);
     Settings.glove.ControlButtons[a].setPin(0);
     byte buttonNum = 0;
@@ -36,7 +42,8 @@ void ConfigureButton(byte a) {
               debug(F("PTT Button on pin: %d\n"), pin);
               App.ptt_button = a;
               Settings.glove.ControlButtons[a].setPTT(true);
-              if (!App.wake_button || App.wake_button == 255) {
+              if (App.wake_button == 255) {
+                debug(F("Setting button %d to wake button\n"), a);
                 App.wake_button = a;
                 snoozeDigital.pinMode(pin, INPUT_PULLUP, FALLING);
               }
@@ -333,9 +340,15 @@ void parseSetting(const char *settingName, char *settingValue)
   } else if (strcasecmp(settingName, SETTING_MIC) == 0) {
     Settings.volume.microphone = atoi(settingValue);
     setMicGain();
-  } else if (strcasecmp(settingName, SETTING_BUTTON_CLICK) == 0) {
+  } else if (strcasecmp(settingName, SETTING_BUTTON_ON) == 0) {
     memset(Settings.sounds.button, 0, sizeof(Settings.sounds.button));
     strcpy(Settings.sounds.button, settingValue);
+  } else if (strcasecmp(settingName, SETTING_BUTTON_OFF) == 0) {
+    memset(Settings.sounds.buttonOff, 0, sizeof(Settings.sounds.buttonOff));
+    strcpy(Settings.sounds.buttonOff, settingValue);  
+  } else if (strcasecmp(settingName, SETTING_VOICE_OFF) == 0) {
+    memset(Settings.sounds.voiceOff, 0, sizeof(Settings.sounds.voiceOff));
+    strcpy(Settings.sounds.voiceOff, settingValue);   
   } else if (strcasecmp(settingName, SETTING_STARTUP_SOUND) == 0) {
     memset(Settings.sounds.start, 0, sizeof(Settings.sounds.start));
     strcpy(Settings.sounds.start, settingValue);
@@ -589,7 +602,7 @@ boolean saveConfig() {
   root["debug"] = Config.debug;
   root["echo"] = Config.echo;
   root["input"] = Config.input;
-  root["baud"] = Config.baud | 9600;
+  root["baud"] = Config.baud;
 
   JsonArray& buttons = root.createNestedArray("buttons");
   buttons.add(Config.buttons[0]);
@@ -635,7 +648,9 @@ char *settingsToString(char result[], const boolean pretty = false)
   sounds["dir"] = Settings.sounds.dir;
   sounds["start"] = Settings.sounds.start;
   sounds["button"] = Settings.sounds.button;
-  
+  sounds["buttonOff"] = Settings.sounds.buttonOff;
+  sounds["voiceOff"] = Settings.sounds.voiceOff;
+
   JsonObject& loop = root.createNestedObject("loop");
   loop["dir"] = Settings.loop.dir;
   loop["file"] = Settings.loop.file;
@@ -662,7 +677,7 @@ char *settingsToString(char result[], const boolean pretty = false)
   effects_chorus["voices"] = Settings.effects.chorus.voices;
   effects_chorus["delay"] = Settings.effects.chorus.delay;
   effects_chorus["enabled"] = Settings.effects.chorus.enabled;
-  
+
   JsonObject& effects_flanger = effects.createNestedObject("flanger");
   effects_flanger["delay"] = Settings.effects.flanger.delay;
   effects_flanger["offset"] = Settings.effects.flanger.offset;
@@ -675,7 +690,7 @@ char *settingsToString(char result[], const boolean pretty = false)
   effects_shifter["speed"] = Settings.effects.shifter.speed;
   effects_shifter["range"] = Settings.effects.shifter.range;
   effects_shifter["enabled"] = Settings.effects.shifter.enabled;
-  
+
   effects["noise"] = Settings.effects.noise;
   effects["mute"] = Settings.effects.mute;
 
@@ -699,7 +714,7 @@ char *settingsToString(char result[], const boolean pretty = false)
   JsonArray& buttons = glove.createNestedArray("buttons");
 
   char *button;
-  
+
   JsonArray& buttons_0 = buttons.createNestedArray();
   button = Settings.glove.ControlButtons[0].buttons[0].getSettings();
   buttons_0.add(button);
@@ -764,12 +779,12 @@ boolean saveSettings(const char *src, const boolean backup = true)
   }
   // add profiles path to file name
   char srcFileName[30];
-  strcpy(srcFileName, PROFILES_DIR);
+  strcpy(srcFileName, Config.profile_dir);
   strcat(srcFileName, filename);
   debug(F("Settings file path: %s\n"), srcFileName);
   if (backup == true) {
     char backupfile[30];
-    strcpy(backupfile, PROFILES_DIR);
+    strcpy(backupfile, Config.profile_dir);
     strcat(backupfile, filename);
     addBackupExt(backupfile);
     debug(F("Backup File: %s\n"), backupfile);
@@ -821,7 +836,7 @@ boolean setDefaultProfile(char *filename)
     addFileExt(filename);
     debug(F("Setting default profile to %s\n"), filename);
     char profiles[MAX_FILE_COUNT][FILENAME_SIZE];
-    int total = listFiles(PROFILES_DIR, profiles, MAX_FILE_COUNT, FILE_EXT, false, false);
+    int total = listFiles(Config.profile_dir, profiles, MAX_FILE_COUNT, FILE_EXT, false, false);
     boolean result = false;
     boolean found = false;
     for (int i = 0; i < total; i++) {
@@ -856,7 +871,7 @@ boolean deleteProfile(char *filename)
   boolean result = false;
   addFileExt(filename);
   char path[SETTING_ENTRY_MAX];
-  strcpy(path, PROFILES_DIR);
+  strcpy(path, Config.profile_dir);
   strcat(path, filename);
   debug(F("Deleting file %s\n"), path);
   // can't delete current profile
@@ -888,7 +903,6 @@ void loadSettings(char *filename, Settings_t *settings, const boolean nameOnly)
   if (ret == NULL) {
     addFileExt(filename);
   }
-  strlcpy(settings->file, filename, sizeof(settings->file));
   
   // pre-shifter -> const size_t bufferSize = 6*JSON_ARRAY_SIZE(2) + JSON_ARRAY_SIZE(5) + JSON_ARRAY_SIZE(6) + 4*JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(3) + 3*JSON_OBJECT_SIZE(4) + JSON_OBJECT_SIZE(5) + JSON_OBJECT_SIZE(8) + JSON_OBJECT_SIZE(9) + 780;
   // with shifter
@@ -896,7 +910,7 @@ void loadSettings(char *filename, Settings_t *settings, const boolean nameOnly)
   DynamicJsonBuffer jsonBuffer(JSON_BUFFER_SIZE);
   
   char srcFileName[27];
-  strcpy(srcFileName, PROFILES_DIR);
+  strcpy(srcFileName, Config.profile_dir);
   strcat(srcFileName, filename);
 
   debug(F("Loading settings file: %s\n"), srcFileName);
@@ -905,11 +919,14 @@ void loadSettings(char *filename, Settings_t *settings, const boolean nameOnly)
 
   if (!file) {
     debug(F("Error reading file %s\n"), srcFileName);
+    return;
   } else {
     debug(F("Opened %s\n"), srcFileName);
   }
-  
+
+  debug(F("Parsing file\n"));
   JsonObject& root = jsonBuffer.parseObject(file);
+  debug(F("After file parse\n"));
 
   if (!root.success()) {
     debug(F("ERROR PARSING SETTINGS FILE!\n"));
@@ -920,6 +937,15 @@ void loadSettings(char *filename, Settings_t *settings, const boolean nameOnly)
   
   file.close();
 
+  // reset settings object ONLY if not just fetching
+  // the name of the settings file
+  if (!nameOnly) {
+    settings->reset();
+  }
+
+  // reset effects processors
+  
+  strlcpy(settings->file, filename, sizeof(settings->file));
   strlcpy(settings->name, root["name"], sizeof(settings->name)); // "aaaaaaaaaaaaaaaaaaaa"
 
   if (nameOnly) {
@@ -945,11 +971,15 @@ void loadSettings(char *filename, Settings_t *settings, const boolean nameOnly)
   JsonObject& sounds = root["sounds"];
   strlcpy(settings->sounds.dir, sounds["dir"], sizeof(settings->sounds.dir));
   strlcpy(settings->sounds.start, sounds["start"] | "", sizeof(settings->sounds.start));
-  strlcpy(settings->sounds.button, sounds["button"], sizeof(settings->sounds.button)); // "aaaaaaaa.aaa"
+  strlcpy(settings->sounds.button, sounds["button"] | "*", sizeof(settings->sounds.button)); // "aaaaaaaa.aaa"
+  strlcpy(settings->sounds.buttonOff, sounds["buttonOff"] | "*", sizeof(settings->sounds.buttonOff)); // "aaaaaaaa.aaa"
+  strlcpy(settings->sounds.voiceOff, sounds["voiceOff"] | "*", sizeof(settings->sounds.voiceOff)); // "aaaaaaaa.aaa"
 
   debug(F("Sounds.dir: %s\n"), settings->sounds.dir);
   debug(F("Sounds.start: %s\n"), settings->sounds.start);
   debug(F("Sounds.button: %s\n"), settings->sounds.button);
+  debug(F("Sounds.buttonOff: %s\n"), settings->sounds.buttonOff);
+  debug(F("Sounds.voiceOff: %s\n"), settings->sounds.voiceOff);
   
   JsonObject& loop = root["loop"];
   strlcpy(settings->loop.dir, loop["dir"], sizeof(settings->loop.dir)); // "/aaaaaaaa/"

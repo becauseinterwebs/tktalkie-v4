@@ -60,7 +60,7 @@ char *arrayToStringJson(char result[], const char arr[][14], int len)
 byte getCommand(const char cmd[14])
 {
   
-  char commands[38][12] = { 
+  char commands[39][12] = { 
     "debug", 
     "echo", 
     "default", 
@@ -98,7 +98,8 @@ byte getCommand(const char cmd[14])
     "mem",
     "beep", 
     "berp",
-    "show"
+    "show",
+    "profile_dir"
   };
 
   byte min   = 0;

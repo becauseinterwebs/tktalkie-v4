@@ -21,7 +21,7 @@ class VirtualButton
     char *getSettings();
   private:
     byte _type;
-    char _sound[12];
+    char _sound[14];
     void setup();
 };
 
