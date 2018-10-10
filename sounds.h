@@ -198,7 +198,7 @@ void addSoundEffect()
   byte rnd = 0;
   byte count = 0;
   rnd = App.lastRnd;
-  while (rnd == App.lastRnd && count < 50) {
+  while (rnd == App.lastRnd && count < 50) { 
    rnd = random(0, Settings.effects.count);
    count++;
   }

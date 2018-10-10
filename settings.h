@@ -618,7 +618,7 @@ boolean saveConfig() {
     file.close();
     return false;
   } else {
-    debug(F("Config file saved."));
+    debug(F("Config file saved.\n"));
   }
 
   // Close the file (File's destructor doesn't close the file)
@@ -791,6 +791,7 @@ boolean saveSettings(const char *src, const boolean backup = true)
     File bakFile = openFile(backupfile, FILE_WRITE);
     File srcFile = openFile(srcFileName, FILE_READ);
     if (bakFile && srcFile) {
+      debug(F("Writing contents to backup file %s\n"), backupfile);
       char c;
       while (srcFile.available()) {
         c = srcFile.read();
@@ -809,12 +810,13 @@ boolean saveSettings(const char *src, const boolean backup = true)
     }
   }
   // now save file
-  debug(F("Save to: %s\n"), srcFileName);
+  debug(F("Saving profile to: %s\n"), srcFileName);
   
  File newFile = openFile(srcFileName, FILE_WRITE);
   if (newFile) {
-    char buffer[1600];
+    char buffer[JSON_BUFFER_SIZE];
     char* p = settingsToString(buffer, true);
+    debug(F("Writing contents..."));
     newFile.print(p);
     newFile.close();
     //free(p);
@@ -929,7 +931,7 @@ void loadSettings(char *filename, Settings_t *settings, const boolean nameOnly)
   debug(F("After file parse\n"));
 
   if (!root.success()) {
-    debug(F("ERROR PARSING SETTINGS FILE!\n"));
+    debug(F("ERROR PARSING SETTINGS FILE %s!\n"), srcFileName);
     return;
   } else {
     debug(F("Parsed settings file OK\n"));

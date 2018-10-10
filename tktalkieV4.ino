@@ -1048,26 +1048,6 @@ void run() {
                 }  
               }
               break; 
-            case BUTTON_SHIFT_RANGE_UP:
-              {
-                
-              }
-              break;
-            case BUTTON_SHIFT_RANGE_DOWN:
-              {
-                  
-              }
-              break;
-            case BUTTON_SHIFT_SPEED_UP:
-              {
-                
-              }
-              break;
-            case BUTTON_SHIFT_SPEED_DOWN:
-              {
-                  
-              }
-              break;
           }
         }
          

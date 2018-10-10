@@ -29,10 +29,6 @@
 #define BUTTON_DRY_DOWN         17  // Dry gain down
 #define BUTTON_EFFECTS_UP       18  // Effects gain up
 #define BUTTON_EFFECTS_DOWN     19  // Effects gain down
-#define BUTTON_SHIFT_RANGE_UP   20  // Voice Shifter range up
-#define BUTTON_SHIFT_RANGE_DOWN 21  // Voice Shifter range down
-#define BUTTON_SHIFT_SPEED_UP   22  // Voice Shifter speed up
-#define BUTTON_SHIFT_SPEED_DOWN 23  // Voice Shifter speed down
 
 /***********************
  * Command Mapping
