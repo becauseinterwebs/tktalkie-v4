@@ -3,8 +3,8 @@
  */
 
 // version flag
-#define VERSION     4.0
-#define MIN_APP_VER 2.0
+#define VERSION     4.20
+#define MIN_APP_VER 2.00
 
 /***************************
    BUTTON TYPE VALUES
@@ -84,8 +84,9 @@
 #define SETTING_HIPASS          "highpass"
 #define SETTING_MIC             "mic"
 #define SETTING_BUTTON_ON       "button_click"
-#define SETTING_BUTTON_OFF      "button_off"
+#define SETTING_BUTTON_OFF      "button_release"
 #define SETTING_VOICE_OFF       "voice_off"
+#define SETTING_VOICE_ON        "voice_on"
 #define SETTING_STARTUP_SOUND   "startup_sound"
 #define SETTING_LOOP_FILE       "loop_file"
 #define SETTING_NOISE_GAIN      "noise_gain"
@@ -131,6 +132,8 @@
 #define MAX_GAIN     10
 #define MAX_FILENAME 14
 
+#define PTT_UNSET 254
+
 #define GRANULAR_MEMORY_SIZE 2048  // enough for 290 ms at 44.1 kHz
 int16_t granularMemory[GRANULAR_MEMORY_SIZE];
 
@@ -155,7 +158,21 @@ int16_t granularMemory[GRANULAR_MEMORY_SIZE];
 #define FX_DELAY       16
 #define FILENAME_SIZE  14
 
-#define CONFIG_FILE   "CONFIG.TXT"
+#define DEFAULT_EFFECTS_DIR "/effects/"
+#define DEFAULT_SOUNDS_DIR  "/sounds/"
+#define DEFAULT_LOOPS_DIR   "/loops/"
+#define DEFAULT_GLOVE_DIR   "/glove/"
+#define DEFAULT_PROFILE_DIR "/profiles/"
+
+#define RANDOM        "*"
+#define BLANK         ""
+#define CMD_SEPARATOR "|"
+#define FWD_SLASH     "/"
+
+#define DEFAULT_SLEEP_SOUND   "SLEEP.WAV"
+#define DEFAULT_STARTUP_SOUND "STARTUP.WAV"
+#define DEFAULT_PROFILE       "DEFAULT.TXT"
+#define CONFIG_FILE           "CONFIG.TXT"
 
 /**
  * OPERATIONAL STATES - Used for tracking at what stage the app is currently running
@@ -179,13 +196,13 @@ struct Shifter_t {
 };
 
 struct Loop_t {
-  char    dir[MAX_FILENAME]   = "/loops/";
-  char    file[MAX_FILENAME]  = "";
+  char    dir[MAX_FILENAME]   = DEFAULT_LOOPS_DIR;
+  char    file[MAX_FILENAME]  = BLANK;
   boolean mute      = true;
   float   volume    = 1;  
   void reset() {
-    strcpy(dir, "/loops/");
-    strcpy(file, "");
+    strcpy(dir, DEFAULT_LOOPS_DIR);
+    strcpy(file,BLANK);
     mute = true;
     volume = 1;
   }
@@ -207,17 +224,19 @@ struct Voice_t {
 };
 
 struct Sounds_t {
-  char dir[MAX_FILENAME]       = "/sounds/";
-  char start[MAX_FILENAME]     = "STARTUP.WAV";
-  char button[MAX_FILENAME]    = "*";
-  char buttonOff[MAX_FILENAME] = "*";
-  char voiceOff[MAX_FILENAME]  = "*";
+  char dir[MAX_FILENAME]       = DEFAULT_SOUNDS_DIR;
+  char start[MAX_FILENAME]     = DEFAULT_STARTUP_SOUND;
+  char button[MAX_FILENAME]    = RANDOM;
+  char buttonOff[MAX_FILENAME] = RANDOM;
+  char voiceOn[MAX_FILENAME]   = BLANK;
+  char voiceOff[MAX_FILENAME]  = RANDOM;
   void reset() {
-    strcpy(dir, "/sounds/");
-    strcpy(start, "");
-    strcpy(button, "*");
-    strcpy(buttonOff, "*");
-    strcpy(voiceOff, "*");
+    strcpy(dir, DEFAULT_SOUNDS_DIR);
+    strcpy(start, BLANK);
+    strcpy(button, RANDOM);
+    strcpy(buttonOff, RANDOM);
+    strcpy(voiceOff, RANDOM);
+    strcpy(voiceOn, BLANK);
   }
 };
 
@@ -258,8 +277,9 @@ struct Bitcrusher_t {
   }
 };
 
+
 struct Effects_t {
-  char          dir[MAX_FILENAME]   = "/effects/";
+  char          dir[MAX_FILENAME]   = DEFAULT_EFFECTS_DIR;
   float         volume    = 1.0000;
   byte          highpass  = 1;
   float         noise     = 0.0140;
@@ -271,7 +291,7 @@ struct Effects_t {
   char          files[MAX_FILE_COUNT][MAX_FILENAME];
   byte          count;
   void reset() {
-    strcpy(dir, "/effects/");
+    strcpy(dir, DEFAULT_EFFECTS_DIR);
     bitcrusher.reset();
     chorus.reset();
     flanger.reset();
@@ -292,20 +312,22 @@ struct Eq_t {
 
 struct Sleep_t {
   unsigned int  timer     = 0;
-  char          file[MAX_FILENAME]  = "SLEEP.WAV";  
+  char          file[MAX_FILENAME]  = DEFAULT_SLEEP_SOUND;  
   void reset() {
     timer = 0;
-    strcpy(file, "SLEEP.WAV");
+    strcpy(file, DEFAULT_SLEEP_SOUND);
   }
 };
 
 struct Glove_t {
-  char dir[MAX_FILENAME] = "/glove/";
+  char dir[MAX_FILENAME] = DEFAULT_GLOVE_DIR;
   char settings[6][30] = { "0","0","0","0","0","0" };
+  char files[MAX_FILE_COUNT][MAX_FILENAME];
+  byte count;
   // This could be turned into a management class, but there is not a lot of stuff to do with it...so....
   ControlButton ControlButtons[6] = { ControlButton(), ControlButton(), ControlButton(), ControlButton(), ControlButton(), ControlButton() }; 
   void reset() {
-    strcpy(dir, "/glove/");
+    strcpy(dir, DEFAULT_GLOVE_DIR);
     for (byte i = 0; i < 6; i++) {
       strcpy(settings[i], "0");
       ControlButtons[i].reset();
@@ -328,7 +350,7 @@ struct Volume_t {
 
 struct Settings_t {
   char      name[25] = "Default Profile";
-  char      file[MAX_FILENAME] = "DEFAULT.TXT";
+  char      file[MAX_FILENAME] = DEFAULT_PROFILE;
   Volume_t  volume;
   Loop_t    loop;
   Voice_t   voice;
@@ -352,8 +374,8 @@ struct Settings_t {
 } Settings;
 
 struct Config_t {
-  char profile[MAX_FILENAME] = "DEFAULT.TXT";
-  char profile_dir[MAX_FILENAME] = "/profiles/";
+  char profile[MAX_FILENAME] = DEFAULT_PROFILE;
+  char profile_dir[MAX_FILENAME] = DEFAULT_PROFILE_DIR;
   // These define the pins the (up to) 6 control buttons can be connected to
 // NOTE:  Only digital pins can be used for waking:
 //        2,4,6,7,9,10,11,13,16,21,22,26,30,33
@@ -373,7 +395,8 @@ struct App_t {
   boolean button_initialized  = false;        // flag that lets us know if the PTT has been pushed or not to go into PTT mode
   boolean ble_connected       = false;        // flag to indicate whether a remote app is connected or not
   boolean muted               = false;        // flag to indicate whether all sounds should be muted
-  byte    lastRnd             = -1;           // Keeps track of the last file played so that it is different each time
+  byte    lastRnd             = -1;           // Keeps track of the last random sound effects file played so that it is different each time
+  byte    lastGloveRnd        = -1;           // Keeps track of the last random sound file played via the sound glove so that it is different each time
   byte    wake_button         = 255;
   byte    ptt_button          = 254;
   char    device_id[50];

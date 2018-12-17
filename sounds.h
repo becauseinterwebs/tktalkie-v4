@@ -87,7 +87,7 @@ void loopOn()
  */
 void loadSoundEffects() 
 {
-  if (strcasecmp(Settings.effects.dir, "") == 0) {
+  if (strcasecmp(Settings.effects.dir, BLANK) == 0) {
     Settings.effects.count = 0;
     debug(F("No effects directory specified"));
     return;
@@ -97,11 +97,26 @@ void loadSoundEffects()
 }
 
 /***
+ * Read the contents of the SD card and put any files ending with ".WAV" 
+ * into the array.  It will recursively search directories.  
+ */
+void loadGloveSounds() 
+{
+  if (strcasecmp(Settings.glove.dir, BLANK) == 0) {
+    Settings.glove.count = 0;
+    debug(F("No glove directory specified"));
+    return;
+  }
+  Settings.glove.count = listFiles(Settings.glove.dir, Settings.glove.files, MAX_FILE_COUNT, SOUND_EXT, false, false);
+  debug(F("%d Glove sounds loaded\n"), Settings.glove.count);
+}
+
+/***
  * Play the specified sound effect from the SD card
  */
 long playSoundFile(byte player, char *filename) 
 {
-  if (strcasecmp(filename, "") == 0) {
+  if (strcasecmp(filename, BLANK) == 0) {
     debug(F("Exit play sound -> blank file name\n"));
     return 0;
   }
@@ -137,12 +152,26 @@ long playSoundFile(byte player, char *filename)
  */
 unsigned long playGloveSound(const char *filename)
 {
-  if (strcasecmp(filename, "") == 0) {
+  if (strcasecmp(filename, BLANK) == 0) {
     return 0;
   }
   char buf[FILENAME_SIZE*2];
   strcpy(buf, Settings.glove.dir);
-  strcat(buf, filename);
+  // random sound from the glove directory
+  if (strcasecmp(filename, RANDOM) == 0) {
+    // generate a random number between 0 and the number of files read - 1
+    byte rnd = 0;
+    byte count = 0;
+    rnd = App.lastGloveRnd;
+    while (rnd == App.lastGloveRnd && count < 50) { 
+     rnd = random(0, Settings.glove.count);
+     count++;
+    }
+    App.lastGloveRnd = rnd;
+    strcat(buf, Settings.glove.files[rnd]);
+  } else {
+    strcat(buf, filename);
+  }
   return playSoundFile(EFFECTS_PLAYER, buf);
 }
 /**
@@ -150,7 +179,7 @@ unsigned long playGloveSound(const char *filename)
  */
 unsigned long playSound(const char *filename)
 {
-  if (strcasecmp(filename, "") == 0) {
+  if (strcasecmp(filename, BLANK) == 0) {
     return 0;
   }
   char buf[FILENAME_SIZE*2];
@@ -164,12 +193,13 @@ unsigned long playSound(const char *filename)
  */
 unsigned long playEffect(const char *filename)
 {
-  if (strcasecmp(filename, "") == 0) {
+  if (strcasecmp(filename, BLANK) == 0) {
     return 0;
   }
   char buf[FILENAME_SIZE*2];
   strcpy(buf, Settings.effects.dir);
   strcat(buf, filename);
+  debug(F("Play effect: %s"), buf);
   return playSoundFile(EFFECTS_PLAYER, buf);
 }
 
@@ -179,7 +209,7 @@ unsigned long playEffect(const char *filename)
 void playLoop() 
 {
   App.loopLength = 0;
-  if (strcasecmp(Settings.loop.file, "") != 0 && strlen(Settings.loop.file) > 0) {
+  if (strcasecmp(Settings.loop.file, BLANK) != 0 && strlen(Settings.loop.file) > 0) {
     char buf[FILENAME_SIZE*2];
     strcpy(buf, Settings.loop.dir);
     strcat(buf, Settings.loop.file);
@@ -213,7 +243,7 @@ void addSoundEffect()
 void playCommEffect(const char *sound)
 {
   if (Settings.effects.mute) return;
-  if (strcasecmp(sound, "*") == 0) {
+  if (strcasecmp(sound, RANDOM) == 0) {
     addSoundEffect();
   } else { 
     playEffect(sound);

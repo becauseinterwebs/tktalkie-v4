@@ -5,7 +5,7 @@
 void ConfigureButton(byte a) {
 
     if (a == App.ptt_button) {
-      App.ptt_button = 254;
+      App.ptt_button = PTT_UNSET;
     }
     if (a == App.wake_button) {
       App.wake_button = 255;  
@@ -235,6 +235,7 @@ void setLoopDir() {
 
 void setGloveDir() {
   fixPath(Settings.glove.dir);
+  loadGloveSounds();
 }
 
 void setLoopMute() {
@@ -348,7 +349,10 @@ void parseSetting(const char *settingName, char *settingValue)
     strcpy(Settings.sounds.buttonOff, settingValue);  
   } else if (strcasecmp(settingName, SETTING_VOICE_OFF) == 0) {
     memset(Settings.sounds.voiceOff, 0, sizeof(Settings.sounds.voiceOff));
-    strcpy(Settings.sounds.voiceOff, settingValue);   
+    strcpy(Settings.sounds.voiceOff, settingValue); 
+  } else if (strcasecmp(settingName, SETTING_VOICE_ON) == 0) {
+    memset(Settings.sounds.voiceOn, 0, sizeof(Settings.sounds.voiceOn));
+    strcpy(Settings.sounds.voiceOn, settingValue); 
   } else if (strcasecmp(settingName, SETTING_STARTUP_SOUND) == 0) {
     memset(Settings.sounds.start, 0, sizeof(Settings.sounds.start));
     strcpy(Settings.sounds.start, settingValue);
@@ -562,12 +566,12 @@ void parseSetting(const char *settingName, char *settingValue)
       }
   } else if (strcasecmp(settingName, SETTING_BUTTONS) == 0) {
       char *token, *ptr;
-      token = strtok_r(settingValue, "|", &ptr);
+      token = strtok_r(settingValue, CMD_SEPARATOR, &ptr);
       byte a = 0;
       while (token && a < 6) {
         strcpy(Settings.glove.settings[a], token);
         ConfigureButton(a);
-        token = strtok_r(NULL, "|", &ptr);
+        token = strtok_r(NULL, CMD_SEPARATOR, &ptr);
         a++;
       }
   }
@@ -639,60 +643,61 @@ char *settingsToString(char result[], const boolean pretty = false)
   root["name"] = Settings.name;
 
   JsonObject& volume = root.createNestedObject("volume");
-  volume["master"] = Settings.volume.master;
-  volume["microphone"] = Settings.volume.microphone;
-  volume["linein"] = Settings.volume.linein;
-  volume["lineout"] = Settings.volume.lineout;
+  volume["master"]            = Settings.volume.master;
+  volume["microphone"]        = Settings.volume.microphone;
+  volume["linein"]            = Settings.volume.linein;
+  volume["lineout"]           = Settings.volume.lineout;
 
   JsonObject& sounds = root.createNestedObject("sounds");
-  sounds["dir"] = Settings.sounds.dir;
-  sounds["start"] = Settings.sounds.start;
-  sounds["button"] = Settings.sounds.button;
-  sounds["buttonOff"] = Settings.sounds.buttonOff;
-  sounds["voiceOff"] = Settings.sounds.voiceOff;
-
+  sounds["dir"]               = Settings.sounds.dir;
+  sounds["start"]             = Settings.sounds.start;
+  sounds["button"]            = Settings.sounds.button;
+  sounds["buttonOff"]         = Settings.sounds.buttonOff;
+  sounds["voiceOn"]           = Settings.sounds.voiceOn;
+  sounds["voiceOff"]          = Settings.sounds.voiceOff;
+  
   JsonObject& loop = root.createNestedObject("loop");
-  loop["dir"] = Settings.loop.dir;
-  loop["file"] = Settings.loop.file;
-  loop["volume"] = Settings.loop.volume;
-  loop["mute"] = Settings.loop.mute;
+  loop["dir"]                 = Settings.loop.dir;
+  loop["file"]                = Settings.loop.file;
+  loop["volume"]              = Settings.loop.volume;
+  loop["mute"]                = Settings.loop.mute;
 
   JsonObject& voice = root.createNestedObject("voice");
-  voice["volume"] = Settings.voice.volume;
-  voice["dry"] = Settings.voice.dry;
-  voice["start"] = Settings.voice.start;
-  voice["stop"] = Settings.voice.stop;
-  voice["wait"] = Settings.voice.wait;
+  voice["volume"]             = Settings.voice.volume;
+  voice["dry"]                = Settings.voice.dry;
+  voice["start"]              = Settings.voice.start;
+  voice["stop"]               = Settings.voice.stop;
+  voice["wait"]               = Settings.voice.wait;
 
   JsonObject& effects = root.createNestedObject("effects");
-  effects["dir"] = Settings.effects.dir;
-  effects["volume"] = Settings.effects.volume;
-  effects["highpass"] = Settings.effects.highpass;
+  effects["dir"]              = Settings.effects.dir;
+  effects["volume"]           = Settings.effects.volume;
+  effects["highpass"]         = Settings.effects.highpass;
 
   JsonObject& effects_bitcrusher = effects.createNestedObject("bitcrusher");
-  effects_bitcrusher["bits"] = Settings.effects.bitcrusher.bits;
-  effects_bitcrusher["rate"] = Settings.effects.bitcrusher.rate;
+  effects_bitcrusher["bits"]  = Settings.effects.bitcrusher.bits;
+  effects_bitcrusher["rate"]  = Settings.effects.bitcrusher.rate;
 
   JsonObject& effects_chorus = effects.createNestedObject("chorus");
-  effects_chorus["voices"] = Settings.effects.chorus.voices;
-  effects_chorus["delay"] = Settings.effects.chorus.delay;
-  effects_chorus["enabled"] = Settings.effects.chorus.enabled;
+  effects_chorus["voices"]    = Settings.effects.chorus.voices;
+  effects_chorus["delay"]     = Settings.effects.chorus.delay;
+  effects_chorus["enabled"]   = Settings.effects.chorus.enabled;
 
   JsonObject& effects_flanger = effects.createNestedObject("flanger");
-  effects_flanger["delay"] = Settings.effects.flanger.delay;
-  effects_flanger["offset"] = Settings.effects.flanger.offset;
-  effects_flanger["depth"] = Settings.effects.flanger.depth;
-  effects_flanger["freq"] = Settings.effects.flanger.freq;
-  effects_flanger["enabled"] = Settings.effects.flanger.enabled;
+  effects_flanger["delay"]    = Settings.effects.flanger.delay;
+  effects_flanger["offset"]   = Settings.effects.flanger.offset;
+  effects_flanger["depth"]    = Settings.effects.flanger.depth;
+  effects_flanger["freq"]     = Settings.effects.flanger.freq;
+  effects_flanger["enabled"]  = Settings.effects.flanger.enabled;
 
   JsonObject& effects_shifter = effects.createNestedObject("shifter");
-  effects_shifter["length"] = Settings.effects.shifter.length;
-  effects_shifter["speed"] = Settings.effects.shifter.speed;
-  effects_shifter["range"] = Settings.effects.shifter.range;
-  effects_shifter["enabled"] = Settings.effects.shifter.enabled;
+  effects_shifter["length"]   = Settings.effects.shifter.length;
+  effects_shifter["speed"]    = Settings.effects.shifter.speed;
+  effects_shifter["range"]    = Settings.effects.shifter.range;
+  effects_shifter["enabled"]  = Settings.effects.shifter.enabled;
 
-  effects["noise"] = Settings.effects.noise;
-  effects["mute"] = Settings.effects.mute;
+  effects["noise"]  = Settings.effects.noise;
+  effects["mute"]   = Settings.effects.mute;
 
   JsonObject& eq = root.createNestedObject("eq");
   eq["active"] = Settings.eq.active;
@@ -769,7 +774,7 @@ boolean saveSettings(const char *src, const boolean backup = true)
 
   char filename[FILENAME_SIZE];
   boolean result = false;
-  if (strcasecmp(src, "") == 0) {
+  if (strcasecmp(src, BLANK) == 0) {
     strcpy(filename, Settings.file);
   } else {
     strcpy(filename, src);
@@ -972,16 +977,18 @@ void loadSettings(char *filename, Settings_t *settings, const boolean nameOnly)
   
   JsonObject& sounds = root["sounds"];
   strlcpy(settings->sounds.dir, sounds["dir"], sizeof(settings->sounds.dir));
-  strlcpy(settings->sounds.start, sounds["start"] | "", sizeof(settings->sounds.start));
-  strlcpy(settings->sounds.button, sounds["button"] | "*", sizeof(settings->sounds.button)); // "aaaaaaaa.aaa"
-  strlcpy(settings->sounds.buttonOff, sounds["buttonOff"] | "*", sizeof(settings->sounds.buttonOff)); // "aaaaaaaa.aaa"
-  strlcpy(settings->sounds.voiceOff, sounds["voiceOff"] | "*", sizeof(settings->sounds.voiceOff)); // "aaaaaaaa.aaa"
+  strlcpy(settings->sounds.start, sounds["start"] | BLANK, sizeof(settings->sounds.start));
+  strlcpy(settings->sounds.button, sounds["button"] | RANDOM, sizeof(settings->sounds.button)); // "aaaaaaaa.aaa"
+  strlcpy(settings->sounds.buttonOff, sounds["buttonOff"] | RANDOM, sizeof(settings->sounds.buttonOff)); // "aaaaaaaa.aaa"
+  strlcpy(settings->sounds.voiceOff, sounds["voiceOff"] | RANDOM, sizeof(settings->sounds.voiceOff)); // "aaaaaaaa.aaa"
+  strlcpy(settings->sounds.voiceOn, sounds["voiceOn"] | RANDOM, sizeof(settings->sounds.voiceOn)); // "aaaaaaaa.aaa"
 
   debug(F("Sounds.dir: %s\n"), settings->sounds.dir);
   debug(F("Sounds.start: %s\n"), settings->sounds.start);
   debug(F("Sounds.button: %s\n"), settings->sounds.button);
   debug(F("Sounds.buttonOff: %s\n"), settings->sounds.buttonOff);
   debug(F("Sounds.voiceOff: %s\n"), settings->sounds.voiceOff);
+  debug(F("Sounds.voiceOn: %s\n"), settings->sounds.voiceOn);
   
   JsonObject& loop = root["loop"];
   strlcpy(settings->loop.dir, loop["dir"], sizeof(settings->loop.dir)); // "/aaaaaaaa/"

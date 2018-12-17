@@ -103,7 +103,7 @@
  */
 boolean checkPTTButton() 
 {
-  if (App.ptt_button == 254) {
+  if (App.ptt_button == PTT_UNSET) {
     //debug(F("No PTT button specifed...returning\n"));
     return false;
   }
@@ -153,7 +153,7 @@ void startup()
     Config.buttons[4] = 0; // 5
     Config.buttons[5] = 0; // 6
   } else {
-    strlcpy(Config.profile, (root["profile"] | ""), sizeof(Config.profile)); // "123456789012"
+    strlcpy(Config.profile, (root["profile"] | BLANK), sizeof(Config.profile)); // "123456789012"
     strlcpy(Config.access_code, (root["access_code"] | "1138"), sizeof(Config.access_code)); // "1111111111111111111111111"
     strlcpy(Config.profile_dir, (root["profiles"] | "/profiles/"), sizeof(Config.profile_dir)); // "1111111111111111111111111"
     //Config.debug = ((root["debug"] | 0) == 1) ? true : false; // 1
@@ -176,7 +176,7 @@ void startup()
   debug(F("Got startup value Config.debug: %d\n"), Config.debug);
   debug(F("Got startup value Config.profile: %s\n"), Config.profile);
   debug(F("Got startup  value Config.echo: %d\n"), Config.echo);
-  if (strcasecmp(Config.input, "") == 0) {
+  if (strcasecmp(Config.input, BLANK) == 0) {
     strlcpy(Config.input, "BOTH", sizeof(Config.input));
   }
   debug(F("Got startup value Config.input: %s\n"), Config.input);
@@ -184,7 +184,7 @@ void startup()
   
   //strlcpy(Settings.file, Config.profile, sizeof(Settings.file));
   
-  if (strcasecmp(Config.profile, "") == 0) {
+  if (strcasecmp(Config.profile, BLANK) == 0) {
     // No profile specified, try to find one and load it
     char files[MAX_FILE_COUNT][FILENAME_SIZE];
     byte total = listFiles(Config.profile_dir, files, MAX_FILE_COUNT, FILE_EXT, false, false);
@@ -196,7 +196,7 @@ void startup()
     }
   }
 
-  if (strcasecmp(Config.profile, "") == 0) {
+  if (strcasecmp(Config.profile, BLANK) == 0) {
     debug(F("NO PROFILE FILE FOUND...USING DEFAULTS!\n"));
     strlcpy(Config.profile, "DEFAULT.TXT", sizeof(Config.profile));
   } else {
@@ -230,6 +230,8 @@ void startup()
   // apply the settings so we can do stuff
   applySettings();
 
+  voiceOff();
+  
   // set the volume, either by config or volume pot
   
   readVolume();
@@ -378,9 +380,9 @@ void run() {
     }
     
     // loop and serial command handlers
-    char cmd_key[15] = "";
-    char cmd_val[MAX_DATA_SIZE] = "";
-    char received[SETTING_ENTRY_MAX]    = "";
+    char cmd_key[15] = BLANK;
+    char cmd_val[MAX_DATA_SIZE] = BLANK;
+    char received[SETTING_ENTRY_MAX]    = BLANK;
 
     if (Serial.available() > 0) { 
       Serial.readBytesUntil('\n', received, MAX_DATA_SIZE);
@@ -401,9 +403,9 @@ void run() {
       // get other side of string after the '='
       val = strtok_r(NULL, "=", &buf);
       // extract device id, then "val" will hold the rest of the command
-      uid = strtok_r(val, "|", &buf2);
+      uid = strtok_r(val, CMD_SEPARATOR, &buf2);
       // if there is no device id sent...no soup for you!
-      if (uid == NULL || strcasecmp(uid, "") == 0) {
+      if (uid == NULL || strcasecmp(uid, BLANK) == 0) {
           App.ble_connected = true;
           debug(F("Invalid device id: %s\n"), uid);
           sendToApp("access", CONNECT_BAD_UID);
@@ -424,7 +426,7 @@ void run() {
               App.ble_connected = false;
           } else {
             // store the device id
-            if (strcasecmp(App.device_id, "") == 0) {
+            if (strcasecmp(App.device_id, BLANK) == 0) {
               strcpy(App.device_id, uid);
             }
             App.autoSleepMillis = 0;
@@ -433,7 +435,7 @@ void run() {
       }
     }
 
-    if (strcasecmp(cmd_key, "") != 0) {
+    if (strcasecmp(cmd_key, BLANK) != 0) {
         // translate character command into a number for 
         // faster processing
         byte cmdIdx = getCommand(cmd_key);
@@ -443,7 +445,7 @@ void run() {
                 // validate data received from mobile device!
                 char *pwd, *ver, *buf;
                 // get the access code
-                pwd = strtok_r(cmd_val, "|", &buf);
+                pwd = strtok_r(cmd_val, CMD_SEPARATOR, &buf);
                 debug(F("Received access code %s\n"), pwd);
                 if (pwd == NULL || strcmp(pwd, Config.access_code) != 0) {
                   debug(F("Invalid access code: %s\n"), pwd);
@@ -452,9 +454,9 @@ void run() {
                   App.ble_connected = false;
                 } else {
                   // get the version of the app accessing the device
-                  ver = strtok_r(NULL, "|", &buf);
+                  ver = strtok_r(NULL, CMD_SEPARATOR, &buf);
                   debug(F("Received app version %s\n"), ver);
-                  if (ver == NULL || strcasecmp(ver, "") == 0) {
+                  if (ver == NULL || strcasecmp(ver, BLANK) == 0) {
                     strcpy(ver, "0");
                   }
                   if (atof(ver) < MIN_APP_VER) {
@@ -491,15 +493,15 @@ void run() {
            case CMD_SAVE:
               {
                 char *pfile;
-                if (strcasecmp(cmd_val, "") != 0) {
+                if (strcasecmp(cmd_val, BLANK) != 0) {
                     char *ptr, *pname;
                     pfile = strtok_r(cmd_val, ";", &ptr);
-                    if (strcasecmp(pfile, "") != 0) {
+                    if (strcasecmp(pfile, BLANK) != 0) {
                       memset(Settings.file, 0, sizeof(Settings.file));
                       strcpy(Settings.file, pfile);
                     }
                     pname = strtok_r(NULL, ";", &ptr);
-                    if (strcasecmp(pname, "") != 0) {
+                    if (strcasecmp(pname, BLANK) != 0) {
                       memset(Settings.name, 0, sizeof(Settings.name));
                       strcpy(Settings.name, pname);
                     }
@@ -523,7 +525,7 @@ void run() {
               }
               break;
            case CMD_ACCESS_CODE:
-              if (strcasecmp(cmd_val, "") != 0) {
+              if (strcasecmp(cmd_val, BLANK) != 0) {
                 memset(Config.access_code, 0, sizeof(Config.access_code));
                 strlcpy(Config.access_code, cmd_val, sizeof(Config.access_code));
                 saveConfig();
@@ -538,7 +540,7 @@ void run() {
               saveConfig();
               break;
            case CMD_PROFILE_DIR:
-              if (strcasecmp(cmd_val, "") != 0) {
+              if (strcasecmp(cmd_val, BLANK) != 0) {
                 memset(Config.profile_dir, 0, sizeof(Config.profile_dir));
                 strcpy(Config.profile_dir, cmd_val);
                 saveConfig();
@@ -551,7 +553,7 @@ void run() {
               break;
            case CMD_DEFAULT:
               {
-                if (strcasecmp(cmd_val, "") == 0) {
+                if (strcasecmp(cmd_val, BLANK) == 0) {
                   strcpy(cmd_val, Settings.file);
                 }
                 char ret[16];
@@ -566,7 +568,7 @@ void run() {
               break;
            case CMD_DELETE:
               {
-                if (strcasecmp(cmd_val, "") != 0) {
+                if (strcasecmp(cmd_val, BLANK) != 0) {
                   char ret[FILENAME_SIZE];
                   if (deleteProfile(cmd_val)) {
                     strcpy(ret, "1;");
@@ -605,7 +607,7 @@ void run() {
               playGloveSound(cmd_val);
               break;
            case CMD_PLAY_LOOP:
-              if (strcasecmp(cmd_val, "") != 0) {
+              if (strcasecmp(cmd_val, BLANK) != 0) {
                 memset(Settings.loop.file, 0, sizeof(Settings.loop.file));
                 strcpy(Settings.loop.file, cmd_val);
                 playLoop();
@@ -638,7 +640,7 @@ void run() {
               App.muted = false;
               break;
            case CMD_BACKUP:
-              if (strcasecmp(cmd_val, "") == 0) {
+              if (strcasecmp(cmd_val, BLANK) == 0) {
                 strcpy(cmd_val, Settings.file);
               }
               addBackupExt(cmd_val);
@@ -656,14 +658,14 @@ void run() {
               break;
            case CMD_SETTINGS:
               {
-                Serial.println(F(""));
+                Serial.println(F(BLANK));
                 Serial.println(Settings.file);
                 Serial.println(F("--------------------------------------------------------------------------------"));
                 char buffer[JSON_BUFFER_SIZE];
                 char *p = settingsToString(buffer, true);
                 Serial.println(p);
                 Serial.println(F("--------------------------------------------------------------------------------"));
-                Serial.println(F(""));
+                Serial.println(F(BLANK));
               }
               break;
            case CMD_SHOW:
@@ -699,8 +701,8 @@ void run() {
                     strcpy(ext, FILE_EXT);
                     break;
                   case CMD_FILES:
-                    strcpy(path, "/");
-                    strcpy(ext, "");
+                    strcpy(path, FWD_SLASH);
+                    strcpy(ext, BLANK);
                     recurse = true;
                     echo = true;
                     break;
@@ -724,7 +726,7 @@ void run() {
                 char paths[MAX_FILE_COUNT][FILENAME_SIZE];
                 char buffer[1025];
                 // return a list of directories on the card
-                int count = listDirectories("/", paths);
+                int count = listDirectories(FWD_SLASH, paths);
                 char *dirs = arrayToStringJson(buffer, paths, count);
                 sendToApp(cmd_key, dirs);
               }
@@ -1053,7 +1055,7 @@ void run() {
          
     }  
 
-    if (App.ptt_button < 254 && App.button_initialized == false) {
+    if (App.ptt_button < PTT_UNSET && App.button_initialized == false) {
       App.button_initialized = checkPTTButton();
       if (App.button_initialized) {
         // turn voice on with background noise
@@ -1063,7 +1065,7 @@ void run() {
       Settings.glove.ControlButtons[App.ptt_button].update();
     }
     
-    if (App.ptt_button < 254 && App.button_initialized) {
+    if (App.ptt_button < PTT_UNSET && App.button_initialized) {
 
       float val = 0;
       
@@ -1142,9 +1144,10 @@ void run() {
 
              debug(F("Voice start: %4f\n"), val);
              
-            // If user is not currently App.speaking, then they just started talking :)
+            // If user is not currently speaking, then they just started talking :)
             if (App.speaking == false) {
-  
+
+              playCommEffect(Settings.sounds.voiceOn);
               voiceOn();
           
             }
