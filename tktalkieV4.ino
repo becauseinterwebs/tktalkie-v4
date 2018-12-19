@@ -2,7 +2,7 @@
  * TK TALKIE by TK-81113 (Brent Williams) <becauseinterwebs@gmail.com>
  * www.tktalkie.com / www.tk81113.com 
  * 
- * Version 4.0 (December 3, 2017)
+ * Version 4.2 (December 16, 2018)
  *
  * WhiteArmor.net User ID: lerxstrulz
  * 
@@ -23,6 +23,17 @@
  * 
  * WHAT'S NEW:
  * 
+ * v4.2 (12/17/18)
+ *  1.  Added ability to play random sound on PTT button release 
+ *      (previously only random or none)
+ *  2.  Added ability to play fixed, random or no sound when mic is
+ *      activated in VA mode (prevously no sound played.)
+ *  3.  Added ability to play fixed sound (previously only random or none)
+ *      when user stops talking in VA mode.
+ *  
+ * v4.1 (12/10/18)
+ *  1.  Misc bug fixes regarding loading profiles
+ *  
  * v4.0 (12/03/17)
  *  1.  Added Chorus and Flange processing for the voice channel.
  *  2.  Added a dry (unprocessed) voice channel.
