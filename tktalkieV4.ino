@@ -488,8 +488,8 @@ void run() {
               }
               break;
            case CMD_DISCONNECT:
-              App.ble_connected = false;
               sendToApp("disconnect", 1);
+              App.ble_connected = false;
               beep(2);
               memset(App.device_id, 0, sizeof(App.device_id));
               break;

@@ -26,20 +26,23 @@ ControlButton::ControlButton(byte buttonPin, byte interval)
 byte ControlButton::check()
 {
   this->_value = 0;
-  //if (this->_pin > 0) {
-    this->_button.update();
-    if (this->_button.fell()) {
-      elapsedMillis t = 0;
-      while (t < 350) {
-        this->_button.update();
-        if (this->_button.read() != 0) {
-          this->_value = 1;
-          return this->_value;
-        }
+  this->_button.update();
+  if (this->_button.fell()) {
+    boolean released = false;
+    elapsedMillis t = 0;
+    while (t < 350 && released == false) {
+      Serial.println(t);
+      this->_button.update();
+      if (this->_button.read() != 0) {
+        released = true;
+        this->_value = 1;
       }
+    }
+    if (released == false) {
       this->_value = 2;
     }
-  //}
+    Serial.println("");
+  }
   return this->_value;
 }
 
