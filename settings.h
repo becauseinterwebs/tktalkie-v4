@@ -595,10 +595,11 @@ boolean saveConfig() {
   }
 
   const size_t bufferSize = JSON_ARRAY_SIZE(6) + JSON_OBJECT_SIZE(7) + 120;
-  DynamicJsonBuffer jsonBuffer(bufferSize);
+  //DynamicJsonBuffer jsonBuffer(bufferSize);
+  DynamicJsonDocument root(bufferSize);
 
   // Parse the root object
-  JsonObject &root = jsonBuffer.createObject();
+  //JsonObject &root = jsonBuffer.createObject();
 
   // Set the values
   root["profile"] = Config.profile;
@@ -608,7 +609,8 @@ boolean saveConfig() {
   root["input"] = Config.input;
   root["baud"] = Config.baud;
 
-  JsonArray& buttons = root.createNestedArray("buttons");
+  //JsonArray& buttons = root.createNestedArray("buttons");
+  JsonArray buttons = root.createNestedArray("buttons");
   buttons.add(Config.buttons[0]);
   buttons.add(Config.buttons[1]);
   buttons.add(Config.buttons[2]);
@@ -617,14 +619,14 @@ boolean saveConfig() {
   buttons.add(Config.buttons[5]);
 
   // Serialize JSON to file
-  if (root.prettyPrintTo(file) == 0) {
+  size_t written = serializeJsonPretty(root, file);
+  if (written == 0) {
     debug(F("Failed to write to file"));
     file.close();
     return false;
   } else {
     debug(F("Config file saved.\n"));
   }
-
   // Close the file (File's destructor doesn't close the file)
   file.close();
   return true;
@@ -637,18 +639,19 @@ boolean saveConfig() {
 char *settingsToString(char result[], const boolean pretty = false) 
 {
 
-  DynamicJsonBuffer jsonBuffer(JSON_BUFFER_SIZE);
+  //DynamicJsonBuffer jsonBuffer(JSON_BUFFER_SIZE);
+  DynamicJsonDocument root(JSON_BUFFER_SIZE);
 
-  JsonObject& root = jsonBuffer.createObject();
+  //JsonObject& root = jsonBuffer.createObject();
   root["name"] = Settings.name;
 
-  JsonObject& volume = root.createNestedObject("volume");
+  JsonObject volume = root.createNestedObject("volume");
   volume["master"]            = Settings.volume.master;
   volume["microphone"]        = Settings.volume.microphone;
   volume["linein"]            = Settings.volume.linein;
   volume["lineout"]           = Settings.volume.lineout;
 
-  JsonObject& sounds = root.createNestedObject("sounds");
+  JsonObject sounds = root.createNestedObject("sounds");
   sounds["dir"]               = Settings.sounds.dir;
   sounds["start"]             = Settings.sounds.start;
   sounds["button"]            = Settings.sounds.button;
@@ -656,41 +659,41 @@ char *settingsToString(char result[], const boolean pretty = false)
   sounds["voiceOn"]           = Settings.sounds.voiceOn;
   sounds["voiceOff"]          = Settings.sounds.voiceOff;
   
-  JsonObject& loop = root.createNestedObject("loop");
+  JsonObject loop = root.createNestedObject("loop");
   loop["dir"]                 = Settings.loop.dir;
   loop["file"]                = Settings.loop.file;
   loop["volume"]              = Settings.loop.volume;
   loop["mute"]                = Settings.loop.mute;
 
-  JsonObject& voice = root.createNestedObject("voice");
+  JsonObject voice = root.createNestedObject("voice");
   voice["volume"]             = Settings.voice.volume;
   voice["dry"]                = Settings.voice.dry;
   voice["start"]              = Settings.voice.start;
   voice["stop"]               = Settings.voice.stop;
   voice["wait"]               = Settings.voice.wait;
 
-  JsonObject& effects = root.createNestedObject("effects");
+  JsonObject effects = root.createNestedObject("effects");
   effects["dir"]              = Settings.effects.dir;
   effects["volume"]           = Settings.effects.volume;
   effects["highpass"]         = Settings.effects.highpass;
 
-  JsonObject& effects_bitcrusher = effects.createNestedObject("bitcrusher");
+  JsonObject effects_bitcrusher = effects.createNestedObject("bitcrusher");
   effects_bitcrusher["bits"]  = Settings.effects.bitcrusher.bits;
   effects_bitcrusher["rate"]  = Settings.effects.bitcrusher.rate;
 
-  JsonObject& effects_chorus = effects.createNestedObject("chorus");
+  JsonObject effects_chorus = effects.createNestedObject("chorus");
   effects_chorus["voices"]    = Settings.effects.chorus.voices;
   effects_chorus["delay"]     = Settings.effects.chorus.delay;
   effects_chorus["enabled"]   = Settings.effects.chorus.enabled;
 
-  JsonObject& effects_flanger = effects.createNestedObject("flanger");
+  JsonObject effects_flanger = effects.createNestedObject("flanger");
   effects_flanger["delay"]    = Settings.effects.flanger.delay;
   effects_flanger["offset"]   = Settings.effects.flanger.offset;
   effects_flanger["depth"]    = Settings.effects.flanger.depth;
   effects_flanger["freq"]     = Settings.effects.flanger.freq;
   effects_flanger["enabled"]  = Settings.effects.flanger.enabled;
 
-  JsonObject& effects_shifter = effects.createNestedObject("shifter");
+  JsonObject effects_shifter = effects.createNestedObject("shifter");
   effects_shifter["length"]   = Settings.effects.shifter.length;
   effects_shifter["speed"]    = Settings.effects.shifter.speed;
   effects_shifter["range"]    = Settings.effects.shifter.range;
@@ -699,67 +702,67 @@ char *settingsToString(char result[], const boolean pretty = false)
   effects["noise"]  = Settings.effects.noise;
   effects["mute"]   = Settings.effects.mute;
 
-  JsonObject& eq = root.createNestedObject("eq");
+  JsonObject eq = root.createNestedObject("eq");
   eq["active"] = Settings.eq.active;
 
-  JsonArray& eq_bands = eq.createNestedArray("bands");
+  JsonArray eq_bands = eq.createNestedArray("bands");
   eq_bands.add(Settings.eq.bands[0]);
   eq_bands.add(Settings.eq.bands[1]);
   eq_bands.add(Settings.eq.bands[2]);
   eq_bands.add(Settings.eq.bands[3]);
   eq_bands.add(Settings.eq.bands[4]);
 
-  JsonObject& sleep = root.createNestedObject("sleep");
+  JsonObject sleep = root.createNestedObject("sleep");
   sleep["timer"] = Settings.sleep.timer;
   sleep["file"] = Settings.sleep.file;
 
-  JsonObject& glove = root.createNestedObject("glove");
+  JsonObject glove = root.createNestedObject("glove");
   glove["dir"] = Settings.glove.dir;
 
-  JsonArray& buttons = glove.createNestedArray("buttons");
+  JsonArray buttons = glove.createNestedArray("buttons");
 
   char *button;
 
-  JsonArray& buttons_0 = buttons.createNestedArray();
+  JsonArray buttons_0 = buttons.createNestedArray();
   button = Settings.glove.ControlButtons[0].buttons[0].getSettings();
   buttons_0.add(button);
   button = Settings.glove.ControlButtons[0].buttons[1].getSettings();
   buttons_0.add(button);
 
-  JsonArray& buttons_1 = buttons.createNestedArray();
+  JsonArray buttons_1 = buttons.createNestedArray();
   button = Settings.glove.ControlButtons[1].buttons[0].getSettings();
   buttons_1.add(button);
   button = Settings.glove.ControlButtons[1].buttons[1].getSettings();
   buttons_1.add(button);
 
-  JsonArray& buttons_2 = buttons.createNestedArray();
+  JsonArray buttons_2 = buttons.createNestedArray();
   button = Settings.glove.ControlButtons[2].buttons[0].getSettings();
   buttons_2.add(button);
   button = Settings.glove.ControlButtons[2].buttons[1].getSettings();
   buttons_2.add(button);
 
-  JsonArray& buttons_3 = buttons.createNestedArray();
+  JsonArray buttons_3 = buttons.createNestedArray();
   button = Settings.glove.ControlButtons[3].buttons[0].getSettings();
   buttons_3.add(button);
   button = Settings.glove.ControlButtons[3].buttons[1].getSettings();
   buttons_3.add(button);
 
-  JsonArray& buttons_4 = buttons.createNestedArray();
+  JsonArray buttons_4 = buttons.createNestedArray();
   button = Settings.glove.ControlButtons[4].buttons[0].getSettings();
   buttons_4.add(button);
   button = Settings.glove.ControlButtons[4].buttons[1].getSettings();
   buttons_4.add(button);
 
-  JsonArray& buttons_5 = buttons.createNestedArray();
+  JsonArray buttons_5 = buttons.createNestedArray();
   button = Settings.glove.ControlButtons[5].buttons[0].getSettings();
   buttons_5.add(button);
   button = Settings.glove.ControlButtons[5].buttons[1].getSettings();
   buttons_5.add(button);
 
   if (pretty == true) {
-    root.prettyPrintTo((char*)result, root.measurePrettyLength() + 1);
+    serializeJsonPretty(root, (char*)result, measureJsonPretty(root) + 1);
   } else {
-    root.printTo((char*)result, root.measureLength() + 1);
+    serializeJson(root, (char*)result, measureJson(root) + 1);
   }
 
   return result;
@@ -914,7 +917,8 @@ void loadSettings(char *filename, Settings_t *settings, const boolean nameOnly)
   // pre-shifter -> const size_t bufferSize = 6*JSON_ARRAY_SIZE(2) + JSON_ARRAY_SIZE(5) + JSON_ARRAY_SIZE(6) + 4*JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(3) + 3*JSON_OBJECT_SIZE(4) + JSON_OBJECT_SIZE(5) + JSON_OBJECT_SIZE(8) + JSON_OBJECT_SIZE(9) + 780;
   // with shifter
   //const size_t bufferSize = 6*JSON_ARRAY_SIZE(2) + JSON_ARRAY_SIZE(5) + JSON_ARRAY_SIZE(6) + 4*JSON_OBJECT_SIZE(2) + 3*JSON_OBJECT_SIZE(3) + 2*JSON_OBJECT_SIZE(4) + 2*JSON_OBJECT_SIZE(5) + 2*JSON_OBJECT_SIZE(9) + 830;
-  DynamicJsonBuffer jsonBuffer(JSON_BUFFER_SIZE);
+  //DynamicJsonBuffer jsonBuffer(JSON_BUFFER_SIZE);
+  DynamicJsonDocument root(JSON_BUFFER_SIZE);
   
   char srcFileName[27];
   strcpy(srcFileName, Config.profile_dir);
@@ -932,17 +936,24 @@ void loadSettings(char *filename, Settings_t *settings, const boolean nameOnly)
   }
 
   debug(F("Parsing file\n"));
-  JsonObject& root = jsonBuffer.parseObject(file);
+  //JsonObject& root = jsonBuffer.parseObject(file);
+  DeserializationError err = deserializeJson(root, file);
   debug(F("After file parse\n"));
 
+  file.close();
+  
+  if (err) {
+    debug(F("ERROR PARSING SETTINGS FILE %s! Error: %s\n"), srcFileName, err.c_str());
+    return;
+  }
+ /*
   if (!root.success()) {
     debug(F("ERROR PARSING SETTINGS FILE %s!\n"), srcFileName);
     return;
   } else {
     debug(F("Parsed settings file OK\n"));
   }
-  
-  file.close();
+ */ 
 
   // reset settings object ONLY if not just fetching
   // the name of the settings file
@@ -959,7 +970,7 @@ void loadSettings(char *filename, Settings_t *settings, const boolean nameOnly)
     return;
   }
   
-  JsonObject& volume = root["volume"];
+  JsonObject volume = root["volume"];
 
   char buf[30];
     
@@ -975,7 +986,7 @@ void loadSettings(char *filename, Settings_t *settings, const boolean nameOnly)
   debug(F("Volume.linein: %d\n"), settings->volume.linein);
   debug(F("Volume.lineout: %d\n"), settings->volume.lineout);
   
-  JsonObject& sounds = root["sounds"];
+  JsonObject sounds = root["sounds"];
   strlcpy(settings->sounds.dir, sounds["dir"], sizeof(settings->sounds.dir));
   strlcpy(settings->sounds.start, sounds["start"] | BLANK, sizeof(settings->sounds.start));
   strlcpy(settings->sounds.button, sounds["button"] | RANDOM, sizeof(settings->sounds.button)); // "aaaaaaaa.aaa"
@@ -990,7 +1001,7 @@ void loadSettings(char *filename, Settings_t *settings, const boolean nameOnly)
   debug(F("Sounds.voiceOff: %s\n"), settings->sounds.voiceOff);
   debug(F("Sounds.voiceOn: %s\n"), settings->sounds.voiceOn);
   
-  JsonObject& loop = root["loop"];
+  JsonObject loop = root["loop"];
   strlcpy(settings->loop.dir, loop["dir"], sizeof(settings->loop.dir)); // "/aaaaaaaa/"
   strlcpy(settings->loop.file, loop["file"], sizeof(settings->loop.file)); // "aaaaaaaa.aaa"
   settings->loop.volume = loop["volume"]; // 0.02
@@ -1002,7 +1013,7 @@ void loadSettings(char *filename, Settings_t *settings, const boolean nameOnly)
   debug(F("Loop.volume %s\n"), buf);
   debug(F("Loop.mute: %d\n"), settings->loop.mute);
   
-  JsonObject& voice = root["voice"];
+  JsonObject voice = root["voice"];
   settings->voice.volume = voice["volume"]; // 3
   settings->voice.dry = voice["dry"]; // 0
   settings->voice.start = voice["start"]; // 0.043
@@ -1019,7 +1030,7 @@ void loadSettings(char *filename, Settings_t *settings, const boolean nameOnly)
   debug(F("Voice.stop: %s\n"), buf);
   debug(F("Voice.wait: %d\n"), settings->voice.wait);
   
-  JsonObject& effects = root["effects"];
+  JsonObject effects = root["effects"];
   strlcpy(settings->effects.dir, effects["dir"], sizeof(settings->effects.dir)); // "/aaaaaaaa/"
   settings->effects.volume = effects["volume"]; // 1
   settings->effects.highpass = effects["highpass"]; // 1
@@ -1041,7 +1052,7 @@ void loadSettings(char *filename, Settings_t *settings, const boolean nameOnly)
   debug(F("Chorus.delay: %d\n"), settings->effects.chorus.delay);
   debug(F("Chorus.enabled: %d\n"), settings->effects.chorus.enabled);
   
-  JsonObject& effects_flanger = effects["flanger"];
+  JsonObject effects_flanger = effects["flanger"];
   settings->effects.flanger.delay = effects_flanger["delay"]; // 32
   settings->effects.flanger.offset = effects_flanger["offset"]; // 10
   settings->effects.flanger.depth = effects_flanger["depth"]; // 10
@@ -1055,7 +1066,7 @@ void loadSettings(char *filename, Settings_t *settings, const boolean nameOnly)
   debug(F("Flanger.freq: %s\n"), buf);
   debug(F("Flanger.enabled: %d\n"), settings->effects.flanger.enabled);
 
-  JsonObject& effects_shifter = effects["shifter"];
+  JsonObject effects_shifter = effects["shifter"];
   settings->effects.shifter.length = effects_shifter["length"]; // 1023
   settings->effects.shifter.speed = effects_shifter["speed"]; // 1023
   settings->effects.shifter.range = effects_shifter["range"]; // 1023
@@ -1069,7 +1080,7 @@ void loadSettings(char *filename, Settings_t *settings, const boolean nameOnly)
   
   settings->eq.active = root["eq"]["active"]; // 1
   
-  JsonArray& eq_bands = root["eq"]["bands"];
+  JsonArray eq_bands = root["eq"]["bands"];
   settings->eq.bands[0] = eq_bands[0]; // -0.2
   settings->eq.bands[1] = eq_bands[1]; // -0.4
   settings->eq.bands[2] = eq_bands[2]; // -0.35
@@ -1081,7 +1092,7 @@ void loadSettings(char *filename, Settings_t *settings, const boolean nameOnly)
 
   strlcpy(settings->glove.dir, root["glove"]["dir"], sizeof(settings->glove.dir));
   
-  JsonArray& glove_buttons = root["glove"]["buttons"];
+  JsonArray glove_buttons = root["glove"]["buttons"];
 
   for (byte i = 0; i < 6; i++) {
     strcpy(buf, glove_buttons[i][0]);
@@ -1125,5 +1136,3 @@ void applySettings() {
     ConfigureButton(i);
   }
 }
-
-

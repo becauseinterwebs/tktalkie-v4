@@ -1,4 +1,4 @@
-#include "Arduino.h"
+//#include "Arduino.h"
 #include "Bounce2.h"
 #include "ControlButton.h"
 
@@ -115,4 +115,3 @@ void ControlButton::reset() {
   this->_type = 0;
   this->_isPTT = false;
 }
-

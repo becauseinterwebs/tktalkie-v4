@@ -34,7 +34,7 @@ void upcase(char *str)
     return;
    }
    while (str[i] != '\0') {
-    toupper(str[i]);
+    str[i] = toupper(str[i]);
     i++;
    }
 }
@@ -133,4 +133,3 @@ byte getCommand(const char cmd[14])
   return (index);
   
 }
-

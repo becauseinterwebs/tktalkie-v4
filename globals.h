@@ -390,6 +390,7 @@ struct Config_t {
 
 struct App_t {
   byte    state               = STATE_NONE;   // tracks the operational state of the application
+  boolean SD_OK               = true;
   boolean silent              = false;        // used for PTT and to switch back to Voice Activated mode
   boolean speaking            = false;        // flag to let us know if the user is speaking or not
   boolean button_initialized  = false;        // flag that lets us know if the PTT has been pushed or not to go into PTT mode
@@ -415,6 +416,7 @@ struct App_t {
 } App;
 
 // GUItool: begin automatically generated code
+/*
 AudioInputI2S            i2s1;           //xy=59,147
 AudioEffectGranular      granular1;      //xy=175,91
 AudioAnalyzeRMS          rms1;           //xy=248,201
@@ -443,9 +445,50 @@ AudioConnection          patchCord12(effectsMixer, 0, voiceMixer, 3);
 AudioConnection          patchCord13(voiceMixer, 0, i2s2, 0);
 AudioConnection          patchCord14(voiceMixer, 0, i2s2, 1);
 AudioControlSGTL5000     audioShield;    //xy=113,275
+*/
+
+#include <Audio.h>
+#include <Wire.h>
+#include <SPI.h>
+#include <SD.h>
+#include <SerialFlash.h>
+
+// GUItool: begin automatically generated code
+AudioInputI2S            i2s1;           //xy=101,178
+AudioEffectGranular      granular1;      //xy=217,122
+AudioAnalyzeRMS          rms1;           //xy=290,232
+AudioEffectBitcrusher    bitcrusher1;    //xy=356,122
+AudioEffectGranular      granular2;      //xy=356,172
+AudioSynthNoisePink      pink1;          //xy=418,357
+AudioPlaySdWav           loopPlayer;     //xy=425,288
+AudioSynthWaveform       waveform1;      //xy=428,322
+AudioPlaySdWav           effectsPlayer;  //xy=434,253
+AudioEffectFlange        flange1;        //xy=491,123
+AudioEffectChorus        chorus1;        //xy=619,122
+AudioMixer4              effectsMixer;   //xy=636,295
+AudioMixer4              voiceMixer;     //xy=790,160
+AudioOutputI2S           i2s2;           //xy=955,160
+AudioConnection          patchCord1(i2s1, 0, granular1, 0);
+AudioConnection          patchCord2(i2s1, 0, granular2, 0);
+AudioConnection          patchCord3(i2s1, 1, rms1, 0);
+AudioConnection          patchCord4(granular1, bitcrusher1);
+AudioConnection          patchCord5(bitcrusher1, flange1);
+AudioConnection          patchCord6(granular2, 0, voiceMixer, 2);
+AudioConnection          patchCord7(pink1, 0, effectsMixer, 3);
+AudioConnection          patchCord8(loopPlayer, 0, effectsMixer, 1);
+AudioConnection          patchCord9(waveform1, 0, effectsMixer, 2);
+AudioConnection          patchCord10(effectsPlayer, 0, effectsMixer, 0);
+AudioConnection          patchCord11(flange1, chorus1);
+AudioConnection          patchCord12(chorus1, 0, voiceMixer, 0);
+AudioConnection          patchCord13(effectsMixer, 0, voiceMixer, 3);
+AudioConnection          patchCord14(voiceMixer, 0, i2s2, 0);
+AudioConnection          patchCord15(voiceMixer, 0, i2s2, 1);
+AudioControlSGTL5000     audioShield;    //xy=155,306
+// GUItool: end automatically generated code
+
+
 // GUItool: end automatically generated code
 
 SnoozeDigital snoozeDigital;
 SnoozeAudio   snoozeAudio;
 SnoozeBlock config_teensy3x(snoozeDigital, snoozeAudio);
-
