@@ -124,7 +124,13 @@ void setup()
   //analogReference(DEFAULT);
   //analogReadResolution(12);
   //analogReadAveraging(32);
-  
+
+/*
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, LOW);
+  delay(250);
+  digitalWrite(LED_BUILTIN, HIGH);
+ */ 
   App.state = STATE_BOOTING;
   
   // Serial connection for debugging

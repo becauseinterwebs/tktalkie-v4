@@ -88,7 +88,7 @@ void gotoSleep() {
   delay(l+250);
   SLEEP:
     Settings.glove.ControlButtons[App.wake_button].update();
-    pinMode(LED_BUILTIN, OUTPUT);
+    //pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, LOW);
     elapsedMillis timeout = 0;
     while (digitalRead(LED_BUILTIN) > 0 && timeout < 2000) {
@@ -138,9 +138,9 @@ void startup()
     Config.baud  = 9600;
     strlcpy(Config.input,"BOTH", sizeof(Config.input)); // "both"
     Config.echo = 1;
-    Config.buttons[0] = 2; // 1
-    Config.buttons[1] = 3; // 2
-    Config.buttons[2] = 4; // 3
+    Config.buttons[0] = 0; // 1
+    Config.buttons[1] = 0; // 2
+    Config.buttons[2] = 0; // 3
     Config.buttons[3] = 0; // 4
     Config.buttons[4] = 0; // 5
     Config.buttons[5] = 0; // 6

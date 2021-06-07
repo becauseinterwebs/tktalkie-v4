@@ -277,6 +277,7 @@ float readVolume()
  */
 void voiceOff() 
 {
+  //digitalWrite(LED_BUILTIN, LOW);
   App.autoSleepMillis = 0;
   App.speaking = false;
   App.silent = false;
@@ -310,4 +311,5 @@ void voiceOn()
   voiceMixer.gain(0, Settings.voice.volume);
   voiceMixer.gain(1, Settings.voice.volume);
   voiceMixer.gain(2, Settings.voice.dry);
+  //digitalWrite(LED_BUILTIN, HIGH);
 }
