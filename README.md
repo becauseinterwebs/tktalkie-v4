@@ -80,6 +80,8 @@ V3.0 (4/10/2017)
 
 ### PUBLIC RELEASE June 7, 2021
 
+*NOTICE!* This version of the firmware is made to work with the Teensy 3.2.  For a version that supports Teensy 4.0, please see the [v5 repository](https://github.com/becauseinterwebs/TKTalkie-V5).
+
 This is the latest version of the TK-Talkie firmware. Since I have had plans to vastly improve it for probably 2 years now but can just never find the time to actually do it due to what seems like an ever busier life and career, it's being released in the hopes that these improvements can be made by the community. This is long overdue, anyway. I was wanting to get this to a really good place before doing so, but like I said above, that has just not materialized. So here you go...warts and all!
 
 ## About
