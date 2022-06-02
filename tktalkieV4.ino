@@ -2,7 +2,7 @@
  * TK TALKIE by TK-81113 (Brent Williams) <becauseinterwebs@gmail.com>
  * www.tktalkie.com / www.tk81113.com 
  * 
- * Version 4.3
+ * Version 4.4
  *
  * WhiteArmor.net User ID: lerxstrulz
  * 
@@ -23,6 +23,12 @@
  * 
  * WHAT'S NEW:
  * 
+ * v4.4 (06/02/2022)
+ *  1. Added check for wake button in sleep check.  If no wake button is programmed,
+ *     it will not go to sleep.
+ *  2. Added sleep timeout reset to button press events (previously only on voice events.)
+ *  3. Added audio interrupt calls for file operations
+ *  
  * v4.3 (04/29/18)
  *  1.  Reorganized include files for easier management. 
  *  2.  Upgraded ArduinoJson to version 6.

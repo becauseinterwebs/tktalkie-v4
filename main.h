@@ -163,6 +163,7 @@ void startup()
     Config.buttons[5] = buttons[5]; // 6
   }
 
+  debug(F("Got startup  value Config.baud: %d\n"), Config.baud);
   debug(F("Got startup value Config.debug: %d\n"), Config.debug);
   debug(F("Got startup value Config.profile: %s\n"), Config.profile);
   debug(F("Got startup  value Config.echo: %d\n"), Config.echo);
@@ -286,7 +287,7 @@ void run() {
     } else {
       App.muteLoopMillis = 0;
     }
-    
+
     // loop and serial command handlers
     char cmd_key[15] = BLANK;
     char cmd_val[MAX_DATA_SIZE] = BLANK;
@@ -312,6 +313,16 @@ void run() {
       val = strtok_r(NULL, "=", &buf);
       // extract device id, then "val" will hold the rest of the command
       uid = strtok_r(val, CMD_SEPARATOR, &buf2);
+      if (uid != NULL) {
+        debug(F("Received UID %s\n"), uid);
+      } else {
+        debug(F("Received NULL UID!"));
+      }
+      if (App.device_id != NULL) {
+        debug(F("Current device id: %s\n"), App.device_id);
+      } else {
+        debug(F("Current device id is NULL"));
+      }
       // if there is no device id sent...no soup for you!
       if (uid == NULL || strcasecmp(uid, BLANK) == 0) {
           App.ble_connected = true;
@@ -329,9 +340,9 @@ void run() {
               // this is not the same user...
               debug(F("Device in use\n"));
               memset(cmd_key, 0, sizeof(cmd_key));
-              App.ble_connected = true;
-              sendToApp("access", CONNECT_IN_USE);
-              App.ble_connected = false;
+              //App.ble_connected = true;
+              //sendToApp("access", CONNECT_IN_USE);
+              //App.ble_connected = false;
           } else {
             // store the device id
             if (strcasecmp(App.device_id, BLANK) == 0) {
@@ -385,6 +396,7 @@ void run() {
               }
               break;
            case CMD_DISCONNECT:
+              debug(F("Sending discconnect to app"));
               sendToApp("disconnect", 1);
               App.ble_connected = false;
               beep(2);
@@ -664,7 +676,7 @@ void run() {
         }
 
     }
-    
+
     // clear command buffers
     memset(cmd_key, 0, sizeof(cmd_key));
     memset(cmd_val, 0, sizeof(cmd_val));         
@@ -684,6 +696,8 @@ void run() {
           }
 
           sendButtonPress(i, whichButton);
+
+          App.autoSleepMillis = 0;
         
           switch(btype) {
             // Sound button
@@ -969,10 +983,10 @@ void run() {
         // turn voice on with background noise
         voiceOn();
       }
-    } else {
+    } else if (App.ptt_button < PTT_UNSET) {
       Settings.glove.ControlButtons[App.ptt_button].update();
     }
-    
+
     if (App.ptt_button < PTT_UNSET && App.button_initialized) {
 
       float val = 0;
@@ -1097,7 +1111,11 @@ void run() {
   }
 
   // Sleep mode check
-  if (Settings.sleep.timer > 0 && (App.autoSleepMillis >= (Settings.sleep.timer * 60000))) {
+  // DO NOT go to sleep if:
+  //   1.  There is no wake button set (because why?)
+  //   2.  The sleep timeout setting > 0
+  //   3.  There has been no activity (button or mic) for the set amount of time
+  if (App.wake_button != 255 && Settings.sleep.timer > 0 && (App.autoSleepMillis >= (Settings.sleep.timer * 60000))) {
       gotoSleep();
   }
 

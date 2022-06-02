@@ -213,6 +213,7 @@ void playLoop()
     char buf[FILENAME_SIZE*2];
     strcpy(buf, Settings.loop.dir);
     strcat(buf, Settings.loop.file);
+    debug(F("Play loop: %s\n"), buf);
     App.loopLength = playSoundFile(LOOP_PLAYER, buf);
   }
   App.loopMillis = 0;

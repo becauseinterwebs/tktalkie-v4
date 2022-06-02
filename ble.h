@@ -76,6 +76,8 @@ void sendToApp(const char *cmd, const byte value)
 void sendConfig() 
 {
 
+  AudioNoInterrupts();
+  
   debug(F("Sending config\n"));
 
   btprint(F("{\"cmd\":\"config\", \"data\": { \"ver\":\"%2f\","), VERSION);
@@ -191,6 +193,8 @@ void sendConfig()
   
   // end
   btprint(F("}}\n"));
+
+  AudioInterrupts();
   
 }
 
@@ -201,4 +205,3 @@ void sendButtonPress(const byte pbutton, const byte vbutton)
   sprintf(val, "%d,%d", pbutton, vbutton);
   sendToApp("press", val);
 }
-

@@ -436,7 +436,7 @@ void parseSetting(const char *settingName, char *settingValue)
   } else if (strcasecmp(settingName, SETTING_MUTE_EFFECTS) == 0) {
     Settings.effects.mute = (byte)atoi(settingValue);
     setEffectsMute();
-  } else if (strcasecmp(settingName, SETTING_SLEEP_TIME) == 0) {
+  } else if (strcasecmp(settingName, SETTING_SLEEP_TIMER) == 0) {
     Settings.sleep.timer = (byte)atoi(settingValue);
     setSleepTimer();
   } else if (strcasecmp(settingName, SETTING_SLEEP_SOUND) == 0) {
@@ -583,6 +583,8 @@ void parseSetting(const char *settingName, char *settingValue)
  */
 boolean saveConfig() {
 
+  AudioNoInterrupts();
+  
   const char filename[13] = CONFIG_FILE;
   
   debug(F("Saving Config data to %s\n"), filename);
@@ -591,6 +593,7 @@ boolean saveConfig() {
   File file = openFile(filename, FILE_WRITE);
   if (!file) {
     debug(F("Failed to create file"));
+    AudioInterrupts();
     return false;
   }
 
@@ -623,12 +626,14 @@ boolean saveConfig() {
   if (written == 0) {
     debug(F("Failed to write to file"));
     file.close();
+    AudioInterrupts();
     return false;
   } else {
     debug(F("Config file saved.\n"));
   }
   // Close the file (File's destructor doesn't close the file)
   file.close();
+  AudioInterrupts();
   return true;
   
 }
@@ -775,6 +780,8 @@ char *settingsToString(char result[], const boolean pretty = false)
 boolean saveSettings(const char *src, const boolean backup = true) 
 {
 
+  AudioNoInterrupts();
+  
   char filename[FILENAME_SIZE];
   boolean result = false;
   if (strcasecmp(src, BLANK) == 0) {
@@ -833,6 +840,9 @@ boolean saveSettings(const char *src, const boolean backup = true)
   } else {
     debug(F("**ERROR** saving to %s\n"), srcFileName);
   }
+
+  AudioInterrupts();
+  
   return result;
   
 }
@@ -925,11 +935,14 @@ void loadSettings(char *filename, Settings_t *settings, const boolean nameOnly)
   strcat(srcFileName, filename);
 
   debug(F("Loading settings file: %s\n"), srcFileName);
+
+  AudioNoInterrupts();
   
   File file = SD.open(srcFileName);
 
   if (!file) {
     debug(F("Error reading file %s\n"), srcFileName);
+    AudioInterrupts();
     return;
   } else {
     debug(F("Opened %s\n"), srcFileName);
@@ -941,6 +954,8 @@ void loadSettings(char *filename, Settings_t *settings, const boolean nameOnly)
   debug(F("After file parse\n"));
 
   file.close();
+
+  AudioInterrupts();
   
   if (err) {
     debug(F("ERROR PARSING SETTINGS FILE %s! Error: %s\n"), srcFileName, err.c_str());

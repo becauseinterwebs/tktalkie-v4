@@ -87,6 +87,7 @@ File openFile(const char *filename, int mode)
  */
 void showFile(const char *filename) {
   debug(F("Showing file %s\n"), filename);
+  AudioNoInterrupts();
   File file = SD.open(filename);
   if (file) {
     char c;
@@ -98,6 +99,7 @@ void showFile(const char *filename) {
   } else {
     Serial.println(F("Could not find file!"));
   }
+  AudioInterrupts();
 }
 
 /***
@@ -108,9 +110,11 @@ String dirSep = "";
 int listDirectories(const char *path, char directories[][FILENAME_SIZE])
 {
    int index = 0;
+   AudioNoInterrupts();
    File dir = SD.open(path);
    if (!dir) {
     debug(F("Could not open %s!\n"), path);
+    AudioInterrupts();
     return 0;
    }
    dir.rewindDirectory();
@@ -134,6 +138,7 @@ int listDirectories(const char *path, char directories[][FILENAME_SIZE])
      entry.close();
    }
    debug(F("%d directories found\n"), index);
+   AudioInterrupts();
    return index;
 }
 
@@ -156,9 +161,11 @@ int listDirectories(const char *path, char directories[][FILENAME_SIZE])
     debug(F("Path %s not found!\n"), path);
     return 0;
   }
+  AudioNoInterrupts();
   File dir = SD.open(path);
   if (!dir) {
     debug(F("Could not open %s!\n"), path);
+    AudioInterrupts();
     return 0;
   }
   dir.rewindDirectory();
@@ -211,5 +218,6 @@ int listDirectories(const char *path, char directories[][FILENAME_SIZE])
      }
      entry.close();
    }
+   AudioInterrupts();
    return index;
 }
